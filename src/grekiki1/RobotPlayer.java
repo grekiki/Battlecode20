@@ -103,6 +103,12 @@ class bitcoin{
 				ans[2+i]=contents[i];
 			}
 			ans[6]=42;
+		}else if(type.equals("odstrani surovino")) {
+			ans[1]=2;
+			for(int i=0;i<4;i++){
+				ans[2+i]=contents[i];
+			}
+			ans[6]=42;
 		}
 		return ans;
 	}
@@ -111,9 +117,11 @@ class bitcoin{
 class HQ extends robot{
 	int round;
 	RobotController rc;
+	int miners;
 	HQ(RobotController rc){
 		this.rc=rc;
 		round=rc.getRoundNum();
+		miners=0;
 	}
 	@Override public void precompute(){
 
@@ -122,10 +130,11 @@ class HQ extends robot{
 		try{
 			round++;
 			int soup=rc.getTeamSoup();
-			if(soup>=70&&rc.isReady()){
+			if(miners<5&&soup>=70&&rc.isReady()){
 				for(Direction d:Direction.allDirections()){
 					if(rc.canBuildRobot(RobotType.MINER,d)){
 						rc.buildRobot(RobotType.MINER,d);
+						miners++;
 						return;
 					}
 				}
@@ -159,23 +168,25 @@ class miner extends robot{
 				alive--;//èe ne vemo kje je baza, a se sploh splaèa obstajati?
 			}
 		}
+		for(int i=0;i<surovine.size;i++) {
+			System.out.println(surovine.get(i).x+" "+surovine.get(i).y);
+		}
 		if(round>0){
 			try{
 				Transaction[] q=rc.getBlock(round-1);
 				for(Transaction t:q){
 //					System.out.println("Prejeto "+Arrays.toString(t.getMessage()));
-					if(t.getMessage()[6]==42){
-						if(t.getMessage()[0]==round-1){
-							if(t.getMessage()[1]==1){//surovina
-								if(!surovine.contains(new MapLocation(t.getMessage()[2],t.getMessage()[3]))){
-									surovine.add(new MapLocation(t.getMessage()[2],t.getMessage()[3]));
-									System.out.println("Dodana surovina "+new MapLocation(t.getMessage()[2],t.getMessage()[3]).x+" "+new MapLocation(t.getMessage()[2],t.getMessage()[3]).y);
-								}else{
-									System.out.println("Surovina obstaja?");
-								}
+					if(t.getMessage()[6]==42&&t.getMessage()[0]==round-1){
+						if(t.getMessage()[1]==1){//surovina
+							if(!surovine.contains(new MapLocation(t.getMessage()[2],t.getMessage()[3]))){
+								surovine.add(new MapLocation(t.getMessage()[2],t.getMessage()[3]));
+//								System.out.println("Dodana surovina "+new MapLocation(t.getMessage()[2],t.getMessage()[3]).x+" "+new MapLocation(t.getMessage()[2],t.getMessage()[3]).y);
+							}else{
+//								System.out.println("Surovina obstaja?");
 							}
-						}else{
-//							System.out.println(t.getMessage()[0]+" "+round);
+						}else if(t.getMessage()[1]==2) {
+							MapLocation rem=new MapLocation(t.getMessage()[2],t.getMessage()[3]);
+							surovine.remove(rem);
 						}
 					}
 				}
@@ -242,6 +253,23 @@ class miner extends robot{
 		round++;
 		int range=rc.getCurrentSensorRadiusSquared();
 		MapLocation curr=rc.getLocation();
+		for(int i=0;i<surovine.size;i++) {
+			MapLocation check=surovine.get(i);
+			try{
+				if(rc.canSenseLocation(check)&&rc.senseSoup(check)==0){
+					int[] block=bitcoin.generateMessage("odstrani surovino",new int[]{check.x,check.y,0,0},round-1);
+					if(rc.canSubmitTransaction(block,2)){
+						rc.submitTransaction(block,2);
+						rc.setIndicatorDot(check,255,0,0);
+//						System.out.println("Poslano"+Arrays.toString(block));
+						//System.out.println(t.x+" "+t.y);
+					}
+				}
+			}catch(GameActionException e){
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 		for(int dx=0;dx+dx<=range;dx++){
 			int used=dx*dx;
 			for(int dy=0;dy*dy<=range-used;dy++){
@@ -250,7 +278,7 @@ class miner extends robot{
 					if(Clock.getBytecodesLeft()>1000){
 						try{
 							if(!rc.canSenseLocation(t)){
-								System.out.println("Napaka pri skeniranju juhe");
+//								System.out.println("Napaka pri skeniranju juhe");
 							}else{
 								int soup=rc.senseSoup(t);
 								if(soup>0){

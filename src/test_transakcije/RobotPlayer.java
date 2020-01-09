@@ -112,6 +112,7 @@ class HQ extends robot{
 	int round;
 	RobotController rc;
 	int[] t;
+	int countMiners=0;
 	HQ(RobotController rc){
 		this.rc=rc;
 		round=rc.getRoundNum();
@@ -122,11 +123,15 @@ class HQ extends robot{
 	@Override public void runTurn(){
 		try{
 			round++;
+			if(countMiners==1) {
+				return;
+			}
 			int soup=rc.getTeamSoup();
 			if(soup>=70&&rc.isReady()&&rc.getRoundNum()==1){
 				for(Direction d:Direction.allDirections()){
 					if(rc.canBuildRobot(RobotType.MINER,d)){
 						rc.buildRobot(RobotType.MINER,d);
+						countMiners++;
 						return;
 					}
 				}
@@ -136,9 +141,9 @@ class HQ extends robot{
 		}
 	}
 	@Override public void postcompute(){
-		if(rc.getRoundNum()<4&&rc.getRoundNum()>1){
+		if(rc.getRoundNum()>5){
 			try{
-				Transaction[] q=rc.getBlock(rc.getRoundNum()-1);
+				Transaction[] q=rc.getBlock(5);
 				if(q.length!=0&&q[0]!=null&&q[0].getMessage()!=null){
 					t=q[0].getMessage();
 					System.out.println("Prejeto");
@@ -150,7 +155,7 @@ class HQ extends robot{
 			}
 		}
 		if(t!=null){
-			System.out.println(t[0]+" "+t[1]+" "+t);
+			System.out.println(Arrays.toString(t)+" "+t);
 		}else{
 			System.out.println("Ni tabele");
 		}
@@ -158,34 +163,22 @@ class HQ extends robot{
 }
 class miner extends robot{
 	int[] t;
-	int[] t2;
 	RobotController rc;
 	miner(RobotController rcc){
 		rc=rcc;
 		t=new int[7];
 	}
 	@Override public void precompute(){
-		if(rc.getRoundNum()<4&&rc.getRoundNum()>1){
-			try{
-				Transaction[] q=rc.getBlock(rc.getRoundNum()-1);
-				if(q.length!=0&&q[0]!=null&&q[0].getMessage()!=null){
-					t2=q[0].getMessage();
-					System.out.println("Prejeto");
-				}else{
-					System.out.println(q.length+" ni podatkov");
-				}
-			}catch(GameActionException e){
-				e.printStackTrace();
-			}
-		}
+		
 	}
 	@Override public void runTurn(){
 
 	}
 	@Override public void postcompute(){//Drage operacije so lahko le tukaj. Potrebno je preverjati koliko bytecodov je še ostalo!
 		try{
-			if(rc.getRoundNum()<5&&rc.canSubmitTransaction(t,1)){
+			if(rc.getRoundNum()==5&&rc.canSubmitTransaction(t,1)){
 				rc.submitTransaction(t,1);
+				t[0]=42;
 				System.out.println("Poslano");
 			}
 		}catch(Exception e){
@@ -194,7 +187,7 @@ class miner extends robot{
 //		t2[0]++;
 		t[0]++;
 //		System.out.println(Arrays.toString(t2));
-		System.out.println("Poveèano "+t+" "+t2);
+		System.out.println("Poveèano "+t);
 	}
 
 }

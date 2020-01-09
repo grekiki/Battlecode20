@@ -234,14 +234,7 @@ public strictfp class RobotPlayer{
 	}
 
 	static void tryBlockchain() throws GameActionException{
-		if(turnCount<3){
-			int[] message=new int[7];
-			for(int i=0;i<7;i++){
-				message[i]=123;
-			}
-			if(rc.canSubmitTransaction(message,10))
-				rc.submitTransaction(message,10);
-		}
+		
 		// System.out.println(rc.getRoundMessages(turnCount-1));
 	}
 }
