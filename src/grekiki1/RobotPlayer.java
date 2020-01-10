@@ -2,6 +2,7 @@ package grekiki1;
 import java.util.Arrays;
 
 import battlecode.common.*;
+import battlecode.world.GameWorld;
 
 class vector_gl{
 	MapLocation[] q;
@@ -219,6 +220,7 @@ class miner extends robot{
 						return;
 					}
 				}
+				GameWorld gw;
 				if(surovine.size>0){
 					MapLocation best=null;
 					int shortest=64*64+1;
@@ -270,21 +272,17 @@ class miner extends robot{
 				e.printStackTrace();
 			}
 		}
-		for(int dx=0;dx+dx<=range;dx++){
+		for(int dx=0;dx+dx<range;dx++){
 			int used=dx*dx;
-			for(int dy=0;dy*dy<=range-used;dy++){
+			for(int dy=0;dy*dy<range-used;dy++){
 				MapLocation[] tocke={new MapLocation(curr.x+dx,curr.y+dy),new MapLocation(curr.x-dx,curr.y+dy),new MapLocation(curr.x+dx,curr.y-dy),new MapLocation(curr.x-dx,curr.y-dy)};
 				for(MapLocation t:tocke){
 					if(Clock.getBytecodesLeft()>1000){
 						try{
-							if(!rc.canSenseLocation(t)){
-//								System.out.println("Napaka pri skeniranju juhe");
-							}else{
+							if(rc.canSenseLocation(t)) {
 								int soup=rc.senseSoup(t);
 								if(soup>0){
-									if(surovine.contains(t)){
-
-									}else{
+									if(!surovine.contains(t)){
 										int money=rc.getTeamSoup();
 										if(money>5){
 											int[] block=bitcoin.generateMessage("surovina",new int[]{t.x,t.y,0,0},round-1);
@@ -309,7 +307,6 @@ class miner extends robot{
 			}
 		}
 	}
-
 }
 public strictfp class RobotPlayer{
 	static RobotController rc;
