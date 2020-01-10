@@ -53,7 +53,7 @@ class vector_gl2{
 	}
 	void add(MapLocation ml){
 		size++;
-		surovine.append(f(ml.x+","+ml.y)+"è");
+		surovine.append(f(ml.x+","+ml.y)+"ï¿½");
 	}
 	MapLocation get(int a){
 		String s=surovine.substring(11*a,11*a+10);
@@ -74,7 +74,7 @@ class vector_gl2{
 		}
 	}
 	boolean remove(MapLocation ml){
-		String s=f(ml.x+","+ml.y)+"è";
+		String s=f(ml.x+","+ml.y)+"ï¿½";
 		if(surovine.indexOf(s)!=-1){
 			surovine.replace(surovine.indexOf(s),surovine.indexOf(s)+s.length(),"");
 			size--;
@@ -131,6 +131,14 @@ class HQ extends robot{
 		try{
 			round++;
 			int soup=rc.getTeamSoup();
+			if(rc.isReady()) {
+				for(RobotInfo u:rc.senseNearbyRobots()) {
+					if(u.team==rc.getTeam().opponent()&&u.type==RobotType.DELIVERY_DRONE&&rc.canShootUnit(u.ID)) {
+						rc.shootUnit(u.ID);
+						return;
+					}
+				}
+			}
 			if(miners<5&&soup>=70&&rc.isReady()){
 				for(Direction d:Direction.allDirections()){
 					if(rc.canBuildRobot(RobotType.MINER,d)){
@@ -166,7 +174,7 @@ class miner extends robot{
 				}
 			}
 			if(HQ==null){
-				alive--;//èe ne vemo kje je baza, a se sploh splaèa obstajati?
+				alive--;//ï¿½e ne vemo kje je baza, a se sploh splaï¿½a obstajati?
 			}
 		}
 		for(int i=0;i<surovine.size;i++) {
@@ -199,7 +207,7 @@ class miner extends robot{
 	}
 	@Override public void runTurn(){
 		try{
-			if(rc.isReady()&&alive>0){//inicializacija je bila upamo da uspešna
+			if(rc.isReady()&&alive>0){//inicializacija je bila upamo da uspeï¿½na
 				Direction[] dirs={Direction.NORTH,Direction.NORTHEAST,Direction.EAST,Direction.SOUTHEAST,Direction.SOUTH,Direction.SOUTHWEST,Direction.WEST,Direction.NORTHWEST};
 				if(rc.getSoupCarrying()==100){
 					Direction dirHQ=rc.getLocation().directionTo(HQ);
@@ -250,7 +258,7 @@ class miner extends robot{
 			e.printStackTrace();
 		}
 	}
-	@Override public void postcompute(){//Drage operacije so lahko le tukaj. Potrebno je preverjati koliko bytecodov je še ostalo!
+	@Override public void postcompute(){//Drage operacije so lahko le tukaj. Potrebno je preverjati koliko bytecodov je ï¿½e ostalo!
 		alive++;
 		round++;
 		int range=rc.getCurrentSensorRadiusSquared();
