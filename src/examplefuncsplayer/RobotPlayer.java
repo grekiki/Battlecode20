@@ -75,7 +75,7 @@ public strictfp class RobotPlayer{
 	}
 
 	static void runMiner() throws GameActionException{
-		tryBlockchain();
+//		tryBlockchain();
 		tryMove(randomDirection());
 		if(tryMove(randomDirection()))
 			System.out.println("I moved!");
