@@ -226,58 +226,26 @@ class HQ extends robot{
 				b.sendMsg(new paket(msg,1));
 			}
 		}
-//		if(phase==1) {
-//			if(rc.getTeamSoup()>300) {
-//				phase++;
-//				int[] msg=new int[7];
-//				msg[0]=123456789;
-//				msg[1]=1;
-//				msg[2]=phase;
-//				b.sendMsg(new paket(msg,1));
-//			}
-//		}
+		if(phase==1) {
+			if(rc.getTeamSoup()>300) {
+				phase++;
+				int[] msg=new int[7];
+				msg[0]=123456789;
+				msg[1]=1;
+				msg[2]=phase;
+				b.sendMsg(new paket(msg,1));
+			}
+		}
 		for(MapLocation m:polja){
 			rc.setIndicatorDot(m,0,255,255);
 		}
-		for(MapLocation m:refinery){
-			rc.setIndicatorDot(m,255,0,0);
-		}
-//		for(int x=-1;x<=1;x++) {
-//			for(int y=-1;y<=1;y++) {
-//				if(rc.canSenseLocation(new MapLocation(curr.x+x,curr.y+y))){
-//					if(rc.senseFlooding(new MapLocation(curr.x+x,curr.y+y))) {
-//						nukeServer();
-//					}
-//				}
-//			}
-//		}
+
 	}
 
-	/**
-	 * To je metoda ki se uporablja le v skrajnem primeru da bi slucajno izgubljali in da je res pomembno da ne izgubimo.
-	 * 
-	 */
-	public void nukeServer(){
-		System.out.println(Clock.getBytecodeNum());
-		String s="aaaaaaaaaa";
-		s=s+s+s+s+s+s+s+s+s+s;
-		s=s+s+s+s+s+s+s+s+s+s;
-		s=s+s+s+s+s+s+s+s+s+s;
-		s=s+s+s+s+s+s+s+s+s+s;
-		StringBuffer st2=new StringBuffer("");
-		for(int i=0;i<10;i++){
-			st2.append(s);
-		}
-		s=s+s+s+s+s+"b";
-		while(true){
-			st2.append("a");
-			System.out.println(st2.indexOf(s));
-			System.out.println(Clock.getBytecodeNum());
-		}
-	}
 }
 
 class refinery extends robot{
+	//Ne vem kaj bi tukaj sploh napisal
 	RobotController rc;
 
 	public refinery(RobotController r){
@@ -307,6 +275,7 @@ class refinery extends robot{
 }
 
 class vaporator extends robot{
+	//Ne vem kaj bi tukaj sploh napisal
 	RobotController rc;
 
 	public vaporator(RobotController r){
@@ -410,9 +379,27 @@ class net_gun extends robot{
 
 	}
 
-	@Override public void runTurn(){
-		// TODO Auto-generated method stub
-
+	@Override public void runTurn() throws GameActionException{
+		if(!rc.isReady()) {
+			return;
+		}
+		RobotInfo closest=null;
+		int dist=1000000;
+		for(RobotInfo r:rc.senseNearbyRobots()) {
+			if(r.team==rc.getTeam().opponent()&&r.getType()==RobotType.DELIVERY_DRONE) {
+				int t=rc.getLocation().distanceSquaredTo(r.location);
+				if(t<dist) {
+					dist=t;
+					closest=r;
+				}
+			}
+		}
+		if(closest==null) {
+			return;
+		}
+		if(rc.canShootUnit(closest.ID)) {
+			rc.shootUnit(closest.ID);
+		}
 	}
 
 	@Override public void postcompute(){

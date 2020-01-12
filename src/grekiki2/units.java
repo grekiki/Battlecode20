@@ -91,9 +91,9 @@ class miner extends robot{
 			return;
 		}
 
-		if(phase==0||phase==1){
+		if(phase==0||phase==1||phase==2){
 			//Obdelamo potrebo po refineriji
-			if(surovine.size()>0){
+			if(surovine.size()>0&&rc.getTeamSoup()>=RobotType.REFINERY.cost){
 				MapLocation closest=findClosest(surovine);
 				if(rc.getLocation().distanceSquaredTo(closest)<10&&closest.distanceSquaredTo(hq)>30){
 					//Preverimo èe je refinerija potrebna
