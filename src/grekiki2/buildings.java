@@ -108,13 +108,13 @@ class HQ extends robot {
 					if (msg[1] == 1) {// Sprememba faze
 						int currentPhase = msg[2];
 						phase = currentPhase;
-					}else if(msg[1]==2) {
-						MapLocation m=new MapLocation(msg[2],msg[3]);
-						if(!polja.contains(m)) {
+					} else if (msg[1] == 2) {
+						MapLocation m = new MapLocation(msg[2], msg[3]);
+						if (!polja.contains(m)) {
 							polja.add(m);
-							phase=1;
+							phase = 1;
 						}
-					}else if(msg[1]==3) {
+					} else if (msg[1] == 3) {
 						MapLocation m = new MapLocation(msg[2], msg[3]);
 						if (polja.contains(m)) {
 							polja.remove(m);
@@ -130,8 +130,8 @@ class HQ extends robot {
 		curr = rc.getLocation();
 		h = rc.getMapHeight();
 		w = rc.getMapWidth();
-		b=new blockchain(rc);
-		polja=new ArrayList<MapLocation>();
+		b = new blockchain(rc);
+		polja = new ArrayList<MapLocation>();
 	}
 
 	@Override
@@ -156,10 +156,18 @@ class HQ extends robot {
 			return;
 		}
 		if (phase == 0) {
-			if (miner<goodMiners.length&&rc.getTeamSoup()>=70&&rc.canBuildRobot(RobotType.MINER, goodMiners[miner])) {
+			if (miner < goodMiners.length && rc.getTeamSoup() >= 70 && rc.canBuildRobot(RobotType.MINER, goodMiners[miner])) {
 				rc.buildRobot(RobotType.MINER, goodMiners[miner]);
 				miner++;
 				return;
+			}
+		} else if (phase == 1) {
+			for (Direction d : Util.dir) {
+				if (rc.canBuildRobot(RobotType.MINER, d)) {
+					rc.buildRobot(RobotType.MINER, d);
+					miner++;
+					return;
+				}
 			}
 		}
 	}
@@ -167,17 +175,17 @@ class HQ extends robot {
 	@Override
 	public void postcompute() throws GameActionException {
 		if (phase == 0) {
-			if (miner >= goodMiners.length||polja.size()>0) {
+			if (miner >= goodMiners.length || polja.size() > 0) {
 				phase++;
 				System.out.println("Faza 1!");
 				int[] msg = new int[7];
 				msg[0] = 123456789;
 				msg[1] = 1;
-				msg[2] = phase;//1?!
-				b.sendMsg(new paket(msg,1));
+				msg[2] = phase;// 1?!
+				b.sendMsg(new paket(msg, 1));
 			}
 		}
-		for(MapLocation m:polja) {
+		for (MapLocation m : polja) {
 			rc.setIndicatorDot(m, 0, 0, 255);
 		}
 //		for(int x=-1;x<=1;x++) {
