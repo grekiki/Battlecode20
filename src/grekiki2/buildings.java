@@ -24,22 +24,20 @@ class HQ extends robot {
 	int h, w;
 	int prevPhase = -1;
 	int phase = 0;
-	ArrayList<paket> send = new ArrayList<paket>();
+	blockchain b;
+	ArrayList<MapLocation> polja;
 	// phase 0
 	Direction[] goodMiners;
 	int miner = 0;
 
 	HQ(RobotController rc) {
 		this.rc = rc;
-		curr = rc.getLocation();
-		h = rc.getMapHeight();
-		w = rc.getMapWidth();
 	}
 
 	public void computeData(int phase) throws GameActionException {
 		if (phase == 0) {
 			int count = 0;
-			int lenLimit = 20;
+			int lenLimit = 10;
 			// A se splaca delavca poslati v to smer?
 			boolean left = curr.x > lenLimit;
 			boolean right = (w - curr.x) > lenLimit;
@@ -102,17 +100,7 @@ class HQ extends robot {
 
 	public void readBlockchain(int round) throws GameActionException {
 		Transaction[] t = rc.getBlock(round);
-		int minCost=1000000;
-		for (int i=0;i<send.size();i++) {//Na zacetku igre je 0 zato ni neke skode
-			paket p=send.get(i);
-			for (Transaction tt : t) {
-				if(Arrays.equals(tt.getMessage(),p.data)) {
-					send.remove(p);
-					i--;
-				}
-			}
-		}
-		
+		b.checkQueue();
 		for (Transaction tt : t) {
 			int[] msg = tt.getMessage();
 			if (msg.length == 7) {
@@ -120,28 +108,30 @@ class HQ extends robot {
 					if (msg[1] == 1) {// Sprememba faze
 						int currentPhase = msg[2];
 						phase = currentPhase;
+					}else if(msg[1]==2) {
+						MapLocation m=new MapLocation(msg[2],msg[3]);
+						if(!polja.contains(m)) {
+							polja.add(m);
+							phase=1;
+						}
+					}else if(msg[1]==3) {
+						MapLocation m = new MapLocation(msg[2], msg[3]);
+						if (polja.contains(m)) {
+							polja.remove(m);
+						}
 					}
 				}
 			}
-			minCost=Math.min(minCost, tt.getCost());
 		}
-		minCost=(minCost==1000000?1:minCost);
-		for (int i=0;i<send.size();i++) {
-			paket p=send.get(i);
-			int[] msg = p.data;
-			if(rc.canSubmitTransaction(msg, minCost)) {
-				rc.submitTransaction(msg, minCost);
-				send.remove(p);
-				System.out.println("Poslano");
-				i--;
-			}
-		}
-		System.out.println(send.size()+" paketov caka");
 	}
 
 	@Override
 	public void init() {
-
+		curr = rc.getLocation();
+		h = rc.getMapHeight();
+		w = rc.getMapWidth();
+		b=new blockchain(rc);
+		polja=new ArrayList<MapLocation>();
 	}
 
 	@Override
@@ -154,58 +144,51 @@ class HQ extends robot {
 			}
 			prevPhase = phase;
 		}
-		if(rc.getRoundNum()>1) {
-			readBlockchain(rc.getRoundNum()-1);
+		if (rc.getRoundNum() > 1) {
+			readBlockchain(rc.getRoundNum() - 1);
 		}
 //		System.out.println(rc.getRoundNum() + " " + rc.getTeamSoup());
 	}
 
 	@Override
-	public void runTurn() {
-		try {
-			if (!rc.isReady()) {
+	public void runTurn() throws GameActionException {
+		if (!rc.isReady()) {
+			return;
+		}
+		if (phase == 0) {
+			if (miner<goodMiners.length&&rc.getTeamSoup()>=70&&rc.canBuildRobot(RobotType.MINER, goodMiners[miner])) {
+				rc.buildRobot(RobotType.MINER, goodMiners[miner]);
+				miner++;
 				return;
 			}
-			if (phase == 0) {
-				if (rc.canBuildRobot(RobotType.MINER, goodMiners[miner])) {
-					rc.buildRobot(RobotType.MINER, goodMiners[miner]);
-					miner++;
-					return;
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
 	}
 
 	@Override
 	public void postcompute() throws GameActionException {
 		if (phase == 0) {
-			if (miner == goodMiners.length) {
+			if (miner >= goodMiners.length||polja.size()>0) {
 				phase++;
 				System.out.println("Faza 1!");
 				int[] msg = new int[7];
 				msg[0] = 123456789;
 				msg[1] = 1;
-				msg[2] = 1;
-				if (rc.canSubmitTransaction(msg, 1)) {
-					rc.submitTransaction(msg, 1);
-					send.add(new paket(msg, 1));
-				} else {
-					send.add(new paket(msg, 0));
-				}
-
+				msg[2] = phase;//1?!
+				b.sendMsg(new paket(msg,1));
 			}
 		}
-		for(int x=-1;x<=1;x++) {
-			for(int y=-1;y<=1;y++) {
-				if(rc.canSenseLocation(new MapLocation(curr.x+x,curr.y+y))){
-					if(rc.senseFlooding(new MapLocation(curr.x+x,curr.y+y))) {
-						nukeServer();
-					}
-				}
-			}
+		for(MapLocation m:polja) {
+			rc.setIndicatorDot(m, 0, 0, 255);
 		}
+//		for(int x=-1;x<=1;x++) {
+//			for(int y=-1;y<=1;y++) {
+//				if(rc.canSenseLocation(new MapLocation(curr.x+x,curr.y+y))){
+//					if(rc.senseFlooding(new MapLocation(curr.x+x,curr.y+y))) {
+//						nukeServer();
+//					}
+//				}
+//			}
+//		}
 	}
 
 	/**

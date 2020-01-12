@@ -1,9 +1,11 @@
 package grekiki2;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import battlecode.common.*;
 import battlecode.world.GameWorld;
+
 /*
  * Sifrirni sistem za sporocila. 
  * Prvi int je privatna cifra ki jo uporabimo za sifriranje. 
@@ -13,45 +15,124 @@ import battlecode.world.GameWorld;
  * Tukaj bo slovar ki pove kaj dolocena stevilka pomeni ce je navedena kot vsebina
  * 
  * msg[1]==1--> msg[2] pove fazo v kateri je trenutno baza. 
+ * 
+ * msg[1]==2--> msg[2],msg[3] so koordinate polja surovin.
+ * 
+ * msg[1]==3--> Polje na msg[2],msg[3] je prazno. 
+ * 
+ * msg[1]==4--> na msg[2],msg[3] sedaj stoji refinerija. 
+ * 
  */
-class tocka{
-	int x,y;
-	tocka(int a,int b){
-		x=a;
-		y=b;
+
+/*
+ * Faze:
+ * Faza 0: Nakup minerjev ki cimprej poiscejo kaksno surovino
+ * 
+ * Faza 1: Razvoj ekonomije. ce imajo minerji oznacena kaksna dobra surovinska polja, naj razmislijo
+ * o rafineriji ce je to dalec, ali pa naj se naberejo ce je blizu. Nekje 6 minerjev lahko precej v redu zapolni rafinerijo. 
+ * Rafinerije se gradi stran od baze, da ne skodimo zidu z pollutionom. 
+ * Premik v fazo 2 bi lako naredili ko zaznamo nasprotnikovo enoto, ali ko dosežemo neko potezo recimo 300. 
+ * 
+ * Faza 3: Dva minerja gresta nazaj v bazo in izgradita landscaperje. 6 se jih namesti okoli baze da naredijo zid.
+ * Potem gremo v fazo 4. 
+ * 
+ * Faza 4: Minerji zakampirajo surovine z droni in dronecatcherji. To omogoca da polovimo vse nasprotnikove enote.
+ * Baza lahko requesta drone in landscaperje za obrambo, naj bi prisli iz surovinskih polj.
+ * 
+ * Faza 5: Baza, ce ima dovolj dronov in landscaperjev naredi napad. To bo verjetno prislo na vrsto precej pozno. 
+ * 
+ * 
+ * Celoten plan temelji bolj na ekonomiji, tako da se verjetno splaca biti previden glede invazij.  
+ * 
+ */
+
+class blockchain {
+	ArrayList<paket> msg;
+	RobotController rc;
+
+	blockchain(RobotController rc) {
+		this.rc = rc;
+		msg = new ArrayList<paket>();
+	}
+
+	public void sendMsg(paket p) throws GameActionException {
+		if (rc.canSubmitTransaction(p.data, p.cost)) {
+			rc.submitTransaction(p.data, p.cost);
+			msg.add(new paket(p.data, p.cost));
+		} else {
+			msg.add(new paket(p.data, 0));
+		}
+	}
+
+	public void checkQueue() throws GameActionException {
+		int minCost = 1000000;
+		Transaction[] t = rc.getBlock(rc.getRoundNum() - 1);
+		for (int i = 0; i < msg.size(); i++) {
+			paket p = msg.get(i);
+			for (Transaction tt : t) {
+				if (Arrays.equals(tt.getMessage(), p.data)) {
+					msg.remove(p);
+					i--;
+				}
+				minCost = Math.min(minCost, tt.getCost());
+			}
+		}
+		minCost = (minCost == 1000000 ? 1 : minCost);
+		for (int i = 0; i < msg.size(); i++) {
+			paket p = msg.get(i);
+			if (p.cost >= minCost) {// Placali smo ze dovolj
+				continue;
+			}
+			int[] msgg = p.data;
+			if (rc.canSubmitTransaction(msgg, minCost)) {
+				rc.submitTransaction(msgg, minCost);
+				msg.remove(p);
+				System.out.println("Poslano");
+				i--;
+			}
+		}
+//		System.out.println(msg.size() + " paketov caka");
 	}
 }
-class Util{
-	//Garantirano terminira
-	public static Direction tryMoveLite(RobotController rc,Direction dir) {
-		if(rc.canMove(dir)) {
+
+class Util {
+	public static Direction[] dir = { Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST };
+
+	// Garantirano terminira
+	public static Direction tryMoveLite(RobotController rc, Direction dir) throws GameActionException {
+		if (rc.canMove(dir) && rc.canSenseLocation(rc.getLocation().add(dir)) && !rc.senseFlooding(rc.getLocation().add(dir))) {
 			return dir;
-		}else if(rc.canMove(dir.rotateLeft())) {
+		} else if (rc.canMove(dir.rotateLeft()) && rc.canSenseLocation(rc.getLocation().add(dir.rotateLeft())) && !rc.senseFlooding(rc.getLocation().add(dir.rotateLeft()))) {
 			return dir.rotateLeft();
-		}else if(rc.canMove(dir.rotateRight())) {
+		} else if (rc.canMove(dir.rotateRight()) && rc.canSenseLocation(rc.getLocation().add(dir.rotateRight())) && !rc.senseFlooding(rc.getLocation().add(dir.rotateRight()))) {
 			return dir.rotateRight();
-		}else {
+		} else {
 			return null;
 		}
 	}
-	public static Direction tryMove(RobotController rc,Direction dir) {
-		if(rc.canMove(dir)) {
+
+	public static Direction tryMove(RobotController rc, Direction dir) throws GameActionException {
+		if (rc.canMove(dir) && rc.canSenseLocation(rc.getLocation().add(dir)) && !rc.senseFlooding(rc.getLocation().add(dir))) {
 			return dir;
-		}else if(rc.canMove(dir.rotateLeft())) {
+		} else if (rc.canMove(dir.rotateLeft()) && rc.canSenseLocation(rc.getLocation().add(dir.rotateLeft())) && !rc.senseFlooding(rc.getLocation().add(dir.rotateLeft()))) {
 			return dir.rotateLeft();
-		}else if(rc.canMove(dir.rotateRight())) {
+		} else if (rc.canMove(dir.rotateRight()) && rc.canSenseLocation(rc.getLocation().add(dir.rotateRight())) && !rc.senseFlooding(rc.getLocation().add(dir.rotateRight()))) {
 			return dir.rotateRight();
-		}else if(rc.canMove(dir.rotateLeft().rotateLeft())) {
+		} else if (rc.canMove(dir.rotateLeft().rotateLeft()) && rc.canSenseLocation(rc.getLocation().add(dir.rotateLeft().rotateLeft())) && !rc.senseFlooding(rc.getLocation().add(dir.rotateLeft().rotateLeft()))) {
 			return dir.rotateLeft().rotateLeft();
-		}else if(rc.canMove(dir.rotateRight().rotateRight())) {
+		} else if (rc.canMove(dir.rotateRight().rotateRight()) && rc.canSenseLocation(rc.getLocation().add(dir.rotateRight().rotateRight())) && !rc.senseFlooding(rc.getLocation().add(dir.rotateRight().rotateRight()))) {
 			return dir.rotateRight().rotateRight();
-		}else {
+		} else {
 			return null;
 		}
 	}
+
+	public static Direction getRandomDirection() {
+		return dir[(int) Math.floor(dir.length * Math.random())];
+	}
 }
+
 abstract class robot {
-	
 	public abstract void init() throws Exception;
 
 	public abstract void precompute() throws Exception;
@@ -59,7 +140,7 @@ abstract class robot {
 	public abstract void runTurn() throws Exception;
 
 	public abstract void postcompute() throws Exception;
-	
+
 }
 
 public strictfp class RobotPlayer {
@@ -103,15 +184,23 @@ public strictfp class RobotPlayer {
 		}
 		try {
 			r.init();
-			while (true) {
+		} catch (Exception e) {
+			System.out.println(Arrays.toString(e.getStackTrace()));
+			System.out.println(e.getMessage());
+		}
+		while (true) {
+			try {
 				r.precompute();
 				r.runTurn();
 				r.postcompute();
 				Clock.yield();
+			} catch (Exception e) {
+				System.out.println(Arrays.toString(e.getStackTrace()));
+				System.out.println(e.getMessage());
+				Clock.yield();
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
+		
 	}
 
 }
