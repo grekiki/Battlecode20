@@ -147,6 +147,9 @@ class miner extends robot {
 	@Override
 	public void postcompute() throws Exception {
 		int range = rc.getCurrentSensorRadiusSquared();
+		if(Clock.getBytecodesLeft()<1000) {
+			return;
+		}
 		checkForEmptyField();
 		findResources(range);
 		discardMissing();
@@ -158,6 +161,9 @@ class miner extends robot {
 			if (range >= rc.getLocation().distanceSquaredTo(polje) + polmer_surovine) {
 				boolean ok=false;
 				for (int i = 0; i <= polmer_surovine; i++) {
+					if(Clock.getBytecodesLeft()<1000) {
+						return;
+					}
 					MapLocation[] scan = pc.range[i];
 					for (MapLocation mm : scan) {
 						MapLocation m = new MapLocation(polje.x + mm.x, polje.y + mm.y);
@@ -179,9 +185,15 @@ class miner extends robot {
 	public void findResources(int range) throws GameActionException {
 		for (int i = 0; i < range; i++) {
 			MapLocation[] scan = pc.range[i];
+			if(Clock.getBytecodesLeft()<1000) {
+				return;
+			}
 			for (MapLocation mm : scan) {
 				MapLocation m = new MapLocation(rc.getLocation().x + mm.x, rc.getLocation().y + mm.y);
 				if (rc.canSenseLocation(m) && rc.senseSoup(m) > 0) {
+					if(Clock.getBytecodesLeft()<1000) {
+						return;
+					}
 					surovine.add(m);
 					boolean used = false;
 					for (MapLocation center : polja) {
@@ -206,6 +218,9 @@ class miner extends robot {
 		// Tako se brise iz seta. Vir
 		// :https://stackoverflow.com/questions/1110404/remove-elements-from-a-hashset-while-iterating
 		for (Iterator<MapLocation> it = surovine.iterator(); it.hasNext();) {
+			if(Clock.getBytecodesLeft()<1000) {
+				return;
+			}
 			MapLocation m = it.next();
 			if (rc.canSenseLocation(m) && rc.senseSoup(m) == 0) {
 				surovine.remove(m);
