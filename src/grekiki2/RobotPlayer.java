@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import battlecode.common.*;
-import battlecode.world.GameWorld;
 
 /*
  * Sifrirni sistem za sporocila. 
@@ -22,6 +21,7 @@ import battlecode.world.GameWorld;
  * 
  * msg[1]==4--> na msg[2],msg[3] sedaj stoji refinerija. 
  * 
+ * 
  */
 
 /*
@@ -31,10 +31,10 @@ import battlecode.world.GameWorld;
  * Faza 1: Razvoj ekonomije. ce imajo minerji oznacena kaksna dobra surovinska polja, naj razmislijo
  * o rafineriji ce je to dalec, ali pa naj se naberejo ce je blizu. Nekje 6 minerjev lahko precej v redu zapolni rafinerijo. 
  * Rafinerije se gradi stran od baze, da ne skodimo zidu z pollutionom. 
- * Premik v fazo 2 bi lako naredili ko zaznamo nasprotnikovo enoto, ali ko doseÅ¾emo neko potezo recimo 300. 
+ * Premik v fazo 3 naredimo ko imamo dovolj surovin za to. 
  * 
- * Faza 3: Dva minerja gresta nazaj v bazo in izgradita landscaperje. 6 se jih namesti okoli baze da naredijo zid.
- * Potem gremo v fazo 4. 
+ * Faza 3: Sedaj bi morali imeti ogromno surovin, in se lahko lotimo napada/obrambe. Baza poklièe enega minerja nazaj,
+ * vsaka refinerija pa ima minerja zadolženega za obrambo le te. 
  * 
  * Faza 4: Minerji zakampirajo surovine z droni in dronecatcherji. To omogoca da polovimo vse nasprotnikove enote.
  * Baza lahko requesta drone in landscaperje za obrambo, naj bi prisli iz surovinskih polj.
