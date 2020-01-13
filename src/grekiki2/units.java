@@ -3,6 +3,8 @@ package grekiki2;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Queue;
 
 import battlecode.common.*;
 
@@ -32,8 +34,7 @@ class miner extends robot{
 	}
 
 	public void readBlockchain() throws Exception{
-		int curr=rc.getRoundNum();
-		for(int i=1;i<curr;i++){
+		for(int i=1;i<rc.getRoundNum();i++){
 			readBlockchain(i);
 		}
 	}
@@ -114,19 +115,23 @@ class miner extends robot{
 				return;
 			}
 		}
+		if(!baseWorker&&Util.d_inf(rc.getLocation(),hq)<=2&&phase==3){
+			int t=1/0;
+			System.out.println(t);
+		}
 		if(phase==0||phase==1||phase==2||phase==3){//TO-DO optimiziraj fazo 3. 
 			//Obdelamo potrebo po refineriji
 			if(surovine.size()>0&&rc.getTeamSoup()>=RobotType.REFINERY.cost+200||(refinery.size()<2&&rc.getTeamSoup()>=RobotType.REFINERY.cost)){
 				MapLocation closest=findClosest(surovine);
 				if(closest!=null&&rc.getLocation().distanceSquaredTo(closest)<10){
 					//Preverimo èe je refinerija potrebna
-					MapLocation ref=closest.add(hq.directionTo(closest));
-					if(Util.d_inf(hq,ref)>=4){//Ne na zidu... Pa ne motimo baze
+					MapLocation ref=closest;
+					if(Util.d_inf(hq,ref)>=3){//Ne na zidu... Da ne motimo baze
 						int dist=20;
 						for(MapLocation re:refinery){
 							dist=Math.min(dist,re.distanceSquaredTo(ref));
 						}
-						if(dist==20){
+						if(dist==20){//ni refinerije bližje kot 20
 							//Potrebujemo refinerijo.
 							//Poskusimo èe smo dovolj blizu
 							if(ref.distanceSquaredTo(rc.getLocation())<=2){
@@ -165,7 +170,7 @@ class miner extends robot{
 //					System.out.println("Ne moremo priti do najblizje refinerije!");
 				}
 			}
-			a:if(phase==2&&rc.getTeamSoup()>=RobotType.NET_GUN.cost+200){//Rafinerije potrebujejo drone za obrambo. Tovarna vsaj 3 stran po d_inf metriki
+			a:if(phase==2&&rc.getTeamSoup()>=RobotType.NET_GUN.cost+300){//Rafinerije potrebujejo drone za obrambo. Tovarna vsaj 3 stran po d_inf metriki
 				MapLocation ref=findClosest(refinery);
 				int optRange=ref.equals(hq)?4:2;
 				int dist=1000000000;
@@ -195,7 +200,7 @@ class miner extends robot{
 			}
 			//Poskusimo kopati
 			if(rc.getSoupCarrying()<RobotType.MINER.soupLimit){
-				for(Direction d:Util.dir){
+				for(Direction d:Direction.allDirections()){
 					if(rc.canMineSoup(d)){
 						rc.mineSoup(d);
 						return;
@@ -234,12 +239,12 @@ class miner extends robot{
 		}
 		if(fazaBaze==0){
 			MapLocation f1=hq.add(Direction.NORTHWEST);
-			if(rc.canSenseLocation(f1)&&rc.senseRobotAtLocation(f1)!=null&&rc.senseRobotAtLocation(f1).type==RobotType.FULFILLMENT_CENTER&&rc.getTeamSoup()>=RobotType.DESIGN_SCHOOL.cost){
+			if(rc.canSenseLocation(f1)&&rc.senseRobotAtLocation(f1)!=null&&rc.senseRobotAtLocation(f1).type==RobotType.FULFILLMENT_CENTER&&rc.getTeamSoup()>=RobotType.DESIGN_SCHOOL.cost+300){
 				MapLocation f2=hq.add(Direction.SOUTHEAST);
 				if(rc.getLocation().distanceSquaredTo(f2)<=2&&!f2.equals(rc.getLocation())){
-					if(rc.getTeamSoup()>=RobotType.DESIGN_SCHOOL.cost&&rc.canBuildRobot(RobotType.DESIGN_SCHOOL,rc.getLocation().directionTo(f2))){
+					if(rc.canBuildRobot(RobotType.DESIGN_SCHOOL,rc.getLocation().directionTo(f2))){
 						rc.buildRobot(RobotType.DESIGN_SCHOOL,rc.getLocation().directionTo(f2));
-						fazaBaze=1;
+						fazaBaze=-2;
 						return true;
 					}
 				}else if(f2.equals(rc.getLocation())){
@@ -257,7 +262,7 @@ class miner extends robot{
 						return true;
 					}
 				}
-			}else if(rc.getTeamSoup()>=RobotType.FULFILLMENT_CENTER.cost+200){
+			}else if(rc.getTeamSoup()>=RobotType.FULFILLMENT_CENTER.cost){
 				if(rc.getLocation().distanceSquaredTo(f1)<=2&&!f1.equals(rc.getLocation())){
 					if(rc.getTeamSoup()>=RobotType.FULFILLMENT_CENTER.cost&&rc.canBuildRobot(RobotType.FULFILLMENT_CENTER,rc.getLocation().directionTo(f1))){
 						rc.buildRobot(RobotType.FULFILLMENT_CENTER,rc.getLocation().directionTo(f1));
@@ -280,8 +285,64 @@ class miner extends robot{
 				}
 			}
 		}
-		if(fazaBaze==1){//postavimo design schoole
-
+		if(fazaBaze==-2&&phase==3){
+			fazaBaze=1;
+		}
+		if(fazaBaze==1){//NetCatcher
+			int[] msg={123456789,7,rc.getLocation().x,rc.getLocation().y,hq.x+1,hq.y,0};
+			b.sendMsg(new paket(msg,1));
+			fazaBaze=2;
+		}
+		if(fazaBaze==2){
+			if(rc.getLocation().x==hq.x+1&&rc.getLocation().y==hq.y){
+				if(rc.canBuildRobot(RobotType.NET_GUN,Direction.NORTH)){
+					rc.buildRobot(RobotType.NET_GUN,Direction.NORTH);
+					return true;
+				}
+				if(rc.canBuildRobot(RobotType.NET_GUN,Direction.NORTHWEST)){
+					rc.buildRobot(RobotType.NET_GUN,Direction.NORTHWEST);
+					return true;
+				}
+				if(rc.senseRobotAtLocation(rc.getLocation().add(Direction.NORTH))!=null&&rc.senseRobotAtLocation(rc.getLocation().add(Direction.NORTH)).type==RobotType.NET_GUN&&rc.senseRobotAtLocation(rc.getLocation().add(Direction.NORTHWEST))!=null&&rc.senseRobotAtLocation(rc.getLocation().add(Direction.NORTHWEST)).type==RobotType.NET_GUN){
+					fazaBaze=3;
+				}else{
+					return true;
+				}
+			}else{
+				return true;
+			}
+		}
+		if(fazaBaze==3){
+			int[] msg={123456789,7,rc.getLocation().x,rc.getLocation().y,hq.x-1,hq.y,0};
+			b.sendMsg(new paket(msg,1));
+			fazaBaze=4;
+		}
+		if(fazaBaze==4){
+			if(rc.getLocation().x==hq.x-1&&rc.getLocation().y==hq.y){
+				if(rc.canBuildRobot(RobotType.NET_GUN,Direction.SOUTH)){
+					rc.buildRobot(RobotType.NET_GUN,Direction.SOUTH);
+					return true;
+				}
+				if(rc.canBuildRobot(RobotType.NET_GUN,Direction.SOUTHEAST)){
+					rc.buildRobot(RobotType.NET_GUN,Direction.SOUTHEAST);
+					return true;
+				}
+				if(rc.senseRobotAtLocation(rc.getLocation().add(Direction.SOUTH))!=null&&rc.senseRobotAtLocation(rc.getLocation().add(Direction.SOUTH)).type==RobotType.NET_GUN&&rc.senseRobotAtLocation(rc.getLocation().add(Direction.SOUTHEAST))!=null&&rc.senseRobotAtLocation(rc.getLocation().add(Direction.SOUTHEAST)).type==RobotType.NET_GUN){
+					fazaBaze=5;
+				}else{
+					return true;
+				}
+			}else{
+				return true;
+			}
+		}
+		if(fazaBaze==5){
+			int[] msg={123456789,7,rc.getLocation().x,rc.getLocation().y,rc.getLocation().x-2,rc.getLocation().y,0};
+			b.sendMsg(new paket(msg,1));
+			fazaBaze=6;
+			return true;
+		}else if(fazaBaze==6){
+			return false;
 		}
 		return false;
 	}
@@ -335,9 +396,9 @@ class miner extends robot{
 			if(range>=rc.getLocation().distanceSquaredTo(polje)+polmer_surovine){
 				boolean ok=false;
 				for(int i=0;i<=polmer_surovine;i++){
-					if(Clock.getBytecodesLeft()<1000){
-						return;
-					}
+//					if(Clock.getBytecodesLeft()<1000){
+//						return;
+//					}
 					MapLocation[] scan=pc.range[i];
 					for(MapLocation mm:scan){
 						MapLocation m=new MapLocation(polje.x+mm.x,polje.y+mm.y);
@@ -407,6 +468,7 @@ class miner extends robot{
 class landscaper extends robot{
 	RobotController rc;
 	MapLocation hq;
+	int phase=0;
 	public static MapLocation[] place={new MapLocation(0,-2),new MapLocation(0,2),new MapLocation(-2,0),new MapLocation(2,0),new MapLocation(2,-2),new MapLocation(2,2),new MapLocation(-2,2),new MapLocation(-2,-2)};
 
 	landscaper(RobotController rc){
@@ -435,8 +497,18 @@ class landscaper extends robot{
 			return null;
 		}
 	}
-	@Override public void precompute(){
-
+	@Override public void precompute() throws GameActionException{
+		boolean ok=true;
+		for(MapLocation m:landscaper.place){
+			MapLocation check=new MapLocation(hq.x+m.x,hq.y+m.y);
+			if(!rc.canSenseLocation(check)||rc.senseRobotAtLocation(check)==null||(rc.senseRobotAtLocation(check)!=null&&rc.senseRobotAtLocation(check).type!=RobotType.LANDSCAPER)){
+				ok=false;
+				break;
+			}
+		}
+		if(ok){
+			phase=3;
+		}
 	}
 	int p=0;
 	boolean positioned=false;
@@ -445,6 +517,9 @@ class landscaper extends robot{
 			return;
 		}
 		if(rc.getLocation().equals(new MapLocation(hq.x+place[p].x,hq.y+place[p].y))){
+			positioned=true;
+		}
+		if(phase==3){
 			positioned=true;
 		}
 		if(positioned){
@@ -482,47 +557,58 @@ class landscaper extends robot{
 			}
 			MapLocation goal=new MapLocation(hq.x+place[p].x,hq.y+place[p].y);
 			Direction best=rc.getLocation().directionTo(goal);
-			if(Util.d_inf(goal,rc.getLocation())==1){
-				//Skoraj smo na cilju
-				if(rc.canMove(best)){
-					rc.move(best);
-					return;
-				}
-				int currH=rc.senseElevation(rc.getLocation());
-				int next=rc.senseElevation(rc.getLocation().add(best));
-				if(next>currH){
-					if(rc.canDigDirt(best)){
-						rc.digDirt(best);
-						return;
-					}else{
-						rc.depositDirt(Direction.CENTER);
-						return;
-					}
-				}else{
-					if(rc.canDepositDirt(best)){
-						rc.depositDirt(best);
-						return;
-					}else{
-						rc.digDirt(Direction.CENTER);
-						return;
-					}
-				}
-
-			}
-			Direction d=Util.tryMove(rc,best);
-			if(d!=null&&rc.canMove(d)){
-				rc.move(d);
+			Direction good=Util.tryMoveLite(rc,best);
+			if(good!=null){
+				rc.move(good);
 				return;
 			}else{
-//				System.out.println("Premik ne dela "+best);
-//				System.out.println(place[p].x+" "+place[p].y);
+				//Ne gre
+				MapLocation curr=rc.getLocation();
+				Direction[] dir={best,best.rotateLeft(),best.rotateRight()};
+				for(Direction d:dir){
+					if(rc.senseRobotAtLocation(curr.add(d))!=null){
+						continue;
+					}
+					if(rc.senseFlooding(curr.add(d))){
+						if(rc.canDepositDirt(d)){
+							rc.depositDirt(d);
+							return;
+						}else{
+							for(Direction d2:Util.dir){
+								if(!d2.equals(d)&&rc.senseRobotAtLocation(curr.add(d))==null){
+									rc.digDirt(d2);
+								}
+							}
+						}
+					}
+					int h=rc.senseElevation(curr);
+					int h2=rc.senseElevation(curr.add(d));
+					if(h2>h){
+						if(rc.canDigDirt(d)){
+							rc.digDirt(d);
+							return;
+						}else if(rc.canDepositDirt(d)){
+							rc.depositDirt(d);
+							return;
+						}
+					}else{
+						if(rc.canDepositDirt(d)){
+							rc.depositDirt(d);
+							return;
+						}else if(rc.canDigDirt(d)){
+							rc.digDirt(d);
+							return;
+						}
+					}
+				}
 			}
 		}
 
 	}
 
-	@Override public void postcompute(){
-		// TODO Auto-generated method stub
+
+
+	@Override public void postcompute() throws GameActionException{
 
 	}
 
@@ -534,6 +620,8 @@ class delivery_drone extends robot{
 	MapLocation hq;
 	boolean full=false;
 	ArrayList<MapLocation> aqua=new ArrayList<MapLocation>();
+	MapLocation s,drain;
+	int time=1;
 //	boolean[][]flooding;
 	delivery_drone(RobotController rc){
 		this.rc=rc;
@@ -549,14 +637,87 @@ class delivery_drone extends robot{
 //		flooding=new boolean[rc.getMapWidth()][rc.getMapHeight()];
 	}
 
-	@Override public void precompute(){
-		// TODO Auto-generated method stub
-
+	@Override public void precompute() throws GameActionException{
+		if(s!=null||drain!=null){
+			return;
+		}
+		for(int i=time;i<rc.getRoundNum();i++){
+			Transaction[] q=rc.getBlock(rc.getRoundNum()-1);
+			for(Transaction t:q){
+				if(t.getMessage()[0]==123456789&&t.getMessage()[1]==7){
+					s=new MapLocation(t.getMessage()[2],t.getMessage()[3]);
+					drain=new MapLocation(t.getMessage()[4],t.getMessage()[5]);
+					time=rc.getRoundNum();
+					return;
+				}
+			}
+		}
 	}
 
 	@Override public void runTurn() throws GameActionException{
 		if(!rc.isReady()){
 			return;
+		}
+		a:if(s!=null&&!full){
+			if(rc.getRoundNum()-time>100){
+				s=null;
+				drain=null;
+			}
+			if(rc.canSenseLocation(s)){
+				if(rc.senseRobotAtLocation(s)==null||rc.senseRobotAtLocation(s).type==RobotType.DELIVERY_DRONE){
+					s=null;
+					drain=null;
+					break a;
+				}else{
+					if(rc.getLocation().distanceSquaredTo(s)<=2){
+						if(rc.canPickUpUnit(rc.senseRobotAtLocation(s).ID)){
+							rc.pickUpUnit(rc.senseRobotAtLocation(s).ID);
+							full=true;
+							s=null;
+							return;
+						}
+					}
+				}
+			}
+			Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(s));
+			if(d!=null){
+				rc.move(d);
+				return;
+			}else{
+				return;
+			}
+		}
+		if(s==null&&drain!=null&&full){
+			System.out.println(drain.x+" "+drain.y);
+			if(rc.getLocation().distanceSquaredTo(drain)<=2){
+				if(rc.getLocation().distanceSquaredTo(drain)==0){
+					for(Direction d:Util.dir){
+						if(rc.canMove(d)){
+							rc.move(d);
+							return;
+						}
+					}
+				}else{
+					Direction d=rc.getLocation().directionTo(drain);
+					if(rc.canDropUnit(d)){
+						rc.dropUnit(d);
+						drain=null;
+						return;
+					}
+				}
+			}
+			if(rc.getLocation().distanceSquaredTo(drain)>=20){
+				Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(drain));
+				if(d!=null&&rc.canMove(d)){
+					rc.move(d);
+					return;
+				}
+			}
+			Direction d=find_path(drain);
+			if(d!=null&&rc.canMove(d)){
+				rc.move(d);
+				return;
+			}
 		}
 		if(!full){
 			for(Direction d:Util.dir){
@@ -576,19 +737,20 @@ class delivery_drone extends robot{
 					m=r.location;
 				}
 			}
-			if(m!=null&&!full){
-				init=rc.getLocation().directionTo(m);
+			if(safeMove(rc.getLocation().directionTo(m))){
+				rc.move(rc.getLocation().directionTo(m));
+				return;
 			}
 			for(int i=0;i<7;i++){
-				if(rc.canMove(init)){
+				if(safeMove(init)){
 					rc.move(init);
 					return;
 				}else{
-					init=Util.getRandomDirection();
+					init=Math.random()<0.5?rc.getLocation().directionTo(hq).opposite():Util.getRandomDirection();
 				}
 			}
 		}
-		if(full){
+		if(full&&drain==null){
 			for(Direction d:Util.dir){
 				if(rc.canSenseLocation(rc.getLocation().add(d))&&rc.senseFlooding(rc.getLocation().add(d))){
 					if(rc.canDropUnit(d)){
@@ -607,8 +769,22 @@ class delivery_drone extends robot{
 						if(rc.senseFlooding(m)){
 							Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(m));
 							if(d!=null){
-								rc.move(d);
-								return;
+								if(safeMove(d)){
+									rc.move(d);
+									return;
+								}else if(safeMove(d.rotateLeft())){
+									rc.move(d.rotateLeft());
+									return;
+								}else if(safeMove(d.rotateRight())){
+									rc.move(d.rotateRight());
+									return;
+								}else if(safeMove(d.rotateLeft().rotateLeft())){
+									rc.move(d.rotateLeft().rotateLeft());
+									return;
+								}else if(safeMove(d.rotateRight().rotateRight())){
+									rc.move(d.rotateRight().rotateRight());
+									return;
+								}
 							}
 						}
 					}
@@ -617,20 +793,81 @@ class delivery_drone extends robot{
 //			System.out.println("Cena "+(l-Clock.getBytecodesLeft()));
 			MapLocation best=findClosest(aqua);
 			Direction d;
-			if(best!=null) {
+			if(best!=null){
 				d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(best));
-			}else {
+			}else{
 				d=init;
 			}
-			if(d!=null){
-				if(rc.canMove(d)){
+			for(int i=0;i<10;i++){
+				if(safeMove(d)){
 					rc.move(d);
 					return;
-				}else {
+				}else{
 					init=Util.getRandomDirection();
 				}
 			}
 		}
+	}
+	private Direction find_path(MapLocation drain2) throws GameActionException{
+		int[][] dist=new int[64][64];
+		Queue<MapLocation> bfs=new LinkedList<MapLocation>();
+		dist[rc.getLocation().x][rc.getLocation().y]=1;
+		bfs.add(rc.getLocation());
+		int[] dy={1,1,0,-1,-1,-1,0,1};
+		int[] dx={0,1,1,1,0,-1,-1,-1};
+		while(!bfs.isEmpty()){
+			MapLocation t=bfs.poll();
+			if(t.equals(drain2)){
+				while(true){
+					int curr=dist[t.x][t.y];
+					for(int i=0;i<8;i++){
+						int x=t.x+dx[i];
+						int y=t.y+dy[i];
+						if(dist[x][y]==curr-1){
+							t=new MapLocation(x,y);
+							if(t.equals(rc.getLocation())){
+								return Util.dir[i].opposite();
+							}
+							break;
+						}
+					}
+				}
+			}
+			int d=dist[t.x][t.y];
+			for(int i=0;i<8;i++){
+				int x=t.x+dx[i];
+				int y=t.y+dy[i];
+				if(x<0||x>=rc.getMapWidth()||y<0||y>=rc.getMapHeight()){
+					continue;
+				}
+				if(rc.canSenseLocation(new MapLocation(x,y))&&rc.senseRobotAtLocation(new MapLocation(x,y))!=null){
+					continue;
+				}
+				if(dist[x][y]==0){
+					dist[x][y]=1+d;
+					bfs.add(new MapLocation(x,y));
+				}
+			}
+		}
+		return null;
+	}
+
+	public boolean safeMove(Direction d){
+		if(d==null){
+			return false;
+		}
+		if(!rc.canMove(d)){
+			return false;
+		}
+		MapLocation end=rc.getLocation().add(d);
+		for(RobotInfo r:rc.senseNearbyRobots(-1,rc.getTeam().opponent())){
+			if((r.type==RobotType.NET_GUN||r.type==RobotType.HQ)&&r.team==rc.getTeam().opponent()){
+				if(end.distanceSquaredTo(r.location)<=GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED){
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 	public MapLocation findClosest(Iterable<? extends MapLocation> somethings) throws GameActionException{
 		MapLocation best=null;

@@ -246,7 +246,12 @@ public strictfp class RobotPlayer {
 		}
 		try {
 			r.init();
-		} catch (Exception e) {
+		}catch(ArithmeticException e) {
+			System.out.println("DIE!");
+			int t=1/0;
+			System.out.println(t);
+		}catch (Exception e) {
+		
 			System.out.println(Arrays.toString(e.getStackTrace()));
 			System.out.println(e.getMessage());
 		}
@@ -260,10 +265,12 @@ public strictfp class RobotPlayer {
 					System.out.println("Prevec racunanja!");
 				}
 				Clock.yield();
+			}catch(ArithmeticException e) {
+				System.out.println("DIE!");
+				int t=1/0;
+				System.out.println(t);
 			} catch (Exception e) {
-				System.out.println(Arrays.toString(e.getStackTrace()));
-				System.out.println(e.getCause());
-				System.out.println(e.getMessage());
+				e.printStackTrace();
 				Clock.yield();
 			}
 		}

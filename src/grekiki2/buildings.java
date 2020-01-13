@@ -300,7 +300,33 @@ class HQ extends robot{
 		for(MapLocation m:polja){
 			rc.setIndicatorDot(m,0,255,255);
 		}
+		weakScan(rc.getRoundNum());
+	}
 
+	private void weakScan(int roundNum) throws GameActionException{
+		int range=rc.getCurrentSensorRadiusSquared()-(int)Math.round(rc.getCurrentSensorRadiusSquared()*Math.random());
+		if(range<0){
+			return;
+		}
+		for(MapLocation mmm:pc.range[range]){
+			MapLocation m=new MapLocation(rc.getLocation().x+mmm.x,rc.getLocation().y+mmm.y);
+			if(rc.canSenseLocation(m)&&!rc.senseFlooding(m)&&rc.senseSoup(m)>0){
+				boolean used=false;
+				for(MapLocation center:polja){
+					if(center.distanceSquaredTo(m)<=20){
+						used=true;
+						break;
+					}
+				}
+				if(!used){
+					// Dodamo polje v blockchain
+					MapLocation interpolacija_centra=m.add(rc.getLocation().directionTo(m));
+					polja.add(interpolacija_centra);
+					int[] msg={123456789,2,interpolacija_centra.x,interpolacija_centra.y,0,0,0};
+					b.sendMsg(new paket(msg,1));
+				}
+			}
+		}
 	}
 
 }
@@ -342,27 +368,82 @@ class vaporator extends robot{
 class design_school extends robot{
 	RobotController rc;
 	int diggers=0;
+	ArrayList<MapLocation> polja=new ArrayList<MapLocation>();
+	MapLocation hq;
+	blockchain b;
+	int phase=0;
+	int p=0;
+	ArrayList<MapLocation> zid=new ArrayList<MapLocation>();
 	public design_school(RobotController r){
 		rc=r;
 	}
-
-	@Override public void init(){
-		// TODO Auto-generated method stub
-
+	public void readBlockchain() throws Exception{
+		int curr=rc.getRoundNum();
+		for(int i=1;i<curr;i++){
+			readBlockchain(i);
+		}
 	}
 
-	@Override public void precompute(){
-		// TODO Auto-generated method stub
+	public void readBlockchain(int round) throws GameActionException{
+		Transaction[] t=rc.getBlock(round);
+		for(Transaction tt:t){
+			int[] msg=tt.getMessage();
+			if(msg.length==7){
+				if(msg[0]==123456789){
+					if(msg[1]==1){
+						phase=msg[2];
+					}
+					if(msg[1]==2){
+						MapLocation m=new MapLocation(msg[2],msg[3]);
+						if(!polja.contains(m)){
+							polja.add(m);
+						}
+					}else if(msg[1]==3){
+						MapLocation m=new MapLocation(msg[2],msg[3]);
+						if(polja.contains(m)){
+							polja.remove(m);
+						}
+					}
+				}
+			}
+		}
+	}
 
+	@Override public void init() throws Exception{
+		for(RobotInfo r:rc.senseNearbyRobots(10,rc.getTeam())){
+			if(r.type==RobotType.HQ){
+				hq=r.location;
+			}
+		}
+		for(int i=0;i<=2*2+2*2;i++){
+			for(MapLocation m:pc.range[i]){
+				System.out.println(m.x+" "+m.y);
+				if(Util.d_inf(new MapLocation(0,0),m)==2){
+					zid.add(m);
+				}
+			}
+		}
+		b=new blockchain(rc);
+		readBlockchain();
+		
+	}
+
+	@Override public void precompute() throws GameActionException{
+		readBlockchain(rc.getRoundNum()-1);
 	}
 
 	@Override public void runTurn() throws GameActionException{
 		if(!rc.isReady()){
 			return;
 		}
+		for(MapLocation m:polja){//Èe je surovina blizu bo gneèa
+			if(Util.d_inf(m,hq)<=5){
+				return;
+			}
+		}
 		if(diggers<8){
-			if(rc.getTeamSoup()>=RobotType.LANDSCAPER.cost){
-				for(Direction d:Util.dir){
+			if(rc.getTeamSoup()>=500){
+				for(Direction d:new Direction[]{Direction.NORTH,Direction.WEST}){
 					if(rc.canBuildRobot(RobotType.LANDSCAPER,d)){
 						rc.buildRobot(RobotType.LANDSCAPER,d);
 						diggers++;
@@ -371,7 +452,41 @@ class design_school extends robot{
 				}
 			}
 		}
-//		else if(diggers<16) {
+//		if(phase==3){
+//			int count=0;
+//			int cw=0;
+//			for(RobotInfo r:rc.senseNearbyRobots(hq,2,rc.getTeam())){
+//				if(r.type==RobotType.NET_GUN){
+//					count++;
+//				}
+//				if(r.type==RobotType.MINER){
+//					cw++;
+//				}
+//			}
+//			if(count==4&&cw==0){
+//				if(rc.canBuildRobot(RobotType.LANDSCAPER,Direction.NORTH)){
+//					for(;p<zid.size();p++){
+////						System.out.println(p+" "+zid.size());
+//						MapLocation goal=new MapLocation(hq.x+zid.get(p).x,hq.y+zid.get(p).y);
+//						if(rc.canSenseLocation(goal)){
+//							if(rc.senseRobotAtLocation(goal)==null){
+//								int[] msg={123456789,7,hq.x+1,hq.y,goal.x,goal.y,0};
+//								b.sendMsg(new paket(msg,1));
+//								break;
+//							}
+//						}
+//					}
+//					if(p<zid.size()){
+//						rc.buildRobot(RobotType.LANDSCAPER,Direction.NORTH);
+//						return;
+//					}else {
+//						p=0;//morda kakšen umre. 
+//						return;
+//					}
+//				}
+//			}
+//		}
+//		else if(diggers<12&&phase==3) {
 //			if(rc.getTeamSoup()>=400+RobotType.LANDSCAPER.cost) {
 //				if(rc.canBuildRobot(RobotType.LANDSCAPER,Direction.WEST)) {
 //					rc.buildRobot(RobotType.LANDSCAPER,Direction.WEST);
@@ -396,8 +511,7 @@ class fulfillment_center extends robot{
 		rc=r;
 	}
 
-	@Override public void init(){
-		// TODO Auto-generated method stub
+	@Override public void init() throws Exception{
 
 	}
 
@@ -411,7 +525,7 @@ class fulfillment_center extends robot{
 			return;
 		}
 		if(droni<1&&rc.getTeamSoup()>=RobotType.DELIVERY_DRONE.cost){
-			for(Direction d:Util.dir) {
+			for(Direction d:Util.dir){
 				if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,d)){
 					rc.buildRobot(RobotType.DELIVERY_DRONE,d);
 					droni++;
@@ -419,16 +533,16 @@ class fulfillment_center extends robot{
 				}
 			}
 		}
-		if(droni<5&&rc.getTeamSoup()>=RobotType.DELIVERY_DRONE.cost+250){//Refinerije imajo prednost
-			for(Direction d:Util.dir) {
+		if(droni<5&&rc.getTeamSoup()>=RobotType.DELIVERY_DRONE.cost+400){//Refinerije imajo prednost
+			for(Direction d:Util.dir){
 				if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,d)){
 					rc.buildRobot(RobotType.DELIVERY_DRONE,d);
 					droni++;
 					return;
 				}
 			}
-		}else if(rc.getTeamSoup()>=800){
-			for(Direction d:Util.dir) {
+		}else if(rc.getTeamSoup()>=2000){//Useless so
+			for(Direction d:Util.dir){
 				if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,d)){
 					rc.buildRobot(RobotType.DELIVERY_DRONE,d);
 					droni++;

@@ -95,6 +95,11 @@ public strictfp class RobotPlayer {
                     numMiners++;
                 }
         }
+        for(RobotInfo r:rc.senseNearbyRobots()) {
+        	if(r.team==rc.getTeam().opponent()&&r.type==RobotType.DELIVERY_DRONE&&rc.canShootUnit(r.getID())) {
+        		rc.shootUnit(r.getID());
+        	}
+        }
     }
 
     static void runMiner() throws GameActionException {
