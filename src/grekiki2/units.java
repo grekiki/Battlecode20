@@ -14,6 +14,8 @@ class miner extends robot{
 	ArrayList<MapLocation> polja;
 	HashSet<MapLocation> surovine;
 	ArrayList<MapLocation> refinery;
+	ArrayList<MapLocation> turret;
+	ArrayList<MapLocation> dronespawn;
 	blockchain b;
 
 	// phase 0
@@ -21,6 +23,8 @@ class miner extends robot{
 	Direction init;
 	// phase 1
 
+	// phase 2
+	boolean baseWorker=false;
 	final int polmer_surovine=20;
 
 	miner(RobotController rc){
@@ -43,6 +47,10 @@ class miner extends robot{
 					if(msg[1]==1){// Sprememba faze
 						int currentPhase=msg[2];
 						phase=currentPhase;
+						int id=msg[3];
+						if(id==rc.getID()){
+							baseWorker=true;
+						}
 					}else if(msg[1]==2){
 						MapLocation m=new MapLocation(msg[2],msg[3]);
 						if(!polja.contains(m)){
@@ -57,6 +65,11 @@ class miner extends robot{
 						MapLocation m=new MapLocation(msg[2],msg[3]);
 						if(!refinery.contains(m)){
 							refinery.add(m);
+						}
+					}else if(msg[1]==5){
+						MapLocation m=new MapLocation(msg[2],msg[3]);
+						if(!turret.contains(m)){
+							turret.add(m);
 						}
 					}
 				}
@@ -77,6 +90,8 @@ class miner extends robot{
 		b=new blockchain(rc);
 		refinery=new ArrayList<MapLocation>();
 		refinery.add(hq);
+		turret=new ArrayList<MapLocation>();
+		dronespawn=new ArrayList<MapLocation>();
 		readBlockchain();
 	}
 
@@ -90,8 +105,35 @@ class miner extends robot{
 		if(!rc.isReady()){
 			return;
 		}
-
-		if(phase==0||phase==1||phase==2){
+		if(baseWorker){
+			if(runBaseBuild()){
+				return;
+			}else{
+				//Najprej poskusimo èe smo polni
+				if(rc.getSoupCarrying()==100){
+					for(Direction d:Util.dir){
+						if(rc.canDepositSoup(d)){
+							rc.depositSoup(d,rc.getSoupCarrying());
+							return;
+						}
+					}
+					if(moveClosest(refinery)){
+						return;
+					}else{
+						System.out.println("Ne moremo priti do najblizje refinerije!");
+					}
+				}
+				//Poskusimo kopati
+				if(rc.getSoupCarrying()<RobotType.MINER.soupLimit){
+					for(Direction d:Util.dir){
+						if(rc.canMineSoup(d)){
+							rc.mineSoup(d);
+							return;
+						}
+					}
+				}
+			}
+		}else if(phase==0||phase==1||phase==2){
 			//Obdelamo potrebo po refineriji
 			if(surovine.size()>0&&rc.getTeamSoup()>=RobotType.REFINERY.cost){
 				MapLocation closest=findClosest(surovine);
@@ -112,6 +154,7 @@ class miner extends robot{
 									rc.buildRobot(RobotType.REFINERY,d);
 									int[] msg={123456789,4,rc.getLocation().x+d.dx,rc.getLocation().y+d.dy,0,0,0};
 									b.sendMsg(new paket(msg,1));
+									return;
 								}
 							}
 						}else{
@@ -125,7 +168,7 @@ class miner extends robot{
 				}
 			}
 			//Najprej poskusimo èe smo polni
-			if(rc.getSoupCarrying()==100) {
+			if(rc.getSoupCarrying()==100){
 				for(Direction d:Util.dir){
 					if(rc.canDepositSoup(d)){
 						rc.depositSoup(d,rc.getSoupCarrying());
@@ -136,6 +179,34 @@ class miner extends robot{
 					return;
 				}else{
 					System.out.println("Ne moremo priti do najblizje refinerije!");
+				}
+			}
+			a:if(phase==2&&rc.getTeamSoup()>=RobotType.NET_GUN.cost+200){//Rafinerije potrebujejo drone za obrambo. Tovarna vsaj 3 stran po d_inf metriki
+				MapLocation ref=findClosest(refinery);
+				int optRange=ref.equals(hq)?4:2;
+				int dist=1000000000;
+				for(RobotInfo r:rc.senseNearbyRobots(-1,rc.getTeam())){
+					if(r.team==rc.getTeam()&&r.type==RobotType.NET_GUN){
+						if(rc.getLocation().distanceSquaredTo(r.location)<dist){
+							dist=rc.getLocation().distanceSquaredTo(r.location);
+						}
+					}
+				}
+				if(dist<5*optRange){
+					break a;
+				}
+				if(optRange-1<=Util.d_inf(ref,rc.getLocation())&&Util.d_inf(ref,rc.getLocation())<=optRange+1){//Morda se da razdaljo spraviti na 3
+					for(Direction d:Util.dir){
+						MapLocation op=rc.getLocation().add(d);
+						if(Util.d_inf(op,ref)==optRange){
+							if(rc.canBuildRobot(RobotType.NET_GUN,d)){
+								rc.buildRobot(RobotType.NET_GUN,d);
+								int[] msg={123456789,5,rc.getLocation().x+d.dx,rc.getLocation().y+d.dy,0,0,0};
+								b.sendMsg(new paket(msg,1));
+								return;
+							}
+						}
+					}
 				}
 			}
 			//Poskusimo kopati
@@ -169,6 +240,69 @@ class miner extends robot{
 			}
 		} // phase>1
 	}
+
+	int fazaBaze=-1;
+	public boolean runBaseBuild() throws GameActionException{
+		if(fazaBaze==-1){
+			fazaBaze=0;
+			int[] msg={123456789,6,hq.x,hq.y,0,0,0};
+			b.sendMsg(new paket(msg,1));
+		}
+		if(fazaBaze==0){
+			//Tovarni za drone
+			MapLocation f1=hq.add(Direction.NORTHWEST);
+			if(rc.canSenseLocation(f1)&&rc.senseRobotAtLocation(f1)!=null&&rc.senseRobotAtLocation(f1).type==RobotType.DESIGN_SCHOOL){
+				MapLocation f2=hq.add(Direction.SOUTHEAST);
+				if(rc.getLocation().distanceSquaredTo(f2)<=2&&!f2.equals(rc.getLocation())){
+					if(rc.getTeamSoup()>=RobotType.FULFILLMENT_CENTER.cost&&rc.canBuildRobot(RobotType.FULFILLMENT_CENTER,rc.getLocation().directionTo(f2))){
+						rc.buildRobot(RobotType.FULFILLMENT_CENTER,rc.getLocation().directionTo(f2));
+						fazaBaze=1;
+						return true;
+					}
+				}else if(f2.equals(rc.getLocation())){
+					if(rc.canMove(Direction.NORTH)){
+						rc.move(Direction.NORTH);
+						return true;
+					}else if(rc.canMove(Direction.WEST)){
+						rc.move(Direction.WEST);
+						return true;
+					}
+				}else{
+					Direction d=Util.tryMove(rc,rc.getLocation().directionTo(f2));
+					if(d!=null){
+						rc.move(d);
+						return true;
+					}
+				}
+			}else{
+				if(rc.getLocation().distanceSquaredTo(f1)<=2&&!f1.equals(rc.getLocation())){
+					if(rc.getTeamSoup()>=RobotType.DESIGN_SCHOOL.cost&&rc.canBuildRobot(RobotType.DESIGN_SCHOOL,rc.getLocation().directionTo(f1))){
+						rc.buildRobot(RobotType.DESIGN_SCHOOL,rc.getLocation().directionTo(f1));
+						return true;
+					}
+				}else if(f1.equals(rc.getLocation())){
+					if(rc.canMove(Direction.SOUTH)){
+						rc.move(Direction.SOUTH);
+						return true;
+					}else if(rc.canMove(Direction.EAST)){
+						rc.move(Direction.EAST);
+						return true;
+					}
+				}else{
+					Direction d=Util.tryMove(rc,rc.getLocation().directionTo(f1));
+					if(d!=null){
+						rc.move(d);
+						return true;
+					}
+				}
+			}
+		}
+		if(fazaBaze==1){//postavimo design schoole
+
+		}
+		return false;
+	}
+
 	public MapLocation findClosest(Iterable<? extends MapLocation> somethings) throws GameActionException{
 		MapLocation best=null;
 		int dist=64*64;
@@ -272,13 +406,14 @@ class miner extends robot{
 	public void discardMissing() throws GameActionException{
 		// Tako se brise iz seta. Vir
 		// :https://stackoverflow.com/questions/1110404/remove-elements-from-a-hashset-while-iterating
-		for(Iterator<MapLocation> it=surovine.iterator();it.hasNext();){
+		Iterator<MapLocation> iterator=surovine.iterator();
+		while(iterator.hasNext()){
 			if(Clock.getBytecodesLeft()<1000){
 				return;
 			}
-			MapLocation m=it.next();
+			MapLocation m=iterator.next();
 			if(rc.canSenseLocation(m)&&rc.senseSoup(m)==0){
-				surovine.remove(m);
+				iterator.remove();
 			}
 		}
 	}
@@ -315,14 +450,20 @@ class landscaper extends robot{
 
 class delivery_drone extends robot{
 	RobotController rc;
-
+	Direction init;
+	MapLocation hq;
+	boolean full=false;
 	delivery_drone(RobotController rc){
 		this.rc=rc;
 	}
 
 	@Override public void init(){
-		// TODO Auto-generated method stub
-
+		for(RobotInfo r:rc.senseNearbyRobots(10,rc.getTeam())){
+			if(r.type==RobotType.HQ){
+				hq=r.location;
+			}
+		}
+		init=rc.getLocation().directionTo(hq).opposite();
 	}
 
 	@Override public void precompute(){
@@ -330,8 +471,34 @@ class delivery_drone extends robot{
 
 	}
 
-	@Override public void runTurn(){
-		// TODO Auto-generated method stub
+	@Override public void runTurn() throws GameActionException{
+		if(!rc.isReady()){
+			return;
+		}
+		if(!full){
+			for(Direction d:Util.dir){
+				if(rc.canSenseLocation(rc.getLocation().add(d))&&rc.senseRobotAtLocation(rc.getLocation().add(d))!=null&&rc.senseRobotAtLocation(rc.getLocation().add(d)).team!=rc.getTeam()){
+					rc.pickUpUnit(rc.senseRobotAtLocation(rc.getLocation().add(d)).ID);
+					full=true;
+				}
+			}
+		}
+		if(full){
+			for(Direction d:Util.dir){
+				if(rc.canSenseLocation(rc.getLocation().add(d))&&rc.senseFlooding(rc.getLocation().add(d))){
+					rc.dropUnit(d);
+					full=false;
+				}
+			}
+		}
+		for(int i=0;i<7;i++){
+			if(rc.canMove(init)){
+				rc.move(init);
+				return;
+			}else{
+				init=init.rotateLeft();
+			}
+		}
 
 	}
 

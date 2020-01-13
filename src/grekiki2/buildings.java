@@ -26,11 +26,22 @@ class HQ extends robot{
 	// phase 0
 	Direction[] goodMiners;
 	int miners=0;
-
+	//phase 1
+	
+	//phase 2
+	int initMiner=-1;
 	HQ(RobotController rc){
 		this.rc=rc;
 	}
 
+	public int f(int a) {
+		if(a==1) {
+			return phase>1?6:4;
+		}else {
+			return 4*a+2;
+		}
+	}
+	
 	public void computeData(int phase) throws GameActionException{
 		if(phase==0){
 			int count=0;
@@ -111,12 +122,6 @@ class HQ extends robot{
 						MapLocation m=new MapLocation(msg[2],msg[3]);
 						if(!polja.contains(m)){
 							polja.add(m);
-							phase=1;
-							int[] msg2=new int[7];
-							msg2[0]=123456789;
-							msg2[1]=1;
-							msg2[2]=phase;// 1?!
-							b.sendMsg(new paket(msg2,1));
 						}
 					}else if(msg[1]==3){
 						MapLocation m=new MapLocation(msg[2],msg[3]);
@@ -155,7 +160,7 @@ class HQ extends robot{
 		if(rc.getRoundNum()>1){
 			readBlockchain(rc.getRoundNum()-1);
 		}
-//		System.out.println(rc.getRoundNum() + " " + rc.getTeamSoup());
+//		System.out.println("Faza "+phase);
 	}
 
 	@Override public void runTurn() throws GameActionException{
@@ -165,11 +170,14 @@ class HQ extends robot{
 		if(phase==0){
 			if(miners<goodMiners.length&&rc.getTeamSoup()>=70&&rc.canBuildRobot(RobotType.MINER,goodMiners[miners])){
 				rc.buildRobot(RobotType.MINER,goodMiners[miners]);
+				if(miners==0) {
+					initMiner=rc.senseRobotAtLocation(rc.getLocation().add(goodMiners[miners])).ID;
+				}
 				miners++;
 				return;
 			}
-		}else if(phase==1){
-			if(rc.getTeamSoup()>=70&&miners<4*polja.size()+1){//vsako polje nekje 6 minerjev? Pa ene 3 zraven za vsak sluèaj
+		}else if(phase==1||phase==2){
+			if(rc.getTeamSoup()>=(phase>1?200:70)&&miners<f(polja.size())){//Nakup minerjev?
 				if(polja.size()>0){//Ce imamo polja minerje usmerimo da so blizje
 					MapLocation best=null;
 					int dist=64*64;
@@ -218,7 +226,7 @@ class HQ extends robot{
 	@Override public void postcompute() throws GameActionException{
 		if(phase==0){
 			if(miners>=goodMiners.length||polja.size()>0){
-				phase++;
+				phase=1;
 				int[] msg=new int[7];
 				msg[0]=123456789;
 				msg[1]=1;
@@ -227,12 +235,25 @@ class HQ extends robot{
 			}
 		}
 		if(phase==1) {
-			if(rc.getTeamSoup()>300) {
-				phase++;
+			if(rc.getTeamSoup()>=150) {
+				phase=2;
 				int[] msg=new int[7];
 				msg[0]=123456789;
 				msg[1]=1;
 				msg[2]=phase;
+				int dist=1000000;
+				for(RobotInfo u:rc.senseNearbyRobots(-1, rc.getTeam())) {
+					if(u.type==RobotType.MINER) {
+						int t=rc.getLocation().distanceSquaredTo(u.location);
+						if(t<dist) {
+							dist=t;
+							msg[3]=u.ID;
+						}
+					}
+				}
+				if(dist==1000000) {
+					msg[3]=initMiner;
+				}
 				b.sendMsg(new paket(msg,1));
 			}
 		}
@@ -247,62 +268,29 @@ class HQ extends robot{
 class refinery extends robot{
 	//Ne vem kaj bi tukaj sploh napisal
 	RobotController rc;
-
 	public refinery(RobotController r){
 		rc=r;
 	}
-
-	@Override public void init(){
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override public void precompute(){
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override public void runTurn(){
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override public void postcompute(){
-		// TODO Auto-generated method stub
-
-	}
+	@Override public void init(){}
+	@Override public void precompute(){}
+	@Override public void runTurn(){}
+	@Override public void postcompute(){}
 
 }
 
 class vaporator extends robot{
 	//Ne vem kaj bi tukaj sploh napisal
 	RobotController rc;
-
 	public vaporator(RobotController r){
 		rc=r;
 	}
-
-	@Override public void init(){
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override public void precompute(){
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override public void runTurn(){
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override public void postcompute(){
-		// TODO Auto-generated method stub
-
-	}
+	@Override public void init(){}
+	@Override public void precompute(){}
+	@Override public void runTurn(){}
+	@Override public void postcompute(){}
 
 }
+
 
 class design_school extends robot{
 	RobotController rc;
@@ -335,7 +323,7 @@ class design_school extends robot{
 
 class fulfillment_center extends robot{
 	RobotController rc;
-
+	int droni=0;
 	public fulfillment_center(RobotController r){
 		rc=r;
 	}
@@ -350,8 +338,30 @@ class fulfillment_center extends robot{
 
 	}
 
-	@Override public void runTurn(){
-		// TODO Auto-generated method stub
+	@Override public void runTurn() throws Exception{
+		if(!rc.isReady()) {
+			return;
+		}
+		if(droni<1&&rc.getTeamSoup()>=RobotType.DELIVERY_DRONE.cost) {
+			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHEAST)) {
+				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHEAST);
+				droni++;
+				return;
+			}
+		}
+		if(droni<5&&rc.getTeamSoup()>=RobotType.DELIVERY_DRONE.cost+250) {//Refinerije imajo prednost
+			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHEAST)) {
+				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHEAST);
+				droni++;
+				return;
+			}
+		}else if(rc.getTeamSoup()>=500) {
+			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHEAST)) {
+				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHEAST);
+				droni++;
+				return;
+			}
+		}
 
 	}
 
@@ -369,15 +379,9 @@ class net_gun extends robot{
 		rc=r;
 	}
 
-	@Override public void init(){
-		// TODO Auto-generated method stub
+	@Override public void init(){}
 
-	}
-
-	@Override public void precompute(){
-		// TODO Auto-generated method stub
-
-	}
+	@Override public void precompute(){}
 
 	@Override public void runTurn() throws GameActionException{
 		if(!rc.isReady()) {
@@ -402,9 +406,6 @@ class net_gun extends robot{
 		}
 	}
 
-	@Override public void postcompute(){
-		// TODO Auto-generated method stub
-
-	}
+	@Override public void postcompute(){}
 
 }

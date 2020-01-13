@@ -13,7 +13,7 @@ import battlecode.common.*;
  * 
  * Tukaj bo slovar ki pove kaj dolocena stevilka pomeni ce je navedena kot vsebina
  * 
- * msg[1]==1--> msg[2] pove fazo v kateri je trenutno baza. 
+ * msg[1]==1--> msg[2] pove fazo v kateri je trenutno baza. msg[3] pove kateri worker gre gradit bazo
  * 
  * msg[1]==2--> msg[2],msg[3] so koordinate polja surovin.
  * 
@@ -21,7 +21,9 @@ import battlecode.common.*;
  * 
  * msg[1]==4--> na msg[2],msg[3] sedaj stoji refinerija. 
  * 
+ * msg[1]==5--> na msg[2],msg[3] sedaj stoji tovarna dronov. 
  * 
+ * msg[1]==6--> na msg[2],msg[3] so koordinate našega hq. 
  */
 
 /*
@@ -46,6 +48,36 @@ import battlecode.common.*;
  * 
  */
 
+/*Plan baze
+ *             Faza 0:
+ *              ...
+ *              .B.
+ *              ...
+ *              
+ *              V fazi 1 naredimo tovarne za drone
+ *              D..
+ *              .B.
+ *              ..D
+ *              V fazi 2 naredimo tovarne za diggerje
+ *              D..
+ *              .H.
+ *              .LD
+ * 				V fazi 3 okoli baze okrepimo obrambo
+ * 				NNNNNNN...
+ *              NWWWWWN
+ *              NWD..WN
+ *              NW.H.WN
+ *              NW.LDWN
+ *              NWWWWWN
+ *              NNNNNNN
+ * 	
+ */
+
+/*
+ * TODO list
+ * -> Branje blockchaina se mora dovolj hitro ustaviti, in se nadaljuje med igro bota. Ne moremo vsega prebrati na zaèetku! Oziroma
+ * lahko ampak le do morda poteze 500
+ */
 class blockchain {
 	ArrayList<paket> msg;
 	RobotController rc;
@@ -73,6 +105,7 @@ class blockchain {
 				if (Arrays.equals(tt.getMessage(), p.data)) {
 					msg.remove(p);
 					i--;
+					break;
 				}
 				minCost = Math.min(minCost, tt.getCost());
 			}
@@ -129,6 +162,37 @@ class Util {
 
 	public static Direction getRandomDirection() {
 		return dir[(int) Math.floor(dir.length * Math.random())];
+	}
+	
+	public static int d_inf(MapLocation l1,MapLocation l2) {//d neskonèno metrika. 
+		return Math.max(Math.abs(l2.x-l1.x),Math.abs(l2.y-l1.y));
+	}
+
+	public static Direction tryMoveLiteDrone(RobotController rc,Direction dir){
+		if (rc.canMove(dir)) {
+			return dir;
+		} else if (rc.canMove(dir.rotateLeft())) {
+			return dir.rotateLeft();
+		} else if (rc.canMove(dir.rotateRight())) {
+			return dir.rotateRight();
+		} else if (rc.canMove(dir.rotateLeft().rotateLeft())) {
+			return dir.rotateLeft().rotateLeft();
+		} else if (rc.canMove(dir.rotateRight().rotateRight())) {
+			return dir.rotateRight().rotateRight();
+		} else {
+			return null;
+		}
+	}
+	public static Direction tryMoveDrone(RobotController rc,Direction dir){
+		if (rc.canMove(dir)) {
+			return dir;
+		} else if (rc.canMove(dir.rotateLeft())) {
+			return dir.rotateLeft();
+		} else if (rc.canMove(dir.rotateRight())) {
+			return dir.rotateRight();
+		} else {
+			return null;
+		}
 	}
 }
 
@@ -190,12 +254,17 @@ public strictfp class RobotPlayer {
 		}
 		while (true) {
 			try {
+				int init=rc.getRoundNum();
 				r.precompute();
 				r.runTurn();
 				r.postcompute();
+				if(rc.getRoundNum()!=init) {
+					System.out.println("Prevec racunanja!");
+				}
 				Clock.yield();
 			} catch (Exception e) {
 				System.out.println(Arrays.toString(e.getStackTrace()));
+				System.out.println(e.getCause());
 				System.out.println(e.getMessage());
 				Clock.yield();
 			}
