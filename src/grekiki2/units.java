@@ -126,7 +126,7 @@ class miner extends robot{
 				if(closest!=null&&rc.getLocation().distanceSquaredTo(closest)<10){
 					//Preverimo èe je refinerija potrebna
 					MapLocation ref=closest;
-					if(Util.d_inf(hq,ref)>=3){//Ne na zidu... Da ne motimo baze
+					if(Util.d_inf(hq,ref)>=6){//Ne na zidu... Da ne motimo baze
 						int dist=20;
 						for(MapLocation re:refinery){
 							dist=Math.min(dist,re.distanceSquaredTo(ref));
@@ -135,14 +135,26 @@ class miner extends robot{
 							//Potrebujemo refinerijo.
 							//Poskusimo èe smo dovolj blizu
 							if(ref.distanceSquaredTo(rc.getLocation())<=2){
-								Direction d=rc.getLocation().directionTo(ref);
-								if(rc.getTeamSoup()>=RobotType.REFINERY.cost){
-									if(rc.canBuildRobot(RobotType.REFINERY,d)){
-										rc.buildRobot(RobotType.REFINERY,d);
-										int[] msg={123456789,4,rc.getLocation().x+d.dx,rc.getLocation().y+d.dy,0,0,0};
-										b.sendMsg(new paket(msg,1));
-										return;
+								int sum=0;
+								for(int i=0;i<=4;i++) {
+									for(MapLocation mm:pc.range[i]) {
+										MapLocation m=new MapLocation(ref.x+mm.x,ref.y+mm.y);
+										if(rc.canSenseLocation(m)) {
+											sum+=rc.senseSoup(m);
+										}
 									}
+								}
+//								System.out.println(sum);
+								if(sum>200) {
+									Direction d=rc.getLocation().directionTo(ref);
+									if(rc.getTeamSoup()>=RobotType.REFINERY.cost){
+										if(rc.canBuildRobot(RobotType.REFINERY,d)){
+											rc.buildRobot(RobotType.REFINERY,d);
+											int[] msg={123456789,4,rc.getLocation().x+d.dx,rc.getLocation().y+d.dy,0,0,0};
+											b.sendMsg(new paket(msg,1));
+											return;
+										}
+									}	
 								}
 							}else{
 								Direction d=Util.tryMove(rc,rc.getLocation().directionTo(ref));
@@ -402,7 +414,7 @@ class miner extends robot{
 					MapLocation[] scan=pc.range[i];
 					for(MapLocation mm:scan){
 						MapLocation m=new MapLocation(polje.x+mm.x,polje.y+mm.y);
-						if(rc.canSenseLocation(m)&&!rc.senseFlooding(m)&&rc.senseSoup(m)>0){
+						if(rc.canSenseLocation(m)&&!rc.senseFlooding(m)&&rc.senseSoup(m)>0&&rc.senseElevation(m)<=3+rc.senseElevation(rc.getLocation())){
 							ok=true;
 							i=1000;
 							break;
@@ -633,6 +645,8 @@ class delivery_drone extends robot{
 				hq=r.location;
 			}
 		}
+		s=null;
+		drain=null;
 		init=rc.getLocation().directionTo(hq).opposite();
 //		flooding=new boolean[rc.getMapWidth()][rc.getMapHeight()];
 	}
@@ -641,8 +655,9 @@ class delivery_drone extends robot{
 		if(s!=null||drain!=null){
 			return;
 		}
-		for(int i=time;i<rc.getRoundNum();i++){
+		for(int i=rc.getRoundNum()-1;i<rc.getRoundNum();i++){
 			Transaction[] q=rc.getBlock(rc.getRoundNum()-1);
+//			System.out.println(Clock.getBytecodesLeft());
 			for(Transaction t:q){
 				if(t.getMessage()[0]==123456789&&t.getMessage()[1]==7){
 					s=new MapLocation(t.getMessage()[2],t.getMessage()[3]);
@@ -658,6 +673,8 @@ class delivery_drone extends robot{
 		if(!rc.isReady()){
 			return;
 		}
+		System.out.println("lol");
+		full=rc.isCurrentlyHoldingUnit();
 		a:if(s!=null&&!full){
 			if(rc.getRoundNum()-time>100){
 				s=null;
@@ -706,49 +723,67 @@ class delivery_drone extends robot{
 					}
 				}
 			}
-			if(rc.getLocation().distanceSquaredTo(drain)>=20){
-				Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(drain));
-				if(d!=null&&rc.canMove(d)){
-					rc.move(d);
-					return;
-				}
+			Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(drain));
+			if(d!=null&&rc.canMove(d)){
+				rc.move(d);
+				return;
 			}
-			Direction d=find_path(drain);
 			if(d!=null&&rc.canMove(d)){
 				rc.move(d);
 				return;
 			}
 		}
 		if(!full){
-			for(Direction d:Util.dir){
-				if(rc.canSenseLocation(rc.getLocation().add(d))&&rc.senseRobotAtLocation(rc.getLocation().add(d))!=null&&rc.senseRobotAtLocation(rc.getLocation().add(d)).team!=rc.getTeam()){
-					if(rc.canPickUpUnit(rc.senseRobotAtLocation(rc.getLocation().add(d)).ID)){
-						rc.pickUpUnit(rc.senseRobotAtLocation(rc.getLocation().add(d)).ID);
+//			System.out.println(Clock.getBytecodesLeft());
+			int closest=64*64;
+			MapLocation best=null;
+			RobotInfo[] rr=rc.senseNearbyRobots();
+			for(RobotInfo r:rr) {
+				if(r.team!=rc.getTeam()&&Util.d_inf(rc.getLocation(),r.location)<closest) {
+					best=r.location;
+					closest=Util.d_inf(rc.getLocation(),r.location);
+				}
+			}
+			if(best!=null) {
+				if(closest<=1) {
+					if(rc.canPickUpUnit(rc.senseRobotAtLocation(best).ID)) {
+						rc.pickUpUnit(rc.senseRobotAtLocation(best).ID);
 						full=true;
 						return;
 					}
-				}
-			}
-			int best=1000000;
-			MapLocation m=null;
-			for(RobotInfo r:rc.senseNearbyRobots()){
-				if(r.team!=rc.getTeam()&&(r.type==RobotType.COW||r.type==RobotType.MINER||r.type==RobotType.LANDSCAPER)&&rc.getLocation().distanceSquaredTo(r.location)<best){
-					best=rc.getLocation().distanceSquaredTo(r.location);
-					m=r.location;
-				}
-			}
-			if(safeMove(rc.getLocation().directionTo(m))){
-				rc.move(rc.getLocation().directionTo(m));
-				return;
-			}
-			for(int i=0;i<7;i++){
-				if(safeMove(init)){
-					rc.move(init);
+				}else {
+					Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(best));
+					if(d!=null) {
+						rc.move(d);
+					}
 					return;
-				}else{
-					init=Math.random()<0.5?rc.getLocation().directionTo(hq).opposite():Util.getRandomDirection();
+				}
+
+			}
+			//ni dobrih opcij
+//			System.out.println(Clock.getBytecodesLeft());
+			int dist=Util.d_inf(hq,rc.getLocation());
+			if(dist<3) {
+				Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(hq).opposite());
+				if(d!=null) {
+					rc.move(d);
 				}
 			}
+			if(dist>6) {
+				Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(hq));
+				if(d!=null) {
+					rc.move(d);
+				}
+			}
+			if(3<=dist&&dist<=6) {
+				for(int i=0;i<10;i++) {
+					Direction d=Util.getRandomDirection();
+					if(rc.canMove(d)) {
+						rc.move(d);
+					}
+				}
+			}
+//			System.out.println(Clock.getBytecodesLeft());
 		}
 		if(full&&drain==null){
 			for(Direction d:Util.dir){
@@ -808,49 +843,49 @@ class delivery_drone extends robot{
 			}
 		}
 	}
-	private Direction find_path(MapLocation drain2) throws GameActionException{
-		int[][] dist=new int[64][64];
-		Queue<MapLocation> bfs=new LinkedList<MapLocation>();
-		dist[rc.getLocation().x][rc.getLocation().y]=1;
-		bfs.add(rc.getLocation());
-		int[] dy={1,1,0,-1,-1,-1,0,1};
-		int[] dx={0,1,1,1,0,-1,-1,-1};
-		while(!bfs.isEmpty()){
-			MapLocation t=bfs.poll();
-			if(t.equals(drain2)){
-				while(true){
-					int curr=dist[t.x][t.y];
-					for(int i=0;i<8;i++){
-						int x=t.x+dx[i];
-						int y=t.y+dy[i];
-						if(dist[x][y]==curr-1){
-							t=new MapLocation(x,y);
-							if(t.equals(rc.getLocation())){
-								return Util.dir[i].opposite();
-							}
-							break;
-						}
-					}
-				}
-			}
-			int d=dist[t.x][t.y];
-			for(int i=0;i<8;i++){
-				int x=t.x+dx[i];
-				int y=t.y+dy[i];
-				if(x<0||x>=rc.getMapWidth()||y<0||y>=rc.getMapHeight()){
-					continue;
-				}
-				if(rc.canSenseLocation(new MapLocation(x,y))&&rc.senseRobotAtLocation(new MapLocation(x,y))!=null){
-					continue;
-				}
-				if(dist[x][y]==0){
-					dist[x][y]=1+d;
-					bfs.add(new MapLocation(x,y));
-				}
-			}
-		}
-		return null;
-	}
+//	private Direction find_path(MapLocation drain2) throws GameActionException{
+//		int[][] dist=new int[64][64];
+//		Queue<MapLocation> bfs=new LinkedList<MapLocation>();
+//		dist[rc.getLocation().x][rc.getLocation().y]=1;
+//		bfs.add(rc.getLocation());
+//		int[] dy={1,1,0,-1,-1,-1,0,1};
+//		int[] dx={0,1,1,1,0,-1,-1,-1};
+//		while(!bfs.isEmpty()){
+//			MapLocation t=bfs.poll();
+//			if(t.equals(drain2)){
+//				while(true){
+//					int curr=dist[t.x][t.y];
+//					for(int i=0;i<8;i++){
+//						int x=t.x+dx[i];
+//						int y=t.y+dy[i];
+//						if(dist[x][y]==curr-1){
+//							t=new MapLocation(x,y);
+//							if(t.equals(rc.getLocation())){
+//								return Util.dir[i].opposite();
+//							}
+//							break;
+//						}
+//					}
+//				}
+//			}
+//			int d=dist[t.x][t.y];
+//			for(int i=0;i<8;i++){
+//				int x=t.x+dx[i];
+//				int y=t.y+dy[i];
+//				if(x<0||x>=rc.getMapWidth()||y<0||y>=rc.getMapHeight()){
+//					continue;
+//				}
+//				if(rc.canSenseLocation(new MapLocation(x,y))&&rc.senseRobotAtLocation(new MapLocation(x,y))!=null){
+//					continue;
+//				}
+//				if(dist[x][y]==0){
+//					dist[x][y]=1+d;
+//					bfs.add(new MapLocation(x,y));
+//				}
+//			}
+//		}
+//		return null;
+//	}
 
 	public boolean safeMove(Direction d){
 		if(d==null){
@@ -888,6 +923,7 @@ class delivery_drone extends robot{
 				if(Clock.getBytecodesLeft()<2000){
 					return;
 				}
+//				System.out.println(Clock.getBytecodesLeft());
 				MapLocation m=new MapLocation(rc.getLocation().x+mmm.x,rc.getLocation().y+mmm.y);
 				if(rc.canSenseLocation(m)){
 					if(rc.senseFlooding(m)){

@@ -437,12 +437,12 @@ class design_school extends robot{
 			return;
 		}
 		for(MapLocation m:polja){//Èe je surovina blizu bo gneèa
-			if(Util.d_inf(m,hq)<=5){
+			if(Util.d_inf(m,hq)<=4){
 				return;
 			}
 		}
 		if(diggers<8){
-			if(rc.getTeamSoup()>=500){
+			if(rc.getTeamSoup()>=350||polja.size()==0){
 				for(Direction d:new Direction[]{Direction.NORTH,Direction.WEST}){
 					if(rc.canBuildRobot(RobotType.LANDSCAPER,d)){
 						rc.buildRobot(RobotType.LANDSCAPER,d);
@@ -533,7 +533,7 @@ class fulfillment_center extends robot{
 				}
 			}
 		}
-		if(droni<5&&rc.getTeamSoup()>=RobotType.DELIVERY_DRONE.cost+400){//Refinerije imajo prednost
+		if(droni<3&&rc.getTeamSoup()>=RobotType.DELIVERY_DRONE.cost+400){//Refinerije imajo prednost
 			for(Direction d:Util.dir){
 				if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,d)){
 					rc.buildRobot(RobotType.DELIVERY_DRONE,d);
@@ -541,7 +541,7 @@ class fulfillment_center extends robot{
 					return;
 				}
 			}
-		}else if(rc.getTeamSoup()>=2000){//Useless so
+		}else if(rc.getTeamSoup()>=1000){//Useless so
 			for(Direction d:Util.dir){
 				if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,d)){
 					rc.buildRobot(RobotType.DELIVERY_DRONE,d);
