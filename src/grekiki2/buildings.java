@@ -36,9 +36,9 @@ class HQ extends robot{
 
 	public int f(int a) {
 		if(a==1) {
-			return phase>1?6:4;
+			return phase>1?5:4;
 		}else {
-			return 4*a+2;
+			return 2*a+4;
 		}
 	}
 	
@@ -294,7 +294,7 @@ class vaporator extends robot{
 
 class design_school extends robot{
 	RobotController rc;
-
+	int diggers=0;
 	public design_school(RobotController r){
 		rc=r;
 	}
@@ -309,9 +309,36 @@ class design_school extends robot{
 
 	}
 
-	@Override public void runTurn(){
-		// TODO Auto-generated method stub
-
+	@Override public void runTurn() throws GameActionException{
+		if(!rc.isReady()) {
+			return;
+		}
+		if(diggers==0) {
+			if(rc.getTeamSoup()>=RobotType.LANDSCAPER.cost) {
+				if(rc.canBuildRobot(RobotType.LANDSCAPER,Direction.WEST)) {
+					rc.buildRobot(RobotType.LANDSCAPER,Direction.WEST);
+					diggers++;
+					return;
+				}
+			}
+		}else if(diggers<8) {
+			if(rc.getTeamSoup()>=50+RobotType.LANDSCAPER.cost) {
+				if(rc.canBuildRobot(RobotType.LANDSCAPER,Direction.WEST)) {
+					rc.buildRobot(RobotType.LANDSCAPER,Direction.WEST);
+					diggers++;
+					return;
+				}
+			}
+		}
+//		}else if(diggers<20) {
+//			if(rc.getTeamSoup()>=400+RobotType.LANDSCAPER.cost) {
+//				if(rc.canBuildRobot(RobotType.LANDSCAPER,Direction.WEST)) {
+//					rc.buildRobot(RobotType.LANDSCAPER,Direction.WEST);
+//					diggers++;
+//					return;
+//				}
+//			}
+//		}
 	}
 
 	@Override public void postcompute(){
@@ -343,21 +370,36 @@ class fulfillment_center extends robot{
 			return;
 		}
 		if(droni<1&&rc.getTeamSoup()>=RobotType.DELIVERY_DRONE.cost) {
-			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHEAST)) {
-				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHEAST);
+			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHWEST)) {
+				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHWEST);
+				droni++;
+				return;
+			}
+			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTH)) {
+				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTH);
 				droni++;
 				return;
 			}
 		}
 		if(droni<5&&rc.getTeamSoup()>=RobotType.DELIVERY_DRONE.cost+250) {//Refinerije imajo prednost
-			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHEAST)) {
-				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHEAST);
+			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHWEST)) {
+				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHWEST);
+				droni++;
+				return;
+			}
+			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTH)) {
+				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTH);
 				droni++;
 				return;
 			}
 		}else if(rc.getTeamSoup()>=500) {
-			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHEAST)) {
-				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHEAST);
+			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHWEST)) {
+				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHWEST);
+				droni++;
+				return;
+			}
+			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTH)) {
+				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTH);
 				droni++;
 				return;
 			}

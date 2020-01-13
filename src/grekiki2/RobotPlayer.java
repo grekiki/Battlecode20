@@ -67,7 +67,7 @@ import battlecode.common.*;
  *              NWWWWWN
  *              NWD..WN
  *              NW.H.WN
- *              NW.LDWN
+ *              NW..LWN
  *              NWWWWWN
  *              NNNNNNN
  * 	
