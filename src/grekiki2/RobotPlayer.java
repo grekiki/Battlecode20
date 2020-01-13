@@ -24,6 +24,8 @@ import battlecode.common.*;
  * msg[1]==5--> na msg[2],msg[3] sedaj stoji tovarna dronov. 
  * 
  * msg[1]==6--> na msg[2],msg[3] so koordinate našega hq. 
+ * 
+ * msg[1]==7--> enota bi šla iz msg[2],msg[3] v msg[4],msg[5]. Za prevoz potrebuje drona. 
  */
 
 /*

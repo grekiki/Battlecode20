@@ -26,22 +26,23 @@ class HQ extends robot{
 	// phase 0
 	Direction[] goodMiners;
 	int miners=0;
+	int cooldown=0;
 	//phase 1
-	
+
 	//phase 2
 	int initMiner=-1;
 	HQ(RobotController rc){
 		this.rc=rc;
 	}
 
-	public int f(int a) {
-		if(a==1) {
+	public int f(int a){
+		if(a==1){
 			return phase>1?5:4;
-		}else {
+		}else{
 			return 2*a+4;
 		}
 	}
-	
+
 	public void computeData(int phase) throws GameActionException{
 		if(phase==0){
 			int count=0;
@@ -128,9 +129,9 @@ class HQ extends robot{
 						if(polja.contains(m)){
 							polja.remove(m);
 						}
-					}else if(msg[1]==4) {
+					}else if(msg[1]==4){
 						MapLocation m=new MapLocation(msg[2],msg[3]);
-						if(!refinery.contains(m)) {
+						if(!refinery.contains(m)){
 							refinery.add(m);
 						}
 					}
@@ -167,32 +168,33 @@ class HQ extends robot{
 		if(!rc.isReady()){
 			return;
 		}
+		cooldown--;
 		RobotInfo closest=null;
 		int dis=1000000;
-		for(RobotInfo r:rc.senseNearbyRobots(15)) {
-			if(r.team==rc.getTeam().opponent()&&r.getType()==RobotType.DELIVERY_DRONE) {
+		for(RobotInfo r:rc.senseNearbyRobots(15)){
+			if(r.team==rc.getTeam().opponent()&&r.getType()==RobotType.DELIVERY_DRONE){
 				int t=rc.getLocation().distanceSquaredTo(r.location);
-				if(t<dis) {
+				if(t<dis){
 					dis=t;
 					closest=r;
 				}
 			}
 		}
-		if(closest!=null&&rc.canShootUnit(closest.ID)) {
+		if(closest!=null&&rc.canShootUnit(closest.ID)){
 			rc.shootUnit(closest.ID);
 			return;
 		}
 		if(phase==0){
 			if(miners<goodMiners.length&&rc.getTeamSoup()>=70&&rc.canBuildRobot(RobotType.MINER,goodMiners[miners])){
 				rc.buildRobot(RobotType.MINER,goodMiners[miners]);
-				if(miners==0) {
+				if(miners==0){
 					initMiner=rc.senseRobotAtLocation(rc.getLocation().add(goodMiners[miners])).ID;
 				}
 				miners++;
 				return;
 			}
 		}else if(phase==1||phase==2){
-			if(rc.getTeamSoup()>=(phase>1?200:70)&&miners<f(polja.size())){//Nakup minerjev?
+			if((cooldown<=0||rc.getTeamSoup()>1000)&&rc.getTeamSoup()>=(phase>1?300:70)&&miners<f(polja.size())){//Nakup minerjev?
 				if(polja.size()>0){//Ce imamo polja minerje usmerimo da so blizje
 					MapLocation best=null;
 					int dist=64*64;
@@ -207,20 +209,24 @@ class HQ extends robot{
 					if(rc.canBuildRobot(RobotType.MINER,d)){
 						rc.buildRobot(RobotType.MINER,d);
 						miners++;
+						cooldown=10;
 						return;
 					}else if(rc.canBuildRobot(RobotType.MINER,d.rotateLeft())){
 						rc.buildRobot(RobotType.MINER,d.rotateLeft());
 						miners++;
+						cooldown=10;
 						return;
 					}else if(rc.canBuildRobot(RobotType.MINER,d.rotateRight())){
 						rc.buildRobot(RobotType.MINER,d.rotateRight());
 						miners++;
+						cooldown=10;
 						return;
-					}else {
+					}else{
 						for(Direction dd:Util.dir){
 							if(rc.canBuildRobot(RobotType.MINER,dd)){
 								rc.buildRobot(RobotType.MINER,dd);
 								miners++;
+								cooldown=10;
 								return;
 							}
 						}
@@ -230,6 +236,7 @@ class HQ extends robot{
 						if(rc.canBuildRobot(RobotType.MINER,d)){
 							rc.buildRobot(RobotType.MINER,d);
 							miners++;
+							cooldown=10;
 							return;
 						}
 					}
@@ -249,39 +256,39 @@ class HQ extends robot{
 				b.sendMsg(new paket(msg,1));
 			}
 		}
-		if(phase==1) {
-			if(rc.getTeamSoup()>=150) {
+		if(phase==1){
+			if(rc.getTeamSoup()>=150){
 				phase=2;
 				int[] msg=new int[7];
 				msg[0]=123456789;
 				msg[1]=1;
 				msg[2]=phase;
 				int dist=1000000;
-				for(RobotInfo u:rc.senseNearbyRobots(-1, rc.getTeam())) {
-					if(u.type==RobotType.MINER) {
+				for(RobotInfo u:rc.senseNearbyRobots(-1,rc.getTeam())){
+					if(u.type==RobotType.MINER){
 						int t=rc.getLocation().distanceSquaredTo(u.location);
-						if(t<dist) {
+						if(t<dist){
 							dist=t;
 							msg[3]=u.ID;
 						}
 					}
 				}
-				if(dist==1000000) {
+				if(dist==1000000){
 					msg[3]=initMiner;
 				}
 				b.sendMsg(new paket(msg,1));
 			}
 		}
-		if(phase==2) {//Preverimo èe imamo zid
+		if(phase==2){//Preverimo èe imamo zid
 			boolean ok=true;
-			for(MapLocation m:landscaper.place) {
+			for(MapLocation m:landscaper.place){
 				MapLocation check=new MapLocation(rc.getLocation().x+m.x,rc.getLocation().y+m.y);
-				if(!rc.canSenseLocation(check)||(rc.senseRobotAtLocation(check)!=null&&rc.senseRobotAtLocation(check).type!=RobotType.LANDSCAPER)) {
+				if(!rc.canSenseLocation(check)||rc.senseRobotAtLocation(check)==null||(rc.senseRobotAtLocation(check)!=null&&rc.senseRobotAtLocation(check).type!=RobotType.LANDSCAPER)){
 					ok=false;
 					break;
 				}
 			}
-			if(ok) {
+			if(ok){
 				phase=3;
 				int[] msg=new int[7];
 				msg[0]=123456789;
@@ -304,10 +311,14 @@ class refinery extends robot{
 	public refinery(RobotController r){
 		rc=r;
 	}
-	@Override public void init(){}
-	@Override public void precompute(){}
-	@Override public void runTurn(){}
-	@Override public void postcompute(){}
+	@Override public void init(){
+	}
+	@Override public void precompute(){
+	}
+	@Override public void runTurn(){
+	}
+	@Override public void postcompute(){
+	}
 
 }
 
@@ -317,13 +328,16 @@ class vaporator extends robot{
 	public vaporator(RobotController r){
 		rc=r;
 	}
-	@Override public void init(){}
-	@Override public void precompute(){}
-	@Override public void runTurn(){}
-	@Override public void postcompute(){}
+	@Override public void init(){
+	}
+	@Override public void precompute(){
+	}
+	@Override public void runTurn(){
+	}
+	@Override public void postcompute(){
+	}
 
 }
-
 
 class design_school extends robot{
 	RobotController rc;
@@ -343,35 +357,29 @@ class design_school extends robot{
 	}
 
 	@Override public void runTurn() throws GameActionException{
-		if(!rc.isReady()) {
+		if(!rc.isReady()){
 			return;
 		}
-		if(diggers==0) {
-			if(rc.getTeamSoup()>=RobotType.LANDSCAPER.cost) {
-				if(rc.canBuildRobot(RobotType.LANDSCAPER,Direction.WEST)) {
-					rc.buildRobot(RobotType.LANDSCAPER,Direction.WEST);
-					diggers++;
-					return;
-				}
-			}
-		}else if(diggers<8) {
-			if(rc.getTeamSoup()>=50+RobotType.LANDSCAPER.cost) {
-				if(rc.canBuildRobot(RobotType.LANDSCAPER,Direction.WEST)) {
-					rc.buildRobot(RobotType.LANDSCAPER,Direction.WEST);
-					diggers++;
-					return;
+		if(diggers<8){
+			if(rc.getTeamSoup()>=RobotType.LANDSCAPER.cost){
+				for(Direction d:Util.dir){
+					if(rc.canBuildRobot(RobotType.LANDSCAPER,d)){
+						rc.buildRobot(RobotType.LANDSCAPER,d);
+						diggers++;
+						return;
+					}
 				}
 			}
 		}
-		else if(diggers<16) {
-			if(rc.getTeamSoup()>=400+RobotType.LANDSCAPER.cost) {
-				if(rc.canBuildRobot(RobotType.LANDSCAPER,Direction.WEST)) {
-					rc.buildRobot(RobotType.LANDSCAPER,Direction.WEST);
-					diggers++;
-					return;
-				}
-			}
-		}
+//		else if(diggers<16) {
+//			if(rc.getTeamSoup()>=400+RobotType.LANDSCAPER.cost) {
+//				if(rc.canBuildRobot(RobotType.LANDSCAPER,Direction.WEST)) {
+//					rc.buildRobot(RobotType.LANDSCAPER,Direction.WEST);
+//					diggers++;
+//					return;
+//				}
+//			}
+//		}
 	}
 
 	@Override public void postcompute(){
@@ -399,42 +407,33 @@ class fulfillment_center extends robot{
 	}
 
 	@Override public void runTurn() throws Exception{
-		if(!rc.isReady()) {
+		if(!rc.isReady()){
 			return;
 		}
-		if(droni<1&&rc.getTeamSoup()>=RobotType.DELIVERY_DRONE.cost) {
-			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHWEST)) {
-				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHWEST);
-				droni++;
-				return;
-			}
-			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTH)) {
-				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTH);
-				droni++;
-				return;
+		if(droni<1&&rc.getTeamSoup()>=RobotType.DELIVERY_DRONE.cost){
+			for(Direction d:Util.dir) {
+				if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,d)){
+					rc.buildRobot(RobotType.DELIVERY_DRONE,d);
+					droni++;
+					return;
+				}
 			}
 		}
-		if(droni<5&&rc.getTeamSoup()>=RobotType.DELIVERY_DRONE.cost+250) {//Refinerije imajo prednost
-			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHWEST)) {
-				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHWEST);
-				droni++;
-				return;
+		if(droni<5&&rc.getTeamSoup()>=RobotType.DELIVERY_DRONE.cost+250){//Refinerije imajo prednost
+			for(Direction d:Util.dir) {
+				if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,d)){
+					rc.buildRobot(RobotType.DELIVERY_DRONE,d);
+					droni++;
+					return;
+				}
 			}
-			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTH)) {
-				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTH);
-				droni++;
-				return;
-			}
-		}else if(rc.getTeamSoup()>=800) {
-			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHWEST)) {
-				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHWEST);
-				droni++;
-				return;
-			}
-			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTH)) {
-				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTH);
-				droni++;
-				return;
+		}else if(rc.getTeamSoup()>=800){
+			for(Direction d:Util.dir) {
+				if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,d)){
+					rc.buildRobot(RobotType.DELIVERY_DRONE,d);
+					droni++;
+					return;
+				}
 			}
 		}
 
@@ -454,33 +453,36 @@ class net_gun extends robot{
 		rc=r;
 	}
 
-	@Override public void init(){}
+	@Override public void init(){
+	}
 
-	@Override public void precompute(){}
+	@Override public void precompute(){
+	}
 
 	@Override public void runTurn() throws GameActionException{
-		if(!rc.isReady()) {
+		if(!rc.isReady()){
 			return;
 		}
 		RobotInfo closest=null;
 		int dist=1000000;
-		for(RobotInfo r:rc.senseNearbyRobots()) {
-			if(r.team==rc.getTeam().opponent()&&r.getType()==RobotType.DELIVERY_DRONE) {
+		for(RobotInfo r:rc.senseNearbyRobots()){
+			if(r.team==rc.getTeam().opponent()&&r.getType()==RobotType.DELIVERY_DRONE){
 				int t=rc.getLocation().distanceSquaredTo(r.location);
-				if(t<dist) {
+				if(t<dist){
 					dist=t;
 					closest=r;
 				}
 			}
 		}
-		if(closest==null) {
+		if(closest==null){
 			return;
 		}
-		if(rc.canShootUnit(closest.ID)) {
+		if(rc.canShootUnit(closest.ID)){
 			rc.shootUnit(closest.ID);
 		}
 	}
 
-	@Override public void postcompute(){}
+	@Override public void postcompute(){
+	}
 
 }

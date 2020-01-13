@@ -51,6 +51,10 @@ class miner extends robot{
 						if(id==rc.getID()){
 							baseWorker=true;
 						}
+						System.out.println(phase+". FAZA");
+						if(phase==3){
+							refinery.remove(hq);
+						}
 					}else if(msg[1]==2){
 						MapLocation m=new MapLocation(msg[2],msg[3]);
 						if(!polja.contains(m)){
@@ -112,9 +116,9 @@ class miner extends robot{
 		}
 		if(phase==0||phase==1||phase==2||phase==3){//TO-DO optimiziraj fazo 3. 
 			//Obdelamo potrebo po refineriji
-			if(surovine.size()>0&&rc.getTeamSoup()>=RobotType.REFINERY.cost){
+			if(surovine.size()>0&&rc.getTeamSoup()>=RobotType.REFINERY.cost+200||(refinery.size()<2&&rc.getTeamSoup()>=RobotType.REFINERY.cost)){
 				MapLocation closest=findClosest(surovine);
-				if(rc.getLocation().distanceSquaredTo(closest)<10){
+				if(closest!=null&&rc.getLocation().distanceSquaredTo(closest)<10){
 					//Preverimo èe je refinerija potrebna
 					MapLocation ref=closest.add(hq.directionTo(closest));
 					if(Util.d_inf(hq,ref)>=4){//Ne na zidu... Pa ne motimo baze
@@ -253,7 +257,7 @@ class miner extends robot{
 						return true;
 					}
 				}
-			}else if(rc.getTeamSoup()>=RobotType.FULFILLMENT_CENTER.cost){
+			}else if(rc.getTeamSoup()>=RobotType.FULFILLMENT_CENTER.cost+200){
 				if(rc.getLocation().distanceSquaredTo(f1)<=2&&!f1.equals(rc.getLocation())){
 					if(rc.getTeamSoup()>=RobotType.FULFILLMENT_CENTER.cost&&rc.canBuildRobot(RobotType.FULFILLMENT_CENTER,rc.getLocation().directionTo(f1))){
 						rc.buildRobot(RobotType.FULFILLMENT_CENTER,rc.getLocation().directionTo(f1));
@@ -304,6 +308,9 @@ class miner extends robot{
 				best=m;
 			}
 		}
+		if(best==null){
+			return false;
+		}
 		Direction d=Util.tryMove(rc,rc.getLocation().directionTo(best));
 		if(d!=null){
 			rc.move(d);
@@ -318,11 +325,10 @@ class miner extends robot{
 		if(Clock.getBytecodesLeft()<1000){
 			return;
 		}
+		discardMissing();
 		checkForEmptyField();
 		findResources(range);
-		discardMissing();
 	}
-
 	public void checkForEmptyField() throws GameActionException{
 		int range=rc.getCurrentSensorRadiusSquared();
 		for(MapLocation polje:polja){
@@ -430,12 +436,14 @@ class landscaper extends robot{
 		}
 	}
 	@Override public void precompute(){
-		// TODO Auto-generated method stub
 
 	}
 	int p=0;
 	boolean positioned=false;
 	@Override public void runTurn() throws GameActionException{
+		if(!rc.isReady()){
+			return;
+		}
 		if(rc.getLocation().equals(new MapLocation(hq.x+place[p].x,hq.y+place[p].y))){
 			positioned=true;
 		}
@@ -476,7 +484,7 @@ class landscaper extends robot{
 			Direction best=rc.getLocation().directionTo(goal);
 			if(Util.d_inf(goal,rc.getLocation())==1){
 				//Skoraj smo na cilju
-				if(rc.canMove(best)) {
+				if(rc.canMove(best)){
 					rc.move(best);
 					return;
 				}
@@ -490,7 +498,7 @@ class landscaper extends robot{
 						rc.depositDirt(Direction.CENTER);
 						return;
 					}
-				}else {
+				}else{
 					if(rc.canDepositDirt(best)){
 						rc.depositDirt(best);
 						return;
@@ -506,8 +514,8 @@ class landscaper extends robot{
 				rc.move(d);
 				return;
 			}else{
-				System.out.println("Premik ne dela "+best);
-				System.out.println(place[p].x+" "+place[p].y);
+//				System.out.println("Premik ne dela "+best);
+//				System.out.println(place[p].x+" "+place[p].y);
 			}
 		}
 
@@ -592,7 +600,7 @@ class delivery_drone extends robot{
 			}
 			//Gremo do najbližje vode
 			int range=Math.min(20,rc.getCurrentSensorRadiusSquared());
-			int l=Clock.getBytecodesLeft();
+//			int l=Clock.getBytecodesLeft();
 			for(int i=0;i<range;i++){
 				for(MapLocation m:pc.range[i]){
 					if(rc.canSenseLocation(m)){
@@ -606,15 +614,21 @@ class delivery_drone extends robot{
 					}
 				}
 			}
-			System.out.println("Cena "+(Clock.getBytecodesLeft()-l));
+//			System.out.println("Cena "+(l-Clock.getBytecodesLeft()));
 			MapLocation best=findClosest(aqua);
-			if(best==null){
-				best=hq;//mogoèe dela?
+			Direction d;
+			if(best!=null) {
+				d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(best));
+			}else {
+				d=init;
 			}
-			Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(best));
 			if(d!=null){
-				rc.move(d);
-				return;
+				if(rc.canMove(d)){
+					rc.move(d);
+					return;
+				}else {
+					init=Util.getRandomDirection();
+				}
 			}
 		}
 	}
@@ -634,6 +648,9 @@ class delivery_drone extends robot{
 		int range=rc.getCurrentSensorRadiusSquared();
 		for(int i=0;i<range;i++){
 			for(MapLocation mmm:pc.range[i]){
+				if(Clock.getBytecodesLeft()<2000){
+					return;
+				}
 				MapLocation m=new MapLocation(rc.getLocation().x+mmm.x,rc.getLocation().y+mmm.y);
 				if(rc.canSenseLocation(m)){
 					if(rc.senseFlooding(m)){
@@ -645,7 +662,6 @@ class delivery_drone extends robot{
 							}
 						}
 						if(ok){
-							System.out.println(m.x+" "+m.y+" voda");
 							aqua.add(m);
 						}
 					}
