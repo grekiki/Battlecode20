@@ -167,6 +167,21 @@ class HQ extends robot{
 		if(!rc.isReady()){
 			return;
 		}
+		RobotInfo closest=null;
+		int dis=1000000;
+		for(RobotInfo r:rc.senseNearbyRobots(15)) {
+			if(r.team==rc.getTeam().opponent()&&r.getType()==RobotType.DELIVERY_DRONE) {
+				int t=rc.getLocation().distanceSquaredTo(r.location);
+				if(t<dis) {
+					dis=t;
+					closest=r;
+				}
+			}
+		}
+		if(closest!=null&&rc.canShootUnit(closest.ID)) {
+			rc.shootUnit(closest.ID);
+			return;
+		}
 		if(phase==0){
 			if(miners<goodMiners.length&&rc.getTeamSoup()>=70&&rc.canBuildRobot(RobotType.MINER,goodMiners[miners])){
 				rc.buildRobot(RobotType.MINER,goodMiners[miners]);
@@ -257,6 +272,24 @@ class HQ extends robot{
 				b.sendMsg(new paket(msg,1));
 			}
 		}
+		if(phase==2) {//Preverimo èe imamo zid
+			boolean ok=true;
+			for(MapLocation m:landscaper.place) {
+				MapLocation check=new MapLocation(rc.getLocation().x+m.x,rc.getLocation().y+m.y);
+				if(!rc.canSenseLocation(check)||(rc.senseRobotAtLocation(check)!=null&&rc.senseRobotAtLocation(check).type!=RobotType.LANDSCAPER)) {
+					ok=false;
+					break;
+				}
+			}
+			if(ok) {
+				phase=3;
+				int[] msg=new int[7];
+				msg[0]=123456789;
+				msg[1]=1;
+				msg[2]=phase;
+				b.sendMsg(new paket(msg,1));
+			}
+		}
 		for(MapLocation m:polja){
 			rc.setIndicatorDot(m,0,255,255);
 		}
@@ -330,15 +363,15 @@ class design_school extends robot{
 				}
 			}
 		}
-//		}else if(diggers<20) {
-//			if(rc.getTeamSoup()>=400+RobotType.LANDSCAPER.cost) {
-//				if(rc.canBuildRobot(RobotType.LANDSCAPER,Direction.WEST)) {
-//					rc.buildRobot(RobotType.LANDSCAPER,Direction.WEST);
-//					diggers++;
-//					return;
-//				}
-//			}
-//		}
+		else if(diggers<16) {
+			if(rc.getTeamSoup()>=400+RobotType.LANDSCAPER.cost) {
+				if(rc.canBuildRobot(RobotType.LANDSCAPER,Direction.WEST)) {
+					rc.buildRobot(RobotType.LANDSCAPER,Direction.WEST);
+					diggers++;
+					return;
+				}
+			}
+		}
 	}
 
 	@Override public void postcompute(){
@@ -392,7 +425,7 @@ class fulfillment_center extends robot{
 				droni++;
 				return;
 			}
-		}else if(rc.getTeamSoup()>=500) {
+		}else if(rc.getTeamSoup()>=800) {
 			if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHWEST)) {
 				rc.buildRobot(RobotType.DELIVERY_DRONE,Direction.SOUTHWEST);
 				droni++;

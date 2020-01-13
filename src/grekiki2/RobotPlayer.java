@@ -35,13 +35,9 @@ import battlecode.common.*;
  * Rafinerije se gradi stran od baze, da ne skodimo zidu z pollutionom. 
  * Premik v fazo 3 naredimo ko imamo dovolj surovin za to. 
  * 
- * Faza 3: Sedaj bi morali imeti ogromno surovin, in se lahko lotimo napada/obrambe. Baza poklièe enega minerja nazaj,
- * vsaka refinerija pa ima minerja zadolženega za obrambo le te. 
+ * Faza 3: Sedaj bi morali imeti ogromno surovin, in se lahko lotimo napada/obrambe. Baza poklièe enega minerja nazaj.
  * 
- * Faza 4: Minerji zakampirajo surovine z droni in dronecatcherji. To omogoca da polovimo vse nasprotnikove enote.
- * Baza lahko requesta drone in landscaperje za obrambo, naj bi prisli iz surovinskih polj.
- * 
- * Faza 5: Baza, ce ima dovolj dronov in landscaperjev naredi napad. To bo verjetno prislo na vrsto precej pozno. 
+ * Faza 4: Baza ima zid, ki pa ga je treba izboljšati. Dronov se ne gradi prevec. 
  * 
  * 
  * Celoten plan temelji bolj na ekonomiji, tako da se verjetno splaca biti previden glede invazij.  
@@ -61,7 +57,7 @@ import battlecode.common.*;
  *              V fazi 2 naredimo tovarne za diggerje
  *              D..
  *              .H.
- *              .LD
+ *              ..L
  * 				V fazi 3 okoli baze okrepimo obrambo
  * 				NNNNNNN...
  *              NWWWWWN
