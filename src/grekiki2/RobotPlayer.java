@@ -88,6 +88,7 @@ class blockchain {
 	public void sendMsg(paket p) throws GameActionException {
 		if (rc.canSubmitTransaction(p.data, p.cost)) {
 			rc.submitTransaction(p.data, p.cost);
+			System.out.println(rc.getLocation()+" je poslal posto");
 			msg.add(new paket(p.data, p.cost));
 		} else {
 			msg.add(new paket(p.data, 0));

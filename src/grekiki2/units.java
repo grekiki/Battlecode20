@@ -136,16 +136,16 @@ class miner extends robot{
 							//Poskusimo èe smo dovolj blizu
 							if(ref.distanceSquaredTo(rc.getLocation())<=2){
 								int sum=0;
-								for(int i=0;i<=4;i++) {
-									for(MapLocation mm:pc.range[i]) {
+								for(int i=0;i<=4;i++){
+									for(MapLocation mm:pc.range[i]){
 										MapLocation m=new MapLocation(ref.x+mm.x,ref.y+mm.y);
-										if(rc.canSenseLocation(m)) {
+										if(rc.canSenseLocation(m)){
 											sum+=rc.senseSoup(m);
 										}
 									}
 								}
 //								System.out.println(sum);
-								if(sum>200) {
+								if(sum>500){
 									Direction d=rc.getLocation().directionTo(ref);
 									if(rc.getTeamSoup()>=RobotType.REFINERY.cost){
 										if(rc.canBuildRobot(RobotType.REFINERY,d)){
@@ -154,7 +154,7 @@ class miner extends robot{
 											b.sendMsg(new paket(msg,1));
 											return;
 										}
-									}	
+									}
 								}
 							}else{
 								Direction d=Util.tryMove(rc,rc.getLocation().directionTo(ref));
@@ -182,9 +182,12 @@ class miner extends robot{
 //					System.out.println("Ne moremo priti do najblizje refinerije!");
 				}
 			}
-			a:if(phase==2&&rc.getTeamSoup()>=RobotType.NET_GUN.cost+300){//Rafinerije potrebujejo drone za obrambo. Tovarna vsaj 3 stran po d_inf metriki
+			a:if(phase==2&&rc.getTeamSoup()>=RobotType.NET_GUN.cost+500){//Rafinerije potrebujejo drone za obrambo. Tovarna vsaj 3 stran po d_inf metriki
 				MapLocation ref=findClosest(refinery);
-				int optRange=ref.equals(hq)?4:2;
+				if(ref.equals(hq)){
+					break a;
+				}
+				int optRange=2;
 				int dist=1000000000;
 				for(RobotInfo r:rc.senseNearbyRobots(-1,rc.getTeam())){
 					if(r.team==rc.getTeam()&&r.type==RobotType.NET_GUN){
@@ -449,7 +452,7 @@ class miner extends robot{
 							break;
 						}
 					}
-					if(!used){
+					if(!used&&Math.abs(rc.senseElevation(m.add(rc.getLocation().directionTo(m)))-rc.senseElevation(rc.getLocation()))<=3){
 						// Dodamo polje v blockchain
 						MapLocation interpolacija_centra=m.add(rc.getLocation().directionTo(m));
 						polja.add(interpolacija_centra);
@@ -618,8 +621,6 @@ class landscaper extends robot{
 
 	}
 
-
-
 	@Override public void postcompute() throws GameActionException{
 
 	}
@@ -630,10 +631,12 @@ class delivery_drone extends robot{
 	RobotController rc;
 	Direction init;
 	MapLocation hq;
+	MapLocation goal;
 	boolean full=false;
 	ArrayList<MapLocation> aqua=new ArrayList<MapLocation>();
 	MapLocation s,drain;
 	int time=1;
+	int dist;
 //	boolean[][]flooding;
 	delivery_drone(RobotController rc){
 		this.rc=rc;
@@ -643,6 +646,23 @@ class delivery_drone extends robot{
 		for(RobotInfo r:rc.senseNearbyRobots(10,rc.getTeam())){
 			if(r.type==RobotType.HQ){
 				hq=r.location;
+			}
+		}
+		goal=hq;
+		dist=rc.getMapWidth()-2*(Math.min(hq.x,rc.getMapWidth()-1-hq.x));
+		dist+=rc.getMapHeight()-2*(Math.min(hq.y,rc.getMapHeight()-1-hq.y));
+
+		if(dist<30){
+			if(hq.x<rc.getMapWidth()){
+				goal=new MapLocation(goal.x-5,goal.y);
+			}else{
+				goal=new MapLocation(goal.x+5,goal.y);
+
+			}
+			if(hq.y<rc.getMapHeight()){
+				goal=new MapLocation(goal.x,goal.y-5);
+			}else{
+				goal=new MapLocation(goal.x,goal.y+5);
 			}
 		}
 		s=null;
@@ -673,7 +693,23 @@ class delivery_drone extends robot{
 		if(!rc.isReady()){
 			return;
 		}
-		System.out.println("lol");
+		if(dist<25){
+			if(rc.getRoundNum()>2000) {
+				MapLocation rightdown=new MapLocation(rc.getMapWidth()-hq.x-1,rc.getMapHeight()-hq.y-1);
+				goal=rightdown;
+			}
+		}else{
+			if(rc.getRoundNum()>2000){
+				MapLocation down=new MapLocation(hq.x,rc.getMapHeight()-hq.y-1);
+				goal=down;
+			}else if(rc.getRoundNum()>1700){
+				MapLocation rightdown=new MapLocation(rc.getMapWidth()-hq.x-1,rc.getMapHeight()-hq.y-1);
+				goal=rightdown;
+			}else if(rc.getRoundNum()>1400){
+				MapLocation right=new MapLocation(rc.getMapWidth()-hq.x-1,hq.y);
+				goal=right;
+			}
+		}
 		full=rc.isCurrentlyHoldingUnit();
 		a:if(s!=null&&!full){
 			if(rc.getRoundNum()-time>100){
@@ -738,22 +774,22 @@ class delivery_drone extends robot{
 			int closest=64*64;
 			MapLocation best=null;
 			RobotInfo[] rr=rc.senseNearbyRobots();
-			for(RobotInfo r:rr) {
-				if(r.team!=rc.getTeam()&&Util.d_inf(rc.getLocation(),r.location)<closest) {
+			for(RobotInfo r:rr){
+				if(r.team!=rc.getTeam()&&Util.d_inf(rc.getLocation(),r.location)<closest){
 					best=r.location;
 					closest=Util.d_inf(rc.getLocation(),r.location);
 				}
 			}
-			if(best!=null) {
-				if(closest<=1) {
-					if(rc.canPickUpUnit(rc.senseRobotAtLocation(best).ID)) {
+			if(best!=null){
+				if(closest<=1){
+					if(rc.canPickUpUnit(rc.senseRobotAtLocation(best).ID)){
 						rc.pickUpUnit(rc.senseRobotAtLocation(best).ID);
 						full=true;
 						return;
 					}
-				}else {
+				}else{
 					Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(best));
-					if(d!=null) {
+					if(d!=null){
 						rc.move(d);
 					}
 					return;
@@ -761,29 +797,27 @@ class delivery_drone extends robot{
 
 			}
 			//ni dobrih opcij
-//			System.out.println(Clock.getBytecodesLeft());
-			int dist=Util.d_inf(hq,rc.getLocation());
-			if(dist<3) {
-				Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(hq).opposite());
-				if(d!=null) {
+			int dist=Util.d_inf(goal,rc.getLocation());
+			if(dist<(goal.equals(hq)?3:1)){
+				Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(goal).opposite());
+				if(d!=null){
 					rc.move(d);
 				}
 			}
-			if(dist>6) {
-				Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(hq));
-				if(d!=null) {
+			if(dist>(goal.equals(hq)?6:3)){
+				Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(goal));
+				if(d!=null){
 					rc.move(d);
 				}
 			}
-			if(3<=dist&&dist<=6) {
-				for(int i=0;i<10;i++) {
+			if((goal.equals(hq)?3:1)<=dist&&dist<=(goal.equals(hq)?6:3)){
+				for(int i=0;i<10;i++){
 					Direction d=Util.getRandomDirection();
-					if(rc.canMove(d)) {
+					if(rc.canMove(d)){
 						rc.move(d);
 					}
 				}
 			}
-//			System.out.println(Clock.getBytecodesLeft());
 		}
 		if(full&&drain==null){
 			for(Direction d:Util.dir){

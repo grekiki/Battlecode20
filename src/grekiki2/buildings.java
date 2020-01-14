@@ -533,7 +533,7 @@ class fulfillment_center extends robot{
 				}
 			}
 		}
-		if(droni<3&&rc.getTeamSoup()>=RobotType.DELIVERY_DRONE.cost+400){//Refinerije imajo prednost
+		if(droni<2&&rc.getTeamSoup()>=RobotType.DELIVERY_DRONE.cost+400){//Refinerije imajo prednost
 			for(Direction d:Util.dir){
 				if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,d)){
 					rc.buildRobot(RobotType.DELIVERY_DRONE,d);
@@ -541,7 +541,7 @@ class fulfillment_center extends robot{
 					return;
 				}
 			}
-		}else if(rc.getTeamSoup()>=1000){//Useless so
+		}else if(rc.getTeamSoup()>=1500||rc.getRoundNum()>800){//Useless so
 			for(Direction d:Util.dir){
 				if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,d)){
 					rc.buildRobot(RobotType.DELIVERY_DRONE,d);
