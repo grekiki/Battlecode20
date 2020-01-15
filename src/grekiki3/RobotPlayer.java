@@ -1,11 +1,20 @@
-package bot_template;
+package grekiki3;
 
 import battlecode.common.*;
 
 
 abstract class robot{
 	RobotController rc;
-
+	boolean[]read;
+	public robot(RobotController rc,boolean[]bl) {
+		this.rc=rc;
+		read=bl.clone();
+	}
+	public robot(RobotController rc) {
+		this.rc=rc;
+		read=null;
+	}
+	
 	public abstract void init();
 	public abstract void precompute();
 	public abstract void runTurn();

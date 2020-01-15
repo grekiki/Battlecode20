@@ -1,11 +1,14 @@
-package bot_template;
+package bot_template2;
 
 import battlecode.common.*;
 
 
 abstract class robot{
 	RobotController rc;
-
+	public robot(RobotController rc) {
+		this.rc=rc;
+	}
+	
 	public abstract void init();
 	public abstract void precompute();
 	public abstract void runTurn();
