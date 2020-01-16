@@ -1,4 +1,4 @@
-package grekiki2;
+package grekiki20;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -123,16 +123,16 @@ class miner extends robot{
 			if(surovine.size()>0&&(rc.getTeamSoup()>=RobotType.REFINERY.cost+konst.refinery_build_buffer||(refinery.size()<konst.refinery_low_count&&rc.getTeamSoup()>=RobotType.REFINERY.cost+konst.refinery_build_buffer2))){
 				MapLocation closest=findClosest(surovine);
 				if(closest!=null&&rc.getLocation().distanceSquaredTo(closest)<konst.max_refinery_dist){
-					//Preverimo Ëe je refinerija potrebna
+					//Preverimo √®e je refinerija potrebna
 					MapLocation ref=closest;
 					if(Util.d_inf(hq,ref)>=konst.refinery_dist_hq){//Ne na zidu... Da ne motimo baze
 						int dist=konst.min_ref_ref_dist;
 						for(MapLocation re:refinery){
 							dist=Math.min(dist,re.distanceSquaredTo(ref));
 						}
-						if(dist==konst.min_ref_ref_dist){//ni refinerije bliûje kot 20
+						if(dist==konst.min_ref_ref_dist){//ni refinerije bli≈æje kot 20
 							//Potrebujemo refinerijo.
-							//Poskusimo Ëe smo dovolj blizu
+							//Poskusimo √®e smo dovolj blizu
 							if(ref.distanceSquaredTo(rc.getLocation())<=2){
 								int sum=0;
 								for(int i=0;i<=konst.ref_soup_scan_range;i++){
@@ -167,7 +167,7 @@ class miner extends robot{
 				}
 			}
 
-			//Najprej poskusimo Ëe smo polni
+			//Najprej poskusimo √®e smo polni
 			if(rc.getSoupCarrying()==100){
 				for(Direction d:Util.dir){
 					if(rc.canDepositSoup(d)){
@@ -221,19 +221,19 @@ class miner extends robot{
 					}
 				}
 			}
-			//Gremo do najbliûje surovine
+			//Gremo do najbli≈æje surovine
 			if(surovine.size()>0){
 				if(moveClosest(surovine)){
 					return;
 				}
 			}
-			//Gremo do najbliûjega polja
+			//Gremo do najbli≈æjega polja
 			if(polja.size()>0){
 				if(moveClosest(polja)){
 					return;
 				}
 			}
-			//»e ni niË dela pametno raziskujemo
+			//√àe ni ni√® dela pametno raziskujemo
 			Direction d=Util.tryMoveLite(rc,init);
 			if(d==null){
 				init=Util.getRandomDirection();
@@ -838,7 +838,7 @@ class delivery_drone extends robot{
 					}
 				}
 			}
-			//Gremo do najbliûje vode
+			//Gremo do najbli≈æje vode
 			int range=Math.min(konst.range_init,rc.getCurrentSensorRadiusSquared());
 //			int l=Clock.getBytecodesLeft();
 			for(int i=0;i<range;i++){
@@ -889,12 +889,12 @@ class delivery_drone extends robot{
 
 
 	private int f(int timeToReach2){
-		//Vsaj tako daleË moramo biti
+		//Vsaj tako dalec moramo biti
 		int turn=rc.getRoundNum();
 		if(turn>timeToReach2) {
 			return 0;
 		}else {
-			return Math.min(konst.f_max,(int)Math.round((timeToReach2-turn)*konst.dist_factor));
+			return Math.min(konst.f_max,(int)Math.floor((timeToReach2-turn)*konst.dist_factor));
 		}
 	}
 

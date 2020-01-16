@@ -5,7 +5,7 @@ import java.util.Arrays;
 import battlecode.common.Clock;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
-import grekiki2.pc;
+import grekiki20.pc;
 
 public class HQ extends robot{
 

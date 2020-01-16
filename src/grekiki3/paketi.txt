@@ -1,11 +1,11 @@
 Tukaj bo seznam paketov in kaj pomenijo
 
-msg[1]==2--> msg[2],msg[3] so koordinate polja surovin.
+int1==1--> (int2,int3) so koordinate polja surovin.
 
-msg[1]==3--> Polje na msg[2],msg[3] je prazno. 
+int1==2--> Polje na (int2,int3) je prazno. 
 
-msg[1]==4--> na msg[2],msg[3] sedaj stoji refinerija. 
+int1==3--> na (int2,int3) sedaj stoji refinerija. 
 
-msg[1]==5--> na msg[2],msg[3] sedaj stoji tovarna dronov. 
+int1==4--> na (int2,int3) sedaj stoji tovarna dronov. 
 
-msg[1]==6--> na msg[2],msg[3] so koordinate naÅ¡ega hq. 
+int1==5--> na (int2,int3) so koordinate našega hq. 
