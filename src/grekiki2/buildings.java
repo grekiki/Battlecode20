@@ -39,7 +39,7 @@ class HQ extends robot{
 		if(a==1){
 			return phase>1?5:4;
 		}else{
-			return 2*a+4;
+			return (int) Math.round(konst.hqf4*a+konst.hqf3);
 		}
 	}
 
@@ -80,28 +80,28 @@ class HQ extends robot{
 //			System.out.println(top+" "+right+" "+bot+" "+left);
 //			System.out.println("Nasteli smo "+count+" pozicij za minerje");
 			count=0;
-			if(top){
+			if(top&&Math.abs(rc.senseElevation(rc.getLocation())-rc.senseElevation(rc.getLocation().add(Direction.NORTH)))<=3){
 				goodMiners[count++]=Direction.NORTH;
 			}
-			if(top&&right){
+			if(top&&right&&Math.abs(rc.senseElevation(rc.getLocation())-rc.senseElevation(rc.getLocation().add(Direction.NORTHEAST)))<=3){
 				goodMiners[count++]=Direction.NORTHEAST;
 			}
-			if(right){
+			if(right&&Math.abs(rc.senseElevation(rc.getLocation())-rc.senseElevation(rc.getLocation().add(Direction.EAST)))<=3){
 				goodMiners[count++]=Direction.EAST;
 			}
-			if(right&&bot){
+			if(right&&bot&&Math.abs(rc.senseElevation(rc.getLocation())-rc.senseElevation(rc.getLocation().add(Direction.SOUTHEAST)))<=3){
 				goodMiners[count++]=Direction.SOUTHEAST;
 			}
-			if(bot){
+			if(bot&&Math.abs(rc.senseElevation(rc.getLocation())-rc.senseElevation(rc.getLocation().add(Direction.SOUTH)))<=3){
 				goodMiners[count++]=Direction.SOUTH;
 			}
-			if(bot&left){
+			if(bot&left&&Math.abs(rc.senseElevation(rc.getLocation())-rc.senseElevation(rc.getLocation().add(Direction.SOUTHWEST)))<=3){
 				goodMiners[count++]=Direction.SOUTHWEST;
 			}
-			if(left){
+			if(left&&Math.abs(rc.senseElevation(rc.getLocation())-rc.senseElevation(rc.getLocation().add(Direction.WEST)))<=3){
 				goodMiners[count++]=Direction.WEST;
 			}
-			if(left&&top){
+			if(left&&top&&Math.abs(rc.senseElevation(rc.getLocation())-rc.senseElevation(rc.getLocation().add(Direction.NORTHWEST)))<=3){
 				goodMiners[count++]=Direction.NORTHWEST;
 			}
 		}else if(phase==1){
@@ -115,7 +115,7 @@ class HQ extends robot{
 		for(Transaction tt:t){
 			int[] msg=tt.getMessage();
 			if(msg.length==7){
-				if(msg[0]==123456789){
+				if(msg[0]==konst.private_key){
 					if(msg[1]==1){// Sprememba faze
 						int currentPhase=msg[2];
 						phase=currentPhase;
@@ -185,7 +185,7 @@ class HQ extends robot{
 			return;
 		}
 		if(phase==0){
-			if(miners<goodMiners.length&&rc.getTeamSoup()>=70&&rc.canBuildRobot(RobotType.MINER,goodMiners[miners])){
+			if(miners<goodMiners.length&&rc.getTeamSoup()>=konst.min_soup_miner&&rc.canBuildRobot(RobotType.MINER,goodMiners[miners])){
 				rc.buildRobot(RobotType.MINER,goodMiners[miners]);
 				if(miners==0){
 					initMiner=rc.senseRobotAtLocation(rc.getLocation().add(goodMiners[miners])).ID;
@@ -194,7 +194,7 @@ class HQ extends robot{
 				return;
 			}
 		}else if(phase==1||phase==2){
-			if((cooldown<=0||rc.getTeamSoup()>1000)&&rc.getTeamSoup()>=(phase>1?300:70)&&miners<f(polja.size())){//Nakup minerjev?
+			if((cooldown<=0||rc.getTeamSoup()>konst.ref_soup_buffer)&&rc.getTeamSoup()>=(phase>1?konst.ref_soup_buffer2:konst.ref_soup_buffer3)&&miners<f(polja.size())){//Nakup minerjev?
 				if(polja.size()>0){//Ce imamo polja minerje usmerimo da so blizje
 					MapLocation best=null;
 					int dist=64*64;
@@ -209,24 +209,24 @@ class HQ extends robot{
 					if(rc.canBuildRobot(RobotType.MINER,d)){
 						rc.buildRobot(RobotType.MINER,d);
 						miners++;
-						cooldown=10;
+						cooldown=konst.cooldown;
 						return;
 					}else if(rc.canBuildRobot(RobotType.MINER,d.rotateLeft())){
 						rc.buildRobot(RobotType.MINER,d.rotateLeft());
 						miners++;
-						cooldown=10;
+						cooldown=konst.cooldown;
 						return;
 					}else if(rc.canBuildRobot(RobotType.MINER,d.rotateRight())){
 						rc.buildRobot(RobotType.MINER,d.rotateRight());
 						miners++;
-						cooldown=10;
+						cooldown=konst.cooldown;
 						return;
 					}else{
 						for(Direction dd:Util.dir){
 							if(rc.canBuildRobot(RobotType.MINER,dd)){
 								rc.buildRobot(RobotType.MINER,dd);
 								miners++;
-								cooldown=10;
+								cooldown=konst.cooldown;
 								return;
 							}
 						}
@@ -236,7 +236,7 @@ class HQ extends robot{
 						if(rc.canBuildRobot(RobotType.MINER,d)){
 							rc.buildRobot(RobotType.MINER,d);
 							miners++;
-							cooldown=10;
+							cooldown=konst.cooldown;
 							return;
 						}
 					}
@@ -250,17 +250,17 @@ class HQ extends robot{
 			if(miners>=goodMiners.length||polja.size()>0){
 				phase=1;
 				int[] msg=new int[7];
-				msg[0]=123456789;
+				msg[0]=konst.private_key;
 				msg[1]=1;
 				msg[2]=phase;
 				b.sendMsg(new paket(msg,1));
 			}
 		}
 		if(phase==1){
-			if(rc.getTeamSoup()>=150){
+			if(rc.getTeamSoup()>=konst.phase_shift){
 				phase=2;
 				int[] msg=new int[7];
-				msg[0]=123456789;
+				msg[0]=konst.private_key;
 				msg[1]=1;
 				msg[2]=phase;
 				int dist=1000000;
@@ -279,7 +279,7 @@ class HQ extends robot{
 				b.sendMsg(new paket(msg,1));
 			}
 		}
-		if(phase==2){//Preverimo èe imamo zid
+		if(phase==2){//Preverimo ï¿½e imamo zid
 			boolean ok=true;
 			for(MapLocation m:landscaper.place){
 				MapLocation check=new MapLocation(rc.getLocation().x+m.x,rc.getLocation().y+m.y);
@@ -291,7 +291,7 @@ class HQ extends robot{
 			if(ok){
 				phase=3;
 				int[] msg=new int[7];
-				msg[0]=123456789;
+				msg[0]=konst.private_key;
 				msg[1]=1;
 				msg[2]=phase;
 				b.sendMsg(new paket(msg,1));
@@ -322,7 +322,7 @@ class HQ extends robot{
 					// Dodamo polje v blockchain
 					MapLocation interpolacija_centra=m.add(rc.getLocation().directionTo(m));
 					polja.add(interpolacija_centra);
-					int[] msg={123456789,2,interpolacija_centra.x,interpolacija_centra.y,0,0,0};
+					int[] msg={konst.private_key,2,interpolacija_centra.x,interpolacija_centra.y,0,0,0};
 					b.sendMsg(new paket(msg,1));
 				}
 			}
@@ -389,7 +389,7 @@ class design_school extends robot{
 		for(Transaction tt:t){
 			int[] msg=tt.getMessage();
 			if(msg.length==7){
-				if(msg[0]==123456789){
+				if(msg[0]==konst.private_key){
 					if(msg[1]==1){
 						phase=msg[2];
 					}
@@ -417,7 +417,6 @@ class design_school extends robot{
 		}
 		for(int i=0;i<=2*2+2*2;i++){
 			for(MapLocation m:pc.range[i]){
-				System.out.println(m.x+" "+m.y);
 				if(Util.d_inf(new MapLocation(0,0),m)==2){
 					zid.add(m);
 				}
@@ -436,13 +435,13 @@ class design_school extends robot{
 		if(!rc.isReady()){
 			return;
 		}
-		for(MapLocation m:polja){//Èe je surovina blizu bo gneèa
-			if(Util.d_inf(m,hq)<=4){
+		for(MapLocation m:polja){//ï¿½e je surovina blizu bo gneï¿½a
+			if(Util.d_inf(m,hq)<=konst.min_field_distance){
 				return;
 			}
 		}
 		if(diggers<8){
-			if(rc.getTeamSoup()>=350||polja.size()==0){
+			if(rc.getTeamSoup()>=konst.digger_buffer||polja.size()==0){
 				for(Direction d:new Direction[]{Direction.NORTH,Direction.WEST}){
 					if(rc.canBuildRobot(RobotType.LANDSCAPER,d)){
 						rc.buildRobot(RobotType.LANDSCAPER,d);
@@ -470,7 +469,7 @@ class design_school extends robot{
 //						MapLocation goal=new MapLocation(hq.x+zid.get(p).x,hq.y+zid.get(p).y);
 //						if(rc.canSenseLocation(goal)){
 //							if(rc.senseRobotAtLocation(goal)==null){
-//								int[] msg={123456789,7,hq.x+1,hq.y,goal.x,goal.y,0};
+//								int[] msg={konst.private_key,7,hq.x+1,hq.y,goal.x,goal.y,0};
 //								b.sendMsg(new paket(msg,1));
 //								break;
 //							}
@@ -480,7 +479,7 @@ class design_school extends robot{
 //						rc.buildRobot(RobotType.LANDSCAPER,Direction.NORTH);
 //						return;
 //					}else {
-//						p=0;//morda kakšen umre. 
+//						p=0;//morda kakï¿½en umre. 
 //						return;
 //					}
 //				}
@@ -524,7 +523,7 @@ class fulfillment_center extends robot{
 		if(!rc.isReady()){
 			return;
 		}
-		if(droni<1&&rc.getTeamSoup()>=RobotType.DELIVERY_DRONE.cost){
+		if(droni<konst.min_drones&&rc.getTeamSoup()>=konst.drone_buffer1){
 			for(Direction d:Util.dir){
 				if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,d)){
 					rc.buildRobot(RobotType.DELIVERY_DRONE,d);
@@ -533,15 +532,7 @@ class fulfillment_center extends robot{
 				}
 			}
 		}
-		if(droni<2&&rc.getTeamSoup()>=RobotType.DELIVERY_DRONE.cost+400){//Refinerije imajo prednost
-			for(Direction d:Util.dir){
-				if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,d)){
-					rc.buildRobot(RobotType.DELIVERY_DRONE,d);
-					droni++;
-					return;
-				}
-			}
-		}else if(rc.getTeamSoup()>=1500||rc.getRoundNum()>800){//Useless so
+		if(rc.getTeamSoup()>=konst.drone_waste_soup||(rc.getRoundNum()>konst.drone_waste_soup_time&&rc.getTeamSoup()>konst.drone_waste_soup2)){//Useless so
 			for(Direction d:Util.dir){
 				if(rc.canBuildRobot(RobotType.DELIVERY_DRONE,d)){
 					rc.buildRobot(RobotType.DELIVERY_DRONE,d);

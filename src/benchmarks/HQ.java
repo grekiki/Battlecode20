@@ -1,5 +1,7 @@
 package benchmarks;
 
+import java.util.Arrays;
+
 import battlecode.common.Clock;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
@@ -23,10 +25,14 @@ public class HQ extends robot{
 	}
 
 	@Override public void runTurn(){
-		iskanje0();
-		iskanje1();
+//		iskanje0();
+//		iskanje1();
+		
+		tabela0(new boolean[] {true,true,false,true});
 	}
 	
+
+
 	@Override public void postcompute(){
 		
 
@@ -60,6 +66,20 @@ public class HQ extends robot{
 		System.out.println(t-Clock.getBytecodesLeft()+" operacij");
 	}
 
-
+	private void tabela0(boolean[]bl) {
+		int t=Clock.getBytecodesLeft();
+		char[] read=new char[500];
+		char[] read2=Arrays.copyOf(read, 500);
+//		String s=new String(read2);
+		System.out.println(t-Clock.getBytecodesLeft()+" Cost");
+//		rc.disintegrate();
+	}
+	private void tabela1(boolean[]bl) {
+		int t=Clock.getBytecodesLeft();
+		char[] read=new char[500];
+		char[] read2=read.clone();
+//		String s=new String(read2);
+		System.out.println(t-Clock.getBytecodesLeft()+" Cost");
+	}
 
 }

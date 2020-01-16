@@ -27,7 +27,6 @@ class miner extends robot{
 
 	// phase 2
 	boolean baseWorker=false;
-	final int polmer_surovine=20;
 
 	miner(RobotController rc){
 		this.rc=rc;
@@ -44,7 +43,7 @@ class miner extends robot{
 		for(Transaction tt:t){
 			int[] msg=tt.getMessage();
 			if(msg.length==7){
-				if(msg[0]==123456789){
+				if(msg[0]==konst.private_key){
 					if(msg[1]==1){// Sprememba faze
 						int currentPhase=msg[2];
 						phase=currentPhase;
@@ -115,28 +114,28 @@ class miner extends robot{
 				return;
 			}
 		}
-		if(!baseWorker&&Util.d_inf(rc.getLocation(),hq)<=2&&phase==3){
+		if(!baseWorker&&Util.d_inf(rc.getLocation(),hq)<=konst.min_base_dist_miner_suicide&&phase==3){
 			int t=1/0;
 			System.out.println(t);
 		}
 		if(phase==0||phase==1||phase==2||phase==3){//TO-DO optimiziraj fazo 3. 
 			//Obdelamo potrebo po refineriji
-			if(surovine.size()>0&&rc.getTeamSoup()>=RobotType.REFINERY.cost+200||(refinery.size()<2&&rc.getTeamSoup()>=RobotType.REFINERY.cost)){
+			if(surovine.size()>0&&(rc.getTeamSoup()>=RobotType.REFINERY.cost+konst.refinery_build_buffer||(refinery.size()<konst.refinery_low_count&&rc.getTeamSoup()>=RobotType.REFINERY.cost+konst.refinery_build_buffer2))){
 				MapLocation closest=findClosest(surovine);
-				if(closest!=null&&rc.getLocation().distanceSquaredTo(closest)<10){
+				if(closest!=null&&rc.getLocation().distanceSquaredTo(closest)<konst.max_refinery_dist){
 					//Preverimo èe je refinerija potrebna
 					MapLocation ref=closest;
-					if(Util.d_inf(hq,ref)>=6){//Ne na zidu... Da ne motimo baze
-						int dist=20;
+					if(Util.d_inf(hq,ref)>=konst.refinery_dist_hq){//Ne na zidu... Da ne motimo baze
+						int dist=konst.min_ref_ref_dist;
 						for(MapLocation re:refinery){
 							dist=Math.min(dist,re.distanceSquaredTo(ref));
 						}
-						if(dist==20){//ni refinerije bližje kot 20
+						if(dist==konst.min_ref_ref_dist){//ni refinerije bližje kot 20
 							//Potrebujemo refinerijo.
 							//Poskusimo èe smo dovolj blizu
 							if(ref.distanceSquaredTo(rc.getLocation())<=2){
 								int sum=0;
-								for(int i=0;i<=4;i++){
+								for(int i=0;i<=konst.ref_soup_scan_range;i++){
 									for(MapLocation mm:pc.range[i]){
 										MapLocation m=new MapLocation(ref.x+mm.x,ref.y+mm.y);
 										if(rc.canSenseLocation(m)){
@@ -145,12 +144,12 @@ class miner extends robot{
 									}
 								}
 //								System.out.println(sum);
-								if(sum>500){
+								if(sum>konst.min_soup_nearby||refinery.size()<konst.refinery_low_count){
 									Direction d=rc.getLocation().directionTo(ref);
 									if(rc.getTeamSoup()>=RobotType.REFINERY.cost){
 										if(rc.canBuildRobot(RobotType.REFINERY,d)){
 											rc.buildRobot(RobotType.REFINERY,d);
-											int[] msg={123456789,4,rc.getLocation().x+d.dx,rc.getLocation().y+d.dy,0,0,0};
+											int[] msg={konst.private_key,4,rc.getLocation().x+d.dx,rc.getLocation().y+d.dy,0,0,0};
 											b.sendMsg(new paket(msg,1));
 											return;
 										}
@@ -182,12 +181,12 @@ class miner extends robot{
 //					System.out.println("Ne moremo priti do najblizje refinerije!");
 				}
 			}
-			a:if(phase==2&&rc.getTeamSoup()>=RobotType.NET_GUN.cost+500){//Rafinerije potrebujejo drone za obrambo. Tovarna vsaj 3 stran po d_inf metriki
+			a:if(phase==2&&rc.getTeamSoup()>=RobotType.NET_GUN.cost+konst.net_gun_build_buffer){//Rafinerije potrebujejo drone za obrambo. Tovarna vsaj 3 stran po d_inf metriki
 				MapLocation ref=findClosest(refinery);
 				if(ref.equals(hq)){
 					break a;
 				}
-				int optRange=2;
+				int optRange=konst.net_gun_radius;
 				int dist=1000000000;
 				for(RobotInfo r:rc.senseNearbyRobots(-1,rc.getTeam())){
 					if(r.team==rc.getTeam()&&r.type==RobotType.NET_GUN){
@@ -196,7 +195,7 @@ class miner extends robot{
 						}
 					}
 				}
-				if(dist<5*optRange){
+				if(dist<konst.dist_optrange_factor*optRange){
 					break a;
 				}
 				if(optRange-1<=Util.d_inf(ref,rc.getLocation())&&Util.d_inf(ref,rc.getLocation())<=optRange+1){//Morda se da razdaljo spraviti na 3
@@ -205,7 +204,7 @@ class miner extends robot{
 						if(Util.d_inf(op,ref)==optRange){
 							if(rc.canBuildRobot(RobotType.NET_GUN,d)){
 								rc.buildRobot(RobotType.NET_GUN,d);
-								int[] msg={123456789,5,rc.getLocation().x+d.dx,rc.getLocation().y+d.dy,0,0,0};
+								int[] msg={konst.private_key,5,rc.getLocation().x+d.dx,rc.getLocation().y+d.dy,0,0,0};
 								b.sendMsg(new paket(msg,1));
 								return;
 							}
@@ -249,12 +248,12 @@ class miner extends robot{
 	public boolean runBaseBuild() throws GameActionException{
 		if(fazaBaze==-1){
 			fazaBaze=0;
-			int[] msg={123456789,6,hq.x,hq.y,0,0,0};
+			int[] msg={konst.private_key,6,hq.x,hq.y,0,0,0};
 			b.sendMsg(new paket(msg,1));
 		}
 		if(fazaBaze==0){
 			MapLocation f1=hq.add(Direction.NORTHWEST);
-			if(rc.canSenseLocation(f1)&&rc.senseRobotAtLocation(f1)!=null&&rc.senseRobotAtLocation(f1).type==RobotType.FULFILLMENT_CENTER&&rc.getTeamSoup()>=RobotType.DESIGN_SCHOOL.cost+300){
+			if(rc.canSenseLocation(f1)&&rc.senseRobotAtLocation(f1)!=null&&rc.senseRobotAtLocation(f1).type==RobotType.FULFILLMENT_CENTER&&rc.getTeamSoup()>=RobotType.DESIGN_SCHOOL.cost+konst.desing_school_buffer){
 				MapLocation f2=hq.add(Direction.SOUTHEAST);
 				if(rc.getLocation().distanceSquaredTo(f2)<=2&&!f2.equals(rc.getLocation())){
 					if(rc.canBuildRobot(RobotType.DESIGN_SCHOOL,rc.getLocation().directionTo(f2))){
@@ -279,7 +278,7 @@ class miner extends robot{
 				}
 			}else if(rc.getTeamSoup()>=RobotType.FULFILLMENT_CENTER.cost){
 				if(rc.getLocation().distanceSquaredTo(f1)<=2&&!f1.equals(rc.getLocation())){
-					if(rc.getTeamSoup()>=RobotType.FULFILLMENT_CENTER.cost&&rc.canBuildRobot(RobotType.FULFILLMENT_CENTER,rc.getLocation().directionTo(f1))){
+					if(rc.getTeamSoup()>=RobotType.FULFILLMENT_CENTER.cost+konst.fullfilemnt_buffer&&rc.canBuildRobot(RobotType.FULFILLMENT_CENTER,rc.getLocation().directionTo(f1))){
 						rc.buildRobot(RobotType.FULFILLMENT_CENTER,rc.getLocation().directionTo(f1));
 						return true;
 					}
@@ -304,7 +303,7 @@ class miner extends robot{
 			fazaBaze=1;
 		}
 		if(fazaBaze==1){//NetCatcher
-			int[] msg={123456789,7,rc.getLocation().x,rc.getLocation().y,hq.x+1,hq.y,0};
+			int[] msg={konst.private_key,7,rc.getLocation().x,rc.getLocation().y,hq.x+1,hq.y,0};
 			b.sendMsg(new paket(msg,1));
 			fazaBaze=2;
 		}
@@ -328,7 +327,7 @@ class miner extends robot{
 			}
 		}
 		if(fazaBaze==3){
-			int[] msg={123456789,7,rc.getLocation().x,rc.getLocation().y,hq.x-1,hq.y,0};
+			int[] msg={konst.private_key,7,rc.getLocation().x,rc.getLocation().y,hq.x-1,hq.y,0};
 			b.sendMsg(new paket(msg,1));
 			fazaBaze=4;
 		}
@@ -352,7 +351,7 @@ class miner extends robot{
 			}
 		}
 		if(fazaBaze==5){
-			int[] msg={123456789,7,rc.getLocation().x,rc.getLocation().y,rc.getLocation().x-2,rc.getLocation().y,0};
+			int[] msg={konst.private_key,7,rc.getLocation().x,rc.getLocation().y,rc.getLocation().x-2,rc.getLocation().y,0};
 			b.sendMsg(new paket(msg,1));
 			fazaBaze=6;
 			return true;
@@ -398,7 +397,7 @@ class miner extends robot{
 
 	@Override public void postcompute() throws Exception{
 		int range=rc.getCurrentSensorRadiusSquared();
-		if(Clock.getBytecodesLeft()<1000){
+		if(Clock.getBytecodesLeft()<konst.clock_buffer){
 			return;
 		}
 		discardMissing();
@@ -408,12 +407,12 @@ class miner extends robot{
 	public void checkForEmptyField() throws GameActionException{
 		int range=rc.getCurrentSensorRadiusSquared();
 		for(MapLocation polje:polja){
-			if(range>=rc.getLocation().distanceSquaredTo(polje)+polmer_surovine){
+			if(range>=rc.getLocation().distanceSquaredTo(polje)+konst.resource_radius){
 				boolean ok=false;
-				for(int i=0;i<=polmer_surovine;i++){
-//					if(Clock.getBytecodesLeft()<1000){
-//						return;
-//					}
+				for(int i=0;i<=konst.resource_radius;i++){
+					if(Clock.getBytecodesLeft()<konst.clock_buffer2){
+						return;
+					}
 					MapLocation[] scan=pc.range[i];
 					for(MapLocation mm:scan){
 						MapLocation m=new MapLocation(polje.x+mm.x,polje.y+mm.y);
@@ -425,7 +424,7 @@ class miner extends robot{
 					}
 				}
 				if(!ok){
-					int[] msg={123456789,3,polje.x,polje.y,0,0,0};
+					int[] msg={konst.private_key,3,polje.x,polje.y,0,0,0};
 					b.sendMsg(new paket(msg,1));
 				}
 			}
@@ -441,22 +440,22 @@ class miner extends robot{
 			for(MapLocation mm:scan){
 				MapLocation m=new MapLocation(rc.getLocation().x+mm.x,rc.getLocation().y+mm.y);
 				if(rc.canSenseLocation(m)&&!rc.senseFlooding(m)&&rc.senseSoup(m)>0){
-					if(Clock.getBytecodesLeft()<1000){
+					if(Clock.getBytecodesLeft()<konst.clock_buffer3){
 						return;
 					}
 					surovine.add(m);
 					boolean used=false;
 					for(MapLocation center:polja){
-						if(center.distanceSquaredTo(m)<=20){
+						if(center.distanceSquaredTo(m)<=konst.resource_radius){
 							used=true;
 							break;
 						}
 					}
-					if(!used&&Math.abs(rc.senseElevation(m.add(rc.getLocation().directionTo(m)))-rc.senseElevation(rc.getLocation()))<=3){
+					if(!used&&rc.canSenseLocation(m.add(rc.getLocation().directionTo(m)))&&Math.abs(rc.senseElevation(m.add(rc.getLocation().directionTo(m)))-rc.senseElevation(rc.getLocation()))<=3){
 						// Dodamo polje v blockchain
 						MapLocation interpolacija_centra=m.add(rc.getLocation().directionTo(m));
 						polja.add(interpolacija_centra);
-						int[] msg={123456789,2,interpolacija_centra.x,interpolacija_centra.y,0,0,0};
+						int[] msg={konst.private_key,2,interpolacija_centra.x,interpolacija_centra.y,0,0,0};
 						b.sendMsg(new paket(msg,1));
 					}
 				}
@@ -469,7 +468,7 @@ class miner extends robot{
 		// :https://stackoverflow.com/questions/1110404/remove-elements-from-a-hashset-while-iterating
 		Iterator<MapLocation> iterator=surovine.iterator();
 		while(iterator.hasNext()){
-			if(Clock.getBytecodesLeft()<1000){
+			if(Clock.getBytecodesLeft()<konst.clock_buffer4){
 				return;
 			}
 			MapLocation m=iterator.next();
@@ -654,17 +653,17 @@ class delivery_drone extends robot{
 		dist=rc.getMapWidth()-2*(Math.min(hq.x,rc.getMapWidth()-1-hq.x));
 		dist+=rc.getMapHeight()-2*(Math.min(hq.y,rc.getMapHeight()-1-hq.y));
 
-		if(dist<30){
+		if(dist<konst.dist_drone_limit){
 			if(hq.x<rc.getMapWidth()){
-				goal=new MapLocation(goal.x-5,goal.y);
+				goal=new MapLocation(goal.x-konst.shift,goal.y);
 			}else{
-				goal=new MapLocation(goal.x+5,goal.y);
+				goal=new MapLocation(goal.x+konst.shift,goal.y);
 
 			}
 			if(hq.y<rc.getMapHeight()){
-				goal=new MapLocation(goal.x,goal.y-5);
+				goal=new MapLocation(goal.x,goal.y-konst.shift);
 			}else{
-				goal=new MapLocation(goal.x,goal.y+5);
+				goal=new MapLocation(goal.x,goal.y+konst.shift);
 			}
 		}
 		s=null;
@@ -681,7 +680,7 @@ class delivery_drone extends robot{
 			Transaction[] q=rc.getBlock(rc.getRoundNum()-1);
 //			System.out.println(Clock.getBytecodesLeft());
 			for(Transaction t:q){
-				if(t.getMessage()[0]==123456789&&t.getMessage()[1]==7){
+				if(t.getMessage()[0]==konst.private_key&&t.getMessage()[1]==7){
 					s=new MapLocation(t.getMessage()[2],t.getMessage()[3]);
 					drain=new MapLocation(t.getMessage()[4],t.getMessage()[5]);
 					time=rc.getRoundNum();
@@ -718,7 +717,7 @@ class delivery_drone extends robot{
 		}
 		full=rc.isCurrentlyHoldingUnit();
 		a:if(s!=null&&!full){
-			if(rc.getRoundNum()-time>100){
+			if(rc.getRoundNum()-time>konst.abort_time){
 				s=null;
 				drain=null;
 			}
@@ -805,21 +804,21 @@ class delivery_drone extends robot{
 			//ni dobrih opcij
 			int dist=Util.d_inf(goal,rc.getLocation());
 			int neBlizje=f(timeToReach);
-			if(dist<neBlizje||dist<(goal.equals(hq)?3:1)){
+			if(dist<neBlizje||dist<(goal.equals(hq)?konst.hq_min:konst.nhq_min)){
 				Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(goal).opposite());
 				if(d!=null){
 					rc.move(d);
 					return;
 				}
 			}
-			if(dist>(goal.equals(hq)?6:3)){
+			if(dist>(goal.equals(hq)?konst.hq_max:konst.nhq_max)){
 				Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(goal));
 				if(d!=null){
 					rc.move(d);
 					return;
 				}
 			}
-			if((goal.equals(hq)?3:1)<=dist&&dist<=(goal.equals(hq)?6:3)){
+			if((goal.equals(hq)?konst.hq_min:konst.nhq_min)<=dist&&dist<=(goal.equals(hq)?konst.hq_max:konst.nhq_max)){
 				for(int i=0;i<10;i++){
 					Direction d=Util.getRandomDirection();
 					if(rc.canMove(d)){
@@ -840,7 +839,7 @@ class delivery_drone extends robot{
 				}
 			}
 			//Gremo do najbližje vode
-			int range=Math.min(20,rc.getCurrentSensorRadiusSquared());
+			int range=Math.min(konst.range_init,rc.getCurrentSensorRadiusSquared());
 //			int l=Clock.getBytecodesLeft();
 			for(int i=0;i<range;i++){
 				for(MapLocation m:pc.range[i]){
@@ -895,7 +894,7 @@ class delivery_drone extends robot{
 		if(turn>timeToReach2) {
 			return 0;
 		}else {
-			return Math.min(20,(int)Math.round((timeToReach2-turn)*0.5));
+			return Math.min(konst.f_max,(int)Math.round((timeToReach2-turn)*konst.dist_factor));
 		}
 	}
 
@@ -932,7 +931,7 @@ class delivery_drone extends robot{
 		int range=rc.getCurrentSensorRadiusSquared();
 		for(int i=0;i<range;i++){
 			for(MapLocation mmm:pc.range[i]){
-				if(Clock.getBytecodesLeft()<2000){
+				if(Clock.getBytecodesLeft()<konst.clock_buffer5){
 					return;
 				}
 //				System.out.println(Clock.getBytecodesLeft());
@@ -941,7 +940,7 @@ class delivery_drone extends robot{
 					if(rc.senseFlooding(m)){
 						boolean ok=true;
 						for(MapLocation mm:aqua){
-							if(m.distanceSquaredTo(mm)<20){
+							if(m.distanceSquaredTo(mm)<konst.dist_water){
 								ok=false;
 								break;
 							}

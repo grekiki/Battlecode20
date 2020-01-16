@@ -23,9 +23,9 @@ import battlecode.common.*;
  * 
  * msg[1]==5--> na msg[2],msg[3] sedaj stoji tovarna dronov. 
  * 
- * msg[1]==6--> na msg[2],msg[3] so koordinate našega hq. 
+ * msg[1]==6--> na msg[2],msg[3] so koordinate naï¿½ega hq. 
  * 
- * msg[1]==7--> enota bi šla iz msg[2],msg[3] v msg[4],msg[5]. Za prevoz potrebuje drona. 
+ * msg[1]==7--> enota bi ï¿½la iz msg[2],msg[3] v msg[4],msg[5]. Za prevoz potrebuje drona. 
  */
 
 /*
@@ -37,9 +37,9 @@ import battlecode.common.*;
  * Rafinerije se gradi stran od baze, da ne skodimo zidu z pollutionom. 
  * Premik v fazo 3 naredimo ko imamo dovolj surovin za to. 
  * 
- * Faza 3: Sedaj bi morali imeti ogromno surovin, in se lahko lotimo napada/obrambe. Baza poklièe enega minerja nazaj.
+ * Faza 3: Sedaj bi morali imeti ogromno surovin, in se lahko lotimo napada/obrambe. Baza pokliï¿½e enega minerja nazaj.
  * 
- * Faza 4: Baza ima zid, ki pa ga je treba izboljšati. Dronov se ne gradi prevec. 
+ * Faza 4: Baza ima zid, ki pa ga je treba izboljï¿½ati. Dronov se ne gradi prevec. 
  * 
  * 
  * Celoten plan temelji bolj na ekonomiji, tako da se verjetno splaca biti previden glede invazij.  
@@ -73,7 +73,7 @@ import battlecode.common.*;
 
 /*
  * TODO list
- * -> Branje blockchaina se mora dovolj hitro ustaviti, in se nadaljuje med igro bota. Ne moremo vsega prebrati na zaèetku! Oziroma
+ * -> Branje blockchaina se mora dovolj hitro ustaviti, in se nadaljuje med igro bota. Ne moremo vsega prebrati na zaï¿½etku! Oziroma
  * lahko ampak le do morda poteze 500
  */
 class blockchain {
@@ -109,7 +109,7 @@ class blockchain {
 				minCost = Math.min(minCost, tt.getCost());
 			}
 		}
-		minCost = (minCost == 1000000 ? 1 : minCost);
+		minCost = (minCost == 1000000 ? konst.min_cena_transakcije : minCost);
 		for (int i = 0; i < msg.size(); i++) {
 			paket p = msg.get(i);
 			if (p.cost >= minCost) {// Placali smo ze dovolj
@@ -125,6 +125,7 @@ class blockchain {
 		}
 //		System.out.println(msg.size() + " paketov caka");
 	}
+
 }
 
 class Util {
@@ -163,7 +164,7 @@ class Util {
 		return dir[(int) Math.floor(dir.length * Math.random())];
 	}
 	
-	public static int d_inf(MapLocation l1,MapLocation l2) {//d neskonèno metrika. 
+	public static int d_inf(MapLocation l1,MapLocation l2) {//d neskonï¿½no metrika. 
 		return Math.max(Math.abs(l2.x-l1.x),Math.abs(l2.y-l1.y));
 	}
 
