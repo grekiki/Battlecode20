@@ -3,6 +3,7 @@ package benchmarks;
 import java.util.Arrays;
 
 import battlecode.common.Clock;
+import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import grekiki20.pc;
@@ -24,7 +25,7 @@ public class HQ extends robot{
 
 	}
 
-	@Override public void runTurn(){
+	@Override public void runTurn() throws Exception{
 //		iskanje0();
 //		iskanje1();
 

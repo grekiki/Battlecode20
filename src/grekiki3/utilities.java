@@ -38,6 +38,25 @@ class Util {
 	public static int d_inf(MapLocation l1, MapLocation l2) {// d neskoncno metrika
 		return Math.max(Math.abs(l2.x - l1.x), Math.abs(l2.y - l1.y));
 	}
+
+	public static Direction rotate(Direction aim, int i) {
+		if(i==0) {
+			return aim;
+		}
+		if(i>0) {
+			Direction a2=aim;
+			for(int q=0;q<i;q++) {
+				a2=a2.rotateLeft();
+			}
+			return a2;
+		}else {
+			Direction a2=aim;
+			for(int q=0;q<-i;q++) {
+				a2=a2.rotateRight();
+			}
+			return a2;
+		}
+	}
 }
 
 /**

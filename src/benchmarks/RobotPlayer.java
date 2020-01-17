@@ -11,7 +11,7 @@ abstract class robot{
 	
 	public abstract void init();
 	public abstract void precompute();
-	public abstract void runTurn();
+	public abstract void runTurn() throws Exception;
 	public abstract void postcompute();
 }
 
@@ -62,10 +62,14 @@ public strictfp class RobotPlayer{
 		}
 		r.init();
 		while(true){
+			try {
 			r.precompute();
 			r.runTurn();
 			r.postcompute();
 			Clock.yield();
+			}catch(Exception e) {
+				e.printStackTrace();
+			}
 		}
 	}
 

@@ -10,14 +10,15 @@ abstract class robot {
 	}
 	/**
 	 * Ta metoda se poklice ko se robot spawna. 
+	 * @throws Exception 
 	 */
-	public abstract void init();
+	public abstract void init() throws Exception;
 
-	public abstract void precompute();
+	public abstract void precompute()throws Exception;
 
-	public abstract void runTurn();
+	public abstract void runTurn()throws Exception;
 
-	public abstract void postcompute();
+	public abstract void postcompute()throws Exception;
 }
 
 public strictfp class RobotPlayer {
