@@ -8,7 +8,9 @@ abstract class robot {
 	public robot(RobotController rc) {
 		this.rc = rc;
 	}
-
+	/**
+	 * Ta metoda se poklice ko se robot spawna. 
+	 */
 	public abstract void init();
 
 	public abstract void precompute();
@@ -58,7 +60,6 @@ public strictfp class RobotPlayer {
 			default:
 				break;
 			}
-
 		} catch (Exception e) {
 			System.out.println(rc.getType() + " Exception");
 			e.printStackTrace();
