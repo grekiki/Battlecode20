@@ -1,6 +1,8 @@
 package grekiki3;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 import battlecode.common.Clock;
 import battlecode.common.Direction;
@@ -9,7 +11,6 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
-import grekiki21.pc;
 
 class MapCell {
 	int soupCount = 0;
@@ -108,12 +109,19 @@ class minerPathfind {
 }
 
 public class miner extends robot {
+	public static final int MINER_COST = RobotType.MINER.cost;
+
 	MapLocation goal;// kam hoce miner priti
 	minerPathfind pth;// iskalnik poti
 	RobotController rc;
 	MapCell[][] mapData;
 	int w, h;// dimenzije mape
-	public static final int MINER_COST = RobotType.MINER.cost;
+
+	MapLocation hq_location;
+
+	Set<MapLocation> surovine = new HashSet<>();
+
+	Direction move_direction;
 
 	public miner(RobotController rc) {
 		super(rc);
@@ -121,7 +129,7 @@ public class miner extends robot {
 	}
 
 	@Override
-	public void init() throws Exception {
+	public void init() throws GameActionException {
 		pth = new minerPathfind(this);
 		goal = new MapLocation(0, 28);
 		w = rc.getMapWidth();
@@ -131,12 +139,25 @@ public class miner extends robot {
 		for (int i = 1; i < w; i++) {
 			mapData[i] = mapData[0].clone();
 		}
+
+		for(RobotInfo r:rc.senseNearbyRobots(2,rc.getTeam())){
+			if(r.type==RobotType.HQ){
+				hq_location=r.location;
+			}
+		}
+		move_direction=rc.getLocation().directionTo(hq_location).opposite();// Miner gre stran od HQ
+
+        // Test blockchaina
+		for (int i = 1; i < rc.getRoundNum(); ++i) {
+			b.read_next_round();
+		}
+
 		scan(1000);//kar lahko
 	}
 
 	@Override
-	public void precompute() {
-
+	public void precompute() throws GameActionException {
+		b.checkQueue();
 	}
 
 	@Override
@@ -148,14 +169,31 @@ public class miner extends robot {
 		pth.moveTowards(goal);
 //		System.out.println(t-Clock.getBytecodesLeft()+" cena.");
 
+		// test blockchaina
+		for (int i = 0; i < 10; ++i) {
+			b.send_location(blockchain.LOC_SUROVINA, new MapLocation(rc.getRoundNum(), 0));
+		}
+	}
+
+	public void postcompute() throws GameActionException {
+		scan(2);//vsa sosednja polja
+
+		while (Clock.getBytecodesLeft() > 800) {
+			b.read_next_round();
+		}
 	}
 
 	@Override
-	public void postcompute() throws Exception {
-		scan(2);//vsa sosednja polja
+	public void bc_surovina(MapLocation pos) {
+		System.out.println("BC SUROVINA: " + pos);
+		surovine.add(pos);
 	}
 
-	public void scan(int a) throws Exception {
+	public void initialScan() throws GameActionException {
+		scan(10000);
+	}
+
+	public void scan(int a) throws GameActionException {
 		int range = Math.min(a,rc.getCurrentSensorRadiusSquared());
 		int x = rc.getLocation().x;
 		int y = rc.getLocation().y;

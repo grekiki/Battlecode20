@@ -66,7 +66,7 @@ public class HQ extends robot {
 		return 2000;
 	}
 
-	// Pomožne metode
+	// Pomoï¿½ne metode
 	Direction pick_miner_direction() {
 		// TODO doloci najboljso smer (proti surovinam)
 		return Direction.SOUTH;

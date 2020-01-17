@@ -4,21 +4,44 @@ import battlecode.common.*;
 
 abstract class robot {
 	RobotController rc;
+	blockchain b;
 
 	public robot(RobotController rc) {
 		this.rc = rc;
+		this.b = new blockchain(rc) {
+			@Override
+			public void handle_location(int type, MapLocation pos) {
+				System.out.println("" + type + " " + pos);
+			    switch (type) {
+					case LOC_SUROVINA: bc_surovina(pos); break;
+					case LOC_POLJE: bc_polje(pos); break;
+					case LOC_RAFINERIJA: bc_rafinerija(pos); break;
+					case LOC_TOVARNA_DRONOV: bc_tovarna_dronov(pos);
+					case LOC_HOME_HQ: bc_home_hq(pos);
+				}
+			}
+		};
 	}
 	/**
 	 * Ta metoda se poklice ko se robot spawna. 
 	 * @throws Exception 
 	 */
-	public abstract void init() throws Exception;
+	public abstract void init() throws GameActionException;
 
-	public abstract void precompute()throws Exception;
+	public abstract void precompute() throws GameActionException;
 
-	public abstract void runTurn()throws Exception;
+	public abstract void runTurn() throws GameActionException;
 
-	public abstract void postcompute()throws Exception;
+	public abstract void postcompute() throws GameActionException;
+
+	// bc_* metode se sprozijo, ko iz blockchaina preberemo ustrezen tip podatka.
+	// Roboti implementirajo samo tiste metode, ki jih zelijo sprejeti.
+	// Za branje blockchaina se uporabi: b.read_next_round();
+	public void bc_surovina(MapLocation pos) {}
+	public void bc_polje(MapLocation pos) {}
+	public void bc_rafinerija(MapLocation pos) {}
+	public void bc_tovarna_dronov(MapLocation pos) {}
+	public void bc_home_hq(MapLocation pos) {}
 }
 
 public strictfp class RobotPlayer {

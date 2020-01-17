@@ -233,7 +233,7 @@ class miner extends robot{
 					return;
 				}
 			}
-			//Èe ni niè dela pametno raziskujemo
+			//Ce ni niè dela pametno raziskujemo
 			Direction d=Util.tryMoveLite(rc,init);
 			if(d==null){
 				init=Util.getRandomDirection();
