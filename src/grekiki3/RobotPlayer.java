@@ -20,6 +20,13 @@ abstract class robot {
 					case LOC_HOME_HQ: bc_home_hq(pos);
 				}
 			}
+
+			@Override
+			public void handle_location2(int type, MapLocation m1, MapLocation m2) {
+				switch (type) {
+					case LOC2_DRONE: bc_drone(m1, m2); break;
+				}
+			}
 		};
 	}
 	/**
@@ -42,6 +49,8 @@ abstract class robot {
 	public void bc_rafinerija(MapLocation pos) {}
 	public void bc_tovarna_dronov(MapLocation pos) {}
 	public void bc_home_hq(MapLocation pos) {}
+
+	public void bc_drone(MapLocation from, MapLocation to) {}
 }
 
 public strictfp class RobotPlayer {

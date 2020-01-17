@@ -170,8 +170,9 @@ public class miner extends robot {
 //		System.out.println(t-Clock.getBytecodesLeft()+" cena.");
 
 		// test blockchaina
-		for (int i = 0; i < 10; ++i) {
+		for (int i = 0; i < 3; ++i) {
 			b.send_location(blockchain.LOC_SUROVINA, new MapLocation(rc.getRoundNum(), 0));
+			b.send_location2(blockchain.LOC2_DRONE, new MapLocation(rc.getRoundNum(), 0), new MapLocation(0, rc.getRoundNum()));
 		}
 	}
 
@@ -187,6 +188,11 @@ public class miner extends robot {
 	public void bc_surovina(MapLocation pos) {
 		System.out.println("BC SUROVINA: " + pos);
 		surovine.add(pos);
+	}
+
+	@Override
+	public void bc_drone(MapLocation from, MapLocation to) {
+	    System.out.println("BC DRONE: " + from + " " + to);
 	}
 
 	public void initialScan() throws GameActionException {
