@@ -1,4 +1,4 @@
-package grekiki20;
+package grekiki21;
 
 public class konst {
 	public static int min_cena_transakcije=1;
@@ -34,9 +34,9 @@ public class konst {
 	public static int drone8=1500;
 	public static int abort_time=100;
 	public static int hq_min=3;
-	public static int hq_max=6;
-	public static int nhq_min=5;
-	public static int nhq_max=10;
+	public static int hq_max=5;
+	public static int nhq_min=0;
+	public static int nhq_max=3;
 	public static int range_init=20;
 	public static int f_max=20;
 	public static double dist_factor=0.5;

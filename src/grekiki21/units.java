@@ -1,4 +1,4 @@
-package grekiki20;
+package grekiki21;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -701,18 +701,18 @@ class delivery_drone extends robot{
 				timeToReach=2100;
 			}
 		}else{
-			if(rc.getRoundNum()>2000){
+			if(rc.getRoundNum()>1500){
 				MapLocation down=new MapLocation(hq.x,rc.getMapHeight()-hq.y-1);
 				goal=down;
-				timeToReach=2100;
-			}else if(rc.getRoundNum()>1700){
+				timeToReach=1600;
+			}else if(rc.getRoundNum()>1300){
 				MapLocation rightdown=new MapLocation(rc.getMapWidth()-hq.x-1,rc.getMapHeight()-hq.y-1);
 				goal=rightdown;
-				timeToReach=1800;
-			}else if(rc.getRoundNum()>1400){
+				timeToReach=1400;
+			}else if(rc.getRoundNum()>1100){
 				MapLocation right=new MapLocation(rc.getMapWidth()-hq.x-1,hq.y);
 				goal=right;
-				timeToReach=1500;
+				timeToReach=1200;
 			}
 		}
 		full=rc.isCurrentlyHoldingUnit();
@@ -780,7 +780,7 @@ class delivery_drone extends robot{
 			MapLocation best=null;
 			RobotInfo[] rr=rc.senseNearbyRobots();
 			for(RobotInfo r:rr){
-				if(r.team!=rc.getTeam()&&Util.d_inf(rc.getLocation(),r.location)<closest){
+				if(r.team!=rc.getTeam()&&Util.d_inf(rc.getLocation(),r.location)<closest&&(r.type==RobotType.LANDSCAPER||r.type==RobotType.MINER)){
 					best=r.location;
 					closest=Util.d_inf(rc.getLocation(),r.location);
 				}
@@ -799,11 +799,11 @@ class delivery_drone extends robot{
 					}
 					return;
 				}
-
 			}
 			//ni dobrih opcij
 			int dist=Util.d_inf(goal,rc.getLocation());
 			int neBlizje=f(timeToReach);
+			System.out.println(dist+" "+neBlizje);
 			if(dist<neBlizje||dist<(goal.equals(hq)?konst.hq_min:konst.nhq_min)){
 				Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(goal).opposite());
 				if(d!=null){
@@ -928,8 +928,11 @@ class delivery_drone extends robot{
 		return best;
 	}
 	@Override public void postcompute() throws Exception{
+		if(rc.getRoundNum()>1000&&rc.getCooldownTurns()<2) {
+			return;
+		}
 		int range=rc.getCurrentSensorRadiusSquared();
-		for(int i=0;i<range;i++){
+		for(int i=0;i<range&&i<20;i++){
 			for(MapLocation mmm:pc.range[i]){
 				if(Clock.getBytecodesLeft()<konst.clock_buffer5){
 					return;
