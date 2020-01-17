@@ -2,6 +2,7 @@ package grekiki3;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
@@ -68,12 +69,62 @@ class paket {
  *
  */
 class blockchain {
-	ArrayList<paket> messages;
+	static final int PRIVATE_KEY = 123456789;
+
+	static final int LOC_SUROVINA = 1;
+	static final int LOC_POLJE = 2;
+	static final int LOC_RAFINERIJA = 3;
+	static final int LOC_TOVARNA_DRONOV = 4;
+	static final int LOC_HOME_HQ = 5;
+	private static final int LOC_MAX = LOC_HOME_HQ;
+
+	List<paket> messages;  // TODO lahko bi uporabili Heap (prioritetna vrsta glede na ceno)
 	RobotController rc;
+
+	int rounds_read = 0;  // Koliko rund smo ze prebrali?
 
 	blockchain(RobotController rc) {
 		this.rc = rc;
 		messages = new ArrayList<paket>();
+	}
+
+	public void handle_location(int type, MapLocation pos) {}
+
+	// VSAKIC KO POSLJEMO SPOROCILO, JE POTREBNO KLICATI checkQueue
+	public void send_location(int type, MapLocation pos) throws GameActionException {
+	   	int[] msg = { PRIVATE_KEY, type, pos.x, pos.y, 0, 0, 0 };
+		sendMsg(new paket(msg, 1));
+	}
+
+	public boolean check_private_key(int[] msg) {
+		// TODO bolje lahko sifriramo nasa sporocila.
+		return (msg[0] == PRIVATE_KEY);
+	}
+
+	public void parse_transaction(int[] msg) {
+		if (!check_private_key(msg)) return;
+
+		int type = msg[1];
+		if (type <= LOC_MAX) {
+			MapLocation m = new MapLocation(msg[2], msg[3]);
+			handle_location(type, m);
+		}
+	}
+
+	public void read_round(int round) throws GameActionException {
+		Transaction[] transactions = rc.getBlock(round);
+		for (Transaction tr : transactions) {
+			int[] msg = tr.getMessage();
+			parse_transaction(msg);
+		}
+	}
+
+	public void read_next_round() throws GameActionException {
+	    // Trenutne runde ne moremo prebrati ...
+		if (rounds_read < rc.getRoundNum() - 1) {
+			rounds_read++;
+			read_round(rounds_read);
+		}
 	}
 
 	public void sendMsg(paket p) throws GameActionException {
@@ -115,11 +166,10 @@ class blockchain {
 			if (rc.canSubmitTransaction(msgg, minCost)) {
 				rc.submitTransaction(msgg, minCost);
 				p.cost = minCost;
-//				System.out.println("Poslano");
+				// System.out.println("Poslano");
 				i--;
 			}
 		}
-//		System.out.println(msg.size() + " paketov caka");
+		// System.out.println(messages.size() + " paketov caka");
 	}
-
 }

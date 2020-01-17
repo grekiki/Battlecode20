@@ -36,8 +36,8 @@ public class HQ extends robot{
 		}
 
 		// Na zacetku potrebujemo vsaj dva minerja. Vedno.
-		if (miners_spawned < 2) {
-			if (try_spawn_miner()) return;
+		if (miners_spawned < 1000) {
+			if (try_spawn_miner(pick_miner_direction())) return;
 		}
 
         if (try_shoot()) return;
@@ -49,7 +49,7 @@ public class HQ extends robot{
 
 	Direction pick_miner_direction() {
 		// TODO doloci najboljso smer (proti surovinam)
-
+		return Util.getRandomDirection();
 	}
 
 	boolean try_spawn_miner(Direction dir) {
