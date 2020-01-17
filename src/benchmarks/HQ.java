@@ -27,8 +27,10 @@ public class HQ extends robot{
 	@Override public void runTurn(){
 //		iskanje0();
 //		iskanje1();
-		
+
 		tabela0(new boolean[] {true,true,false,true});
+		tabela1(new boolean[] {true,true,false,true});
+		rc.disintegrate();
 	}
 	
 
@@ -78,7 +80,7 @@ public class HQ extends robot{
 		int t=Clock.getBytecodesLeft();
 		char[] read=new char[500];
 		char[] read2=read.clone();
-//		String s=new String(read2);
+		String s=new String(read2);
 		System.out.println(t-Clock.getBytecodesLeft()+" Cost");
 	}
 
