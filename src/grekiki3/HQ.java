@@ -1,55 +1,75 @@
 package grekiki3;
 
 import battlecode.common.*;
-import grekiki20.pc;
 
-public class HQ extends robot{
-	int w,h;//dimenzije mape
-	MapLocation loc;//nasa lokacija
+public class HQ extends robot {
+	int w, h;// dimenzije mape
+	MapLocation loc;// nasa lokacija
+	/**
+	 * Strategije: 1000-rush 2000-build a wall 3000-lanscape 4000-mapa je zelo cudna
+	 * in potrebuje posebne ideje
+	 */
+	int strategy = -1;
 
 	int miners_spawned = 0;
 	int miners_alive = 0;
 
-	public HQ(RobotController rc){
+	public HQ(RobotController rc) {
 		super(rc);
 	}
+
 	/**
 	 * HQ se v prvi potezi najprej odloci kaj bi naredil, glede na stanje mape.
 	 */
-	@Override public void init(){
-		w=rc.getMapWidth();
-		h=rc.getMapHeight();
-		loc=rc.getLocation();
-		//Ce vidimo nasprotnikovo bazo (!)
-		if(rc.senseNearbyRobots(-1,rc.getTeam().opponent()).length>0) {
-			
-		}
+	@Override
+	public void init() {
+		w = rc.getMapWidth();
+		h = rc.getMapHeight();
+		loc = rc.getLocation();
+		strategy = choose_strategy();
 	}
 
-	@Override public void precompute(){
+	@Override
+	public void precompute() {
 
 	}
 
-	@Override public void runTurn(){
-		if(!rc.isReady()){
+	@Override
+	public void runTurn() {
+		if (!rc.isReady()) {
 			return;
 		}
+		if (strategy == 1000) {
 
-		// Na zacetku potrebujemo vsaj dva minerja. Vedno.
-		if (miners_spawned < 1000) {
-			if (try_spawn_miner(pick_miner_direction())) return;
+		}
+		if (strategy == 2000) {
+			// Na zacetku potrebujemo vsaj dva minerja. Vedno.
+			if (miners_spawned < 1 ) {
+				if (try_spawn_miner(pick_miner_direction()))
+					return;
+			}
+		}
+		if (strategy == 3000) {
+
 		}
 
-        if (try_shoot()) return;
+		if (try_shoot())
+			return;
 	}
 
-	@Override public void postcompute(){
+	@Override
+	public void postcompute() {
 
 	}
 
+	public int choose_strategy() {
+		return 2000;
+	}
+
+	// Pomo�ne metode
 	Direction pick_miner_direction() {
 		// TODO doloci najboljso smer (proti surovinam)
-		return Util.getRandomDirection();
+		return Direction.SOUTH;
 	}
 
 	boolean try_spawn_miner(Direction dir) {
@@ -67,18 +87,18 @@ public class HQ extends robot{
 	}
 
 	boolean try_shoot() {
-		RobotInfo closest=null;
-		int dis=1000000;
-		for(RobotInfo r:rc.senseNearbyRobots(net_gun.SHOOT_RADIUS, rc.getTeam().opponent())){
-			if(r.getType()== RobotType.DELIVERY_DRONE){
-				int t=rc.getLocation().distanceSquaredTo(r.location);
-				if(t<dis){
-					dis=t;
-					closest=r;
+		RobotInfo closest = null;
+		int dis = 1000000;
+		for (RobotInfo r : rc.senseNearbyRobots(net_gun.SHOOT_RADIUS, rc.getTeam().opponent())) {
+			if (r.getType() == RobotType.DELIVERY_DRONE) {
+				int t = rc.getLocation().distanceSquaredTo(r.location);
+				if (t < dis) {
+					dis = t;
+					closest = r;
 				}
 			}
 		}
-		if(closest!=null&&rc.canShootUnit(closest.ID)){
+		if (closest != null && rc.canShootUnit(closest.ID)) {
 			try {
 				rc.shootUnit(closest.ID);
 				return true;

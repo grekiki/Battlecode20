@@ -24,6 +24,7 @@ abstract class robot {
 	}
 	/**
 	 * Ta metoda se poklice ko se robot spawna. 
+	 * @throws Exception 
 	 */
 	public abstract void init() throws GameActionException;
 
