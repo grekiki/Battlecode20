@@ -11,7 +11,6 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
-import grekiki20.pc;
 
 class MapCell {
 	int soupCount = 0;
