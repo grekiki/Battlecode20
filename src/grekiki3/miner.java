@@ -57,12 +57,19 @@ class minerPathfind {
 			history[i] = history[0].clone();
 		}
 	}
-
+	/**
+	 * Po meritvah stane nekje od 400-800 bytecoda. 
+	 * @param m
+	 * @throws GameActionException
+	 */
 	void moveTowards(MapLocation m) throws GameActionException {
 		if (goal == null || !goal.equals(m)) {
 			goal = m;
 			refresh();
 			path.add(rc.getLocation());
+		}
+		if(m==rc.getLocation()) {
+			return;
 		}
 //		for (int i = 0; i < rc.getMapWidth(); i++) {
 //			for (int j = 0; j < rc.getMapHeight(); j++) {
@@ -83,19 +90,19 @@ class minerPathfind {
 			// zaradi performanca predpostavimo da to polje vidimo in je že skenirano
 			if (rc.canMove(aim2) && !rc.senseFlooding(next) && history[next.x][next.y] == 0) {
 				rc.move(aim2);
-				System.out.println(aim2.dx+" "+aim2.dy);
+//				System.out.println(aim2.dx+" "+aim2.dy);
 				path.add(next);
 				return;
 			}
 		}
 		//backtracking
-		System.out.println("Gremo nazaj do "+path.get(path.size() - 2));
+//		System.out.println("Gremo nazaj do "+path.get(path.size() - 2));
 		Direction d = curr.directionTo(path.get(path.size() - 2));
 		if (rc.canMove(d)) {
 			rc.move(d);
 			path.remove(path.size() - 1);
 		}
-		System.out.println("Nic nismo nasli");
+//		System.out.println("Nic nismo nasli");
 
 	}
 }
@@ -116,6 +123,7 @@ public class miner extends robot {
 	@Override
 	public void init() throws Exception {
 		pth = new minerPathfind(this);
+		goal = new MapLocation(0, 28);
 		w = rc.getMapWidth();
 		h = rc.getMapHeight();
 		mapData = new MapCell[w][];
@@ -123,7 +131,7 @@ public class miner extends robot {
 		for (int i = 1; i < w; i++) {
 			mapData[i] = mapData[0].clone();
 		}
-		initialScan();
+		scan(1000);//kar lahko
 	}
 
 	@Override
@@ -136,19 +144,17 @@ public class miner extends robot {
 		if (!rc.isReady()) {
 			return;
 		}
-		goal = new MapLocation(0, 28);
+//		int t=Clock.getBytecodesLeft();
 		pth.moveTowards(goal);
+//		System.out.println(t-Clock.getBytecodesLeft()+" cena.");
 
 	}
 
 	@Override
 	public void postcompute() throws Exception {
-		scan(10);
+		scan(2);//vsa sosednja polja
 	}
 
-	public void initialScan() throws Exception {
-		scan(10000);
-	}
 	public void scan(int a) throws Exception {
 		int range = Math.min(a,rc.getCurrentSensorRadiusSquared());
 		int x = rc.getLocation().x;
