@@ -16,12 +16,12 @@ import battlecode.common.Transaction;
  *
  */
 class c {
-	public static int pkey = 1234;// Privatni kljuè za blockchain
+	public static int pkey = 1234;// Privatni kljuï¿½ za blockchain
 
 }
 
 /**
- * Razred z raznimi pomožnimi funkcijami.
+ * Razred z raznimi pomoï¿½nimi funkcijami.
  * 
  * @author grego
  *
@@ -57,11 +57,11 @@ class paket {
 }
 
 /**
- * Ta razred bo skrbel da se vsi paketi ki jih želimo poslati, dejansko
- * pošljejo. Vsako potezo naj bi se poklical blockchain.chechQueue() da se
- * znebimo paketov iz seznama. Razred bo preveril cene v prejšnjem bloku, in
- * glede na le te doloèil koliko plaèati da pridemo v naslednji blok. Èe
- * prejšnji blok ni poln, potem placamo 1. Drugaèe matchamo najcenejsi paket v
+ * Ta razred bo skrbel da se vsi paketi ki jih ï¿½elimo poslati, dejansko
+ * poï¿½ljejo. Vsako potezo naj bi se poklical blockchain.checkQueue() da se
+ * znebimo paketov iz seznama. Razred bo preveril cene v prejï¿½njem bloku, in
+ * glede na le te doloï¿½il koliko plaï¿½ati da pridemo v naslednji blok. ï¿½e
+ * prejï¿½nji blok ni poln, potem placamo 1. Drugaï¿½e matchamo najcenejsi paket v
  * prejsnjem bloku.
  * 
  * @author grego
@@ -80,7 +80,7 @@ class blockchain {
 		if (rc.canSubmitTransaction(p.data, p.cost)) {
 			rc.submitTransaction(p.data, p.cost);
 //			System.out.println(rc.getLocation() + " je poslal posto");
-			messages.add(new paket(p.data, p.cost));// Paket dodamo v sseznam ker ne vemo èe je dejansko bil poslan
+			messages.add(new paket(p.data, p.cost));// Paket dodamo v sseznam ker ne vemo ï¿½e je dejansko bil poslan
 		} else {
 			messages.add(new paket(p.data, 1));// ok ta gotovo ni bil poslan
 		}

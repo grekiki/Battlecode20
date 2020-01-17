@@ -95,7 +95,7 @@ class HQ extends robot{
 			if(bot&&Math.abs(rc.senseElevation(rc.getLocation())-rc.senseElevation(rc.getLocation().add(Direction.SOUTH)))<=3){
 				goodMiners[count++]=Direction.SOUTH;
 			}
-			if(bot&left&&Math.abs(rc.senseElevation(rc.getLocation())-rc.senseElevation(rc.getLocation().add(Direction.SOUTHWEST)))<=3){
+			if(bot&&left&&Math.abs(rc.senseElevation(rc.getLocation())-rc.senseElevation(rc.getLocation().add(Direction.SOUTHWEST)))<=3){
 				goodMiners[count++]=Direction.SOUTHWEST;
 			}
 			if(left&&Math.abs(rc.senseElevation(rc.getLocation())-rc.senseElevation(rc.getLocation().add(Direction.WEST)))<=3){
