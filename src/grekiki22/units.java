@@ -780,7 +780,7 @@ class delivery_drone extends robot{
 			MapLocation best=null;
 			RobotInfo[] rr=rc.senseNearbyRobots();
 			for(RobotInfo r:rr){
-				if(r.team!=rc.getTeam()&&Util.d_inf(rc.getLocation(),r.location)<closest&&(r.type==RobotType.LANDSCAPER||r.type==RobotType.MINER)){
+				if(r.team!=rc.getTeam()&&Util.d_inf(rc.getLocation(),r.location)<closest&&(r.type==RobotType.LANDSCAPER||r.type==RobotType.MINER||r.type==RobotType.COW)){
 					best=r.location;
 					closest=Util.d_inf(rc.getLocation(),r.location);
 				}

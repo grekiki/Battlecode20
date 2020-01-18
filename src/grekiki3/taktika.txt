@@ -3,7 +3,7 @@ Tukaj bo strategija kako naj bi igra potekala.
 V prvi potezi mora HQ ugotoviti katero strategijo se gremo.
 
 Opcije: 
-1.) RUSH-miner gre do naprotnikove baze kjer poskusi narediti èim veè škode
-2.) TURTLE-Naredimo èim cenejši zid, potem pa delamo naprej.
+1.) RUSH-miner gre do naprotnikove baze kjer poskusi narediti cim vec skode
+2.) TURTLE-Naredimo cim cenejsi zid, potem pa delamo naprej.
 3.) CONTROL-Prevzamemo nadzor nad svetom :)
 
