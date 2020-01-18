@@ -76,7 +76,7 @@ class Util {
 		return ans;
 	}
 
-	public MapLocation closest(Iterable<? extends MapLocation> somethings, MapLocation source) throws GameActionException {
+	public static MapLocation closest(Iterable<? extends MapLocation> somethings, MapLocation source) throws GameActionException {
 		MapLocation ans = null;
 		int dist = c.inf;
 		for (MapLocation m : somethings) {

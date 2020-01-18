@@ -240,44 +240,6 @@ class minerPathFinder {
 		}
 	}
 	
-	private Direction smart_step(MapLocation dest) {
-		//Predpostavimo da je source==rc.getLocation();
-		int range=rc.getCurrentSensorRadiusSquared();
-		int poteze=0;
-		MapLocation curr=rc.getLocation();
-		while(true) {
-			int requiredRange=rc.getLocation().distanceSquaredTo(curr.add(rc.getLocation().directionTo(curr)));
-			if(requiredRange>range) {
-				break;
-			}
-			Direction d=curr.directionTo(bug_step_simulate(curr,dest,2,1));
-			if(d==null) {
-				break;
-			}
-			MapLocation next=curr.add(d);
-			rc.setIndicatorDot(next, 255, 0, 0);
-			curr=next;
-			poteze++;
-		}
-		MapLocation curr2=rc.getLocation();
-		int count2=0;
-		Direction init=null;
-		while(curr2!=curr&&count2<poteze) {
-			Direction d=fuzzy_step(curr2,curr);
-			if(init==null) {
-				init=d;
-			}
-			count2++;
-			curr2=curr2.add(d);
-		}
-		if(init!=null&&count2<poteze) {
-			System.out.println("Optimizacija");
-			return init;
-		}else {
-			return null;
-		}
-		
-	}
 	public Direction get_move_direction(MapLocation dest) {
 		MapLocation cur = rc.getLocation();
 		if (cur.isAdjacentTo(dest)) return null;
@@ -413,19 +375,19 @@ public class miner extends robot {
 
 	MapLocation goal;// kam hoce miner priti
 	minerPathFinder path_finder;
-	MapCell[][] mapData;
+	ArrayList<MapLocation> juhe;
+	ArrayList<MapLocation> polja;
 	int w, h;// dimenzije mape
 
 	MapLocation hq_location;
 
 	public miner(RobotController rc) {
 		super(rc);
-		path_finder = new minerPathFinder(rc);
 	}
 
 	@Override
 	public void init() throws GameActionException {
-//		goal = new MapLocation(0, 28);
+		path_finder = new minerPathFinder(rc);
 		w = rc.getMapWidth();
 		h = rc.getMapHeight();
 
@@ -434,15 +396,8 @@ public class miner extends robot {
 				hq_location = r.location;
 			}
 		}
-
-		// Test blockchaina
-		for (int i = 1; i < rc.getRoundNum(); ++i) {
-			if (Clock.getBytecodesLeft() > 800 || rc.getCooldownTurns() > 1) {
-				b.read_next_round();
-			} else {
-				System.out.println("Zmanjkalo casa za blockchain pri potezi " + b.rounds_read);
-			}
-		}
+		juhe=new ArrayList<MapLocation>();
+		polja=new ArrayList<MapLocation>();
 	}
 
 	@Override
@@ -474,8 +429,7 @@ public class miner extends robot {
 		}
 		//Ce ni dela gremo po najblizjo surovino
 		if (goal == null) {
-			MapLocation[]soupLocations=rc.senseNearbySoup();
-			goal=Util.closest(soupLocations, rc.getLocation());
+			goal=Util.closest(polja, rc.getLocation());
 		}
 		
 //		int t=Clock.getBytecodesLeft();
@@ -530,8 +484,16 @@ public class miner extends robot {
 	}
 
 	@Override
-	public void bc_surovina(MapLocation pos) {
+	public void bc_polje_found(MapLocation pos) {
 		System.out.println("BC SUROVINA: " + pos);
+		polja.add(pos);
+	}
+	@Override
+	public void bc_polje_empty(MapLocation pos) {
+		System.out.println("BC SUROVINA: " + pos);
+		if(polja.contains(pos)) {
+			polja.remove(pos);
+		}
 	}
 
 	@Override
