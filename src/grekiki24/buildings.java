@@ -1,4 +1,4 @@
-package grekiki22;
+package grekiki24;
 
 import java.util.ArrayList;
 import battlecode.common.*;
@@ -121,11 +121,13 @@ class HQ extends robot{
 						phase=currentPhase;
 					}else if(msg[1]==2){
 						MapLocation m=new MapLocation(msg[2],msg[3]);
+						System.out.println("HQ Dodamo "+m);
 						if(!polja.contains(m)){
 							polja.add(m);
 						}
 					}else if(msg[1]==3){
 						MapLocation m=new MapLocation(msg[2],msg[3]);
+						System.out.println("HQ odstranimo "+m);
 						if(polja.contains(m)){
 							polja.remove(m);
 						}
@@ -378,13 +380,13 @@ class design_school extends robot{
 		rc=r;
 	}
 	public void readBlockchain() throws Exception{
-		int curr=rc.getRoundNum();
-		for(int i=1;i<curr;i++){
+		for(int i=1;i<rc.getRoundNum();i++){
 			readBlockchain(i);
 		}
 	}
 
 	public void readBlockchain(int round) throws GameActionException{
+//		System.out.println("Reading "+round);
 		Transaction[] t=rc.getBlock(round);
 		for(Transaction tt:t){
 			int[] msg=tt.getMessage();
@@ -395,11 +397,13 @@ class design_school extends robot{
 					}
 					if(msg[1]==2){
 						MapLocation m=new MapLocation(msg[2],msg[3]);
+//						System.out.println("Dodamo "+m);
 						if(!polja.contains(m)){
 							polja.add(m);
 						}
 					}else if(msg[1]==3){
 						MapLocation m=new MapLocation(msg[2],msg[3]);
+//						System.out.println("Odstranimo "+m);
 						if(polja.contains(m)){
 							polja.remove(m);
 						}
@@ -435,12 +439,14 @@ class design_school extends robot{
 		if(!rc.isReady()){
 			return;
 		}
-		for(MapLocation m:polja){//�e je surovina blizu bo gne�a
+		for(MapLocation m:polja){//ce je surovina blizu bo gneca
+			System.out.println(m);
 			if(Util.d_inf(m,hq)<=konst.min_field_distance){
 				return;
 			}
 		}
 		if(diggers<8){
+//			System.out.println(diggers);
 			if(rc.getTeamSoup()>=konst.digger_buffer||polja.size()==0){
 				for(Direction d:new Direction[]{Direction.NORTH,Direction.WEST}){
 					if(rc.canBuildRobot(RobotType.LANDSCAPER,d)){

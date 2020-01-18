@@ -1,4 +1,4 @@
-package grekiki22;
+package grekiki24;
 
 public class konst {
 	public static int min_cena_transakcije=1;
@@ -12,7 +12,7 @@ public class konst {
 	public static int min_ref_ref_dist=20;
 	public static int ref_soup_scan_range=10;
 	public static int min_soup_nearby=500;
-	public static int net_gun_build_buffer=500;
+	public static int net_gun_build_buffer=1000;
 	public static int net_gun_radius=2;
 	public static double dist_optrange_factor=5.0;
 	public static int desing_school_buffer=300;
@@ -45,7 +45,7 @@ public class konst {
 	public static int hqf1=5;
 	public static int hqf2=4;
 	public static double hqf3=0;
-	public static double hqf4=6;
+	public static double hqf4=3;
 	public static int min_soup_miner=70;
 	public static int ref_soup_buffer=1000;
 	public static int ref_soup_buffer2=300;
