@@ -1,4 +1,4 @@
-package grekiki21;
+package grekiki22;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -928,7 +928,7 @@ class delivery_drone extends robot{
 		return best;
 	}
 	@Override public void postcompute() throws Exception{
-		if(rc.getRoundNum()>1000&&rc.getCooldownTurns()<2) {
+		if(rc.getRoundNum()>1000) {
 			return;
 		}
 		int range=rc.getCurrentSensorRadiusSquared();
