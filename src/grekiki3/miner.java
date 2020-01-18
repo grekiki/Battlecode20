@@ -249,7 +249,7 @@ class minerPathFinder {
 			return (Direction) left_simulation[0];
 		}
 	}
-
+	
 	public Direction get_move_direction(MapLocation dest) {
 		MapLocation cur = rc.getLocation();
 		if (cur.isAdjacentTo(dest)) return null;
@@ -282,6 +282,7 @@ class minerPathFinder {
 
 	public boolean moveTowards(MapLocation dest) throws GameActionException {
 		Direction dir = get_move_direction(dest);
+		
 		if (dir != null) {
 			rc.move(dir);
 			return true;
@@ -384,19 +385,19 @@ public class miner extends robot {
 
 	MapLocation goal;// kam hoce miner priti
 	minerPathFinder path_finder;
-	MapCell[][] mapData;
+	ArrayList<MapLocation> juhe;
+	ArrayList<MapLocation> polja;
 	int w, h;// dimenzije mape
 
 	MapLocation hq_location;
 
 	public miner(RobotController rc) {
 		super(rc);
-		path_finder = new minerPathFinder(rc);
 	}
 
 	@Override
 	public void init() throws GameActionException {
-		goal = new MapLocation(0, 28);
+		path_finder = new minerPathFinder(rc);
 		w = rc.getMapWidth();
 		h = rc.getMapHeight();
 
@@ -405,15 +406,8 @@ public class miner extends robot {
 				hq_location = r.location;
 			}
 		}
-
-		// Test blockchaina
-		for (int i = 1; i < rc.getRoundNum(); ++i) {
-			if (Clock.getBytecodesLeft() > 800 || rc.getCooldownTurns() > 1) {
-				b.read_next_round();
-			} else {
-				System.out.println("Zmanjkalo casa za blockchain pri potezi " + b.rounds_read);
-			}
-		}
+		juhe=new ArrayList<MapLocation>();
+		polja=new ArrayList<MapLocation>();
 	}
 
 	@Override
@@ -426,10 +420,12 @@ public class miner extends robot {
 		if (!rc.isReady()) {
 			return;
 		}
+		System.out.println(goal);
 		// Ce smo polni gremo do baze
 		if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) {
 			goal = hq_location;
 			if (tryDepositSoup()) {
+				goal=null;
 				return;
 			} else {
 				if (path_finder.moveTowards(goal)) {
@@ -443,18 +439,19 @@ public class miner extends robot {
 		}
 		//Ce ni dela gremo po najblizjo surovino
 		if (goal == null) {
-			goal=Util.closest(rc.senseNearbySoup(), rc.getLocation());
+			goal=Util.closest(polja, rc.getLocation());
 		}
 		
 //		int t=Clock.getBytecodesLeft();
 		if (goal != null) {
-			rc.setIndicatorDot(goal, 0, 255, 255);
+//			rc.setIndicatorDot(goal, 0, 255, 255);
 			path_finder.moveTowards(goal);
 		}else {
 			//Nakljucno raziskovanje ker ni cilja
-			Direction explore=Util.rotateLeft(rc.getLocation().directionTo(hq_location),3);
-			if(rc.canMove(explore)) {
-				rc.move(explore);
+			MapLocation explore=Util.randomPoint(h,w);
+			Direction d=path_finder.get_move_direction(explore);
+			if(d!=null&&rc.canMove(d)) {
+				rc.move(d);
 				return;
 			}
 		}
@@ -478,7 +475,7 @@ public class miner extends robot {
 	//Util
 	public boolean tryDepositSoup() throws GameActionException {
 		for (Direction d : Util.dir) {
-			if (rc.canDepositSoup(d)) {
+			if (rc.canDepositSoup(d)&&rc.senseRobotAtLocation(rc.getLocation().add(d)).team==rc.getTeam()) {
 				rc.depositSoup(d, rc.getSoupCarrying());
 				return true;
 			}
@@ -497,8 +494,16 @@ public class miner extends robot {
 	}
 
 	@Override
-	public void bc_surovina(MapLocation pos) {
+	public void bc_polje_found(MapLocation pos) {
 		System.out.println("BC SUROVINA: " + pos);
+		polja.add(pos);
+	}
+	@Override
+	public void bc_polje_empty(MapLocation pos) {
+		System.out.println("BC SUROVINA: " + pos);
+		if(polja.contains(pos)) {
+			polja.remove(pos);
+		}
 	}
 
 	@Override

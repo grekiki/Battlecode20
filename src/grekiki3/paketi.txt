@@ -2,7 +2,7 @@ Tukaj bo seznam paketov in kaj pomenijo
 
 int1==1--> (int2,int3) so koordinate polja surovin.
 
-int1==2--> Polje na (int2,int3) je prazno. 
+int1==2--> Polje na (int2,int3) ni vec polje surovin. 
 
 int1==3--> na (int2,int3) sedaj stoji refinerija. 
 

@@ -13,8 +13,8 @@ abstract class robot {
 			public void handle_location(int type, MapLocation pos) {
 				System.out.println("" + type + " " + pos);
 			    switch (type) {
-					case LOC_SUROVINA: bc_surovina(pos); break;
-					case LOC_SUROVINA_PRAZNO: bc_polje(pos); break;
+					case LOC_SUROVINA: bc_polje_found(pos); break;
+					case LOC_SUROVINA_PRAZNO: bc_polje_empty(pos); break;
 					case LOC_RAFINERIJA: bc_rafinerija(pos); break;
 					case LOC_TOVARNA_DRONOV: bc_tovarna_dronov(pos);
 					case LOC_HOME_HQ: bc_home_hq(pos);
@@ -44,8 +44,8 @@ abstract class robot {
 	// bc_* metode se sprozijo, ko iz blockchaina preberemo ustrezen tip podatka.
 	// Roboti implementirajo samo tiste metode, ki jih zelijo sprejeti.
 	// Za branje blockchaina se uporabi: b.read_next_round();
-	public void bc_surovina(MapLocation pos) {}
-	public void bc_polje(MapLocation pos) {}
+	public void bc_polje_found(MapLocation pos) {}
+	public void bc_polje_empty(MapLocation pos) {}
 	public void bc_rafinerija(MapLocation pos) {}
 	public void bc_tovarna_dronov(MapLocation pos) {}
 	public void bc_home_hq(MapLocation pos) {}
