@@ -17,8 +17,8 @@ import battlecode.common.Transaction;
  *
  */
 class c {
-	public static int pkey = 1234;// Privatni klju� za blockchain
-
+	public static int pkey = 1234;// Privatni kljuc za blockchain
+	public static int inf = Integer.MAX_VALUE / 2;
 }
 
 /**
@@ -28,9 +28,7 @@ class c {
  *
  */
 class Util {
-	public static Direction[] dir = { Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST,
-			Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST };
-	public static int inf = Integer.MAX_VALUE / 2;
+	public static Direction[] dir = { Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST };
 
 	public static Direction getRandomDirection() {
 		return dir[(int) Math.floor(dir.length * Math.random())];
@@ -40,23 +38,56 @@ class Util {
 		return Math.max(Math.abs(l2.x - l1.x), Math.abs(l2.y - l1.y));
 	}
 
-	public static Direction rotate(Direction aim, int i) {
-		if(i==0) {
+	public static Direction rotate(Direction aim, int lturns) {
+		if (lturns == 0) {
 			return aim;
 		}
-		if(i>0) {
-			Direction a2=aim;
-			for(int q=0;q<i;q++) {
-				a2=a2.rotateLeft();
+		if (lturns > 0) {
+			Direction a2 = aim;
+			for (int q = 0; q < lturns; q++) {
+				a2 = a2.rotateLeft();
 			}
 			return a2;
-		}else {
-			Direction a2=aim;
-			for(int q=0;q<-i;q++) {
-				a2=a2.rotateRight();
+		} else {
+			Direction a2 = aim;
+			for (int q = 0; q < -lturns; q++) {
+				a2 = a2.rotateRight();
 			}
 			return a2;
 		}
+	}
+
+	public static MapLocation closest(MapLocation[] q, MapLocation source) {
+		int closest = c.inf;
+		int i = q.length - 1;
+		MapLocation ans = null;
+		while (i-- > 0) {
+			int d2 = source.distanceSquaredTo(q[i]);
+			if (d2 < closest) {
+				closest = d2;
+				ans = q[i];
+			}
+		}
+		if (ans == null) {
+			System.out.println("Nabljizja lokacija iz prazne mnozice?");
+		}
+		return ans;
+	}
+
+	public MapLocation closest(Iterable<? extends MapLocation> somethings, MapLocation source) throws GameActionException {
+		MapLocation ans = null;
+		int dist = c.inf;
+		for (MapLocation m : somethings) {
+			int d2 = source.distanceSquaredTo(m);
+			if (d2 < dist) {
+				dist = d2;
+				ans = m;
+			}
+		}
+		if (ans == null) {
+			System.out.println("Nabljizja lokacija iz prazne mnozice?");
+		}
+		return ans;
 	}
 }
 
@@ -98,27 +129,29 @@ class blockchain {
 	static final int LOC2_DRONE = 11;
 	private static final int LOC_MAX = LOC_HOME_HQ;
 
-	List<paket> messages;  // TODO lahko bi uporabili Heap (prioritetna vrsta glede na ceno)
+	List<paket> messages; // TODO lahko bi uporabili Heap (prioritetna vrsta glede na ceno)
 	RobotController rc;
 
-	int rounds_read = 0;  // Koliko rund smo ze prebrali?
+	int rounds_read = 0; // Koliko rund smo ze prebrali?
 
 	blockchain(RobotController rc) {
 		this.rc = rc;
 		messages = new ArrayList<paket>();
 	}
 
-	public void handle_location(int type, MapLocation pos) {}
+	public void handle_location(int type, MapLocation pos) {
+	}
 
-	public void handle_location2(int type, MapLocation m1, MapLocation m2) {}
+	public void handle_location2(int type, MapLocation m1, MapLocation m2) {
+	}
 
 	// VSAKIC KO POSLJEMO SPOROCILO, JE POTREBNO KLICATI checkQueue
 	public void send_location(int type, MapLocation pos) throws GameActionException {
-	   	int[] msg = { PRIVATE_KEY, type, pos.x, pos.y, 0, 0, 0 };
+		int[] msg = { PRIVATE_KEY, type, pos.x, pos.y, 0, 0, 0 };
 		sendMsg(new paket(msg, 1));
 	}
 
-	public void send_location2(int type, MapLocation p1, MapLocation p2) throws  GameActionException {
+	public void send_location2(int type, MapLocation p1, MapLocation p2) throws GameActionException {
 		int[] msg = { PRIVATE_KEY, type, p1.x, p1.y, p2.x, p2.y, 0 };
 		sendMsg(new paket(msg, 1));
 	}
@@ -129,7 +162,8 @@ class blockchain {
 	}
 
 	public void parse_transaction(int[] msg) {
-		if (!check_private_key(msg)) return;
+		if (!check_private_key(msg))
+			return;
 
 		int type = msg[1];
 		if (type <= LOC_MAX) {
@@ -151,7 +185,7 @@ class blockchain {
 	}
 
 	public void read_next_round() throws GameActionException {
-	    // Trenutne runde ne moremo prebrati ...
+		// Trenutne runde ne moremo prebrati ...
 		if (rounds_read < rc.getRoundNum() - 1) {
 			rounds_read++;
 			read_round(rounds_read);
@@ -167,10 +201,10 @@ class blockchain {
 			messages.add(new paket(p.data, 1));// ok ta gotovo ni bil poslan
 		}
 	}
-	
-	//TO-DO preveri ce se splaca optimizirati. Vrsta z math.min je prepogosta :)
+
+	// TO-DO preveri ce se splaca optimizirati. Vrsta z math.min je prepogosta :)
 	public void checkQueue() throws GameActionException {
-		int minCost = Util.inf;
+		int minCost = c.inf;
 		Transaction[] t = rc.getBlock(rc.getRoundNum() - 1);
 		if (t.length != 7) {
 			minCost = 1;

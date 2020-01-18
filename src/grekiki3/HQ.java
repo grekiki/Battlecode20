@@ -6,13 +6,18 @@ public class HQ extends robot {
 	int w, h;// dimenzije mape
 	MapLocation loc;// nasa lokacija
 	/**
-	 * Strategije: 1000-rush 2000-build a wall 3000-lanscape 4000-mapa je zelo cudna
-	 * in potrebuje posebne ideje
+	 * Strategije: <br>
+	 * 1000-rush<br>
+	 * 2000-build a wall<br>
+	 * 3000-lanscape<br>
+	 * 4000-mapa je zelo cudna in potrebuje posebne ideje
 	 */
 	int strategy = -1;
 
 	int miners_spawned = 0;
 	int miners_alive = 0;
+	
+	int wallRadius;
 
 	public HQ(RobotController rc) {
 		super(rc);
@@ -35,12 +40,15 @@ public class HQ extends robot {
 	}
 
 	@Override
-	public void runTurn() {
+	public void runTurn() throws GameActionException {
 		if (!rc.isReady()) {
 			return;
 		}
+		if (try_shoot()) {
+			return;
+		}
 		if (strategy == 1000) {
-
+			
 		}
 		if (strategy == 2000) {
 			// Na zacetku potrebujemo vsaj dva minerja. Vedno.
@@ -52,8 +60,6 @@ public class HQ extends robot {
 
 		}
 
-		if (try_shoot())
-			return;
 	}
 
 	@Override
@@ -62,7 +68,12 @@ public class HQ extends robot {
 	}
 
 	public int choose_strategy() {
-		return 2000;
+		wallRadius=2;
+		if(rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length>0) {
+			return 1000;
+		}else {
+			return 2000;
+		}
 	}
 
 	// Pomozne metode
@@ -85,7 +96,7 @@ public class HQ extends robot {
 		return false;
 	}
 
-	boolean try_shoot() {
+	boolean try_shoot() throws GameActionException {
 		RobotInfo closest = null;
 		int dis = 1000000;
 		for (RobotInfo r : rc.senseNearbyRobots(net_gun.SHOOT_RADIUS, rc.getTeam().opponent())) {
@@ -98,13 +109,8 @@ public class HQ extends robot {
 			}
 		}
 		if (closest != null && rc.canShootUnit(closest.ID)) {
-			try {
-				rc.shootUnit(closest.ID);
-				return true;
-			} catch (GameActionException e) {
-				// e.printStackTrace();
-				System.out.println("NE MOREM STRELJATI");
-			}
+			rc.shootUnit(closest.ID);
+			return true;
 		}
 		return false;
 	}
