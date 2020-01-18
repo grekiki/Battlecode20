@@ -145,7 +145,7 @@ class minerPathFinder {
 			Direction dir = bug_step(end, dest, wall);
 			end = end.add(dir);
 			if (end.distanceSquaredTo(dest) < closest.distanceSquaredTo(dest)) {
-				closest = cur;
+				closest = end;
 			}
 		}
 
@@ -217,7 +217,45 @@ class minerPathFinder {
 		}
 		return bug_step(cur, dest, bug_wall_tangent);
 	}
-
+	
+	private Direction smart_step(MapLocation dest) {
+		//Predpostavimo da je source==rc.getLocation();
+		int range=rc.getCurrentSensorRadiusSquared();
+		int poteze=0;
+		MapLocation curr=rc.getLocation();
+		while(true) {
+			int requiredRange=rc.getLocation().distanceSquaredTo(curr.add(rc.getLocation().directionTo(curr)));
+			if(requiredRange>range) {
+				break;
+			}
+			Direction d=curr.directionTo(bug_step_simulate(curr,dest,2,1));
+			if(d==null) {
+				break;
+			}
+			MapLocation next=curr.add(d);
+			rc.setIndicatorDot(next, 255, 0, 0);
+			curr=next;
+			poteze++;
+		}
+		MapLocation curr2=rc.getLocation();
+		int count2=0;
+		Direction init=null;
+		while(curr2!=curr&&count2<poteze) {
+			Direction d=fuzzy_step(curr2,curr);
+			if(init==null) {
+				init=d;
+			}
+			count2++;
+			curr2=curr2.add(d);
+		}
+		if(init!=null&&count2<poteze) {
+			System.out.println("Optimizacija");
+			return init;
+		}else {
+			return null;
+		}
+		
+	}
 	public Direction get_move_direction(MapLocation dest) {
 		MapLocation cur = rc.getLocation();
 		if (cur.isAdjacentTo(dest)) return null;
@@ -233,13 +271,19 @@ class minerPathFinder {
 		}
 		// fuzzy(goal);
 		// tangent_bug(dest);
+//		Direction dirdemo=smart_step(dest);
 		Direction dir = bug_step(cur, dest, RIGHT_WALL);
+//		for(int i=0;i<2;i++) {
+//			rc.setIndicatorDot(bug_step_simulate(rc.getLocation(),dest,RIGHT_WALL,i+1), 0,255,0);
+//		}
+//		System.out.println(dirdemo+" "+dir);
 		// Direction dir = tangent_bug(dest);
 		return dir;
 	}
 
 	public boolean moveTowards(MapLocation dest) throws GameActionException {
 		Direction dir = get_move_direction(dest);
+		
 		if (dir != null) {
 			rc.move(dir);
 			return true;
@@ -354,7 +398,7 @@ public class miner extends robot {
 
 	@Override
 	public void init() throws GameActionException {
-		goal = new MapLocation(0, 28);
+//		goal = new MapLocation(0, 28);
 		w = rc.getMapWidth();
 		h = rc.getMapHeight();
 
@@ -384,10 +428,12 @@ public class miner extends robot {
 		if (!rc.isReady()) {
 			return;
 		}
+		System.out.println(goal);
 		// Ce smo polni gremo do baze
 		if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) {
 			goal = hq_location;
 			if (tryDepositSoup()) {
+				goal=null;
 				return;
 			} else {
 				if (path_finder.moveTowards(goal)) {
@@ -401,18 +447,20 @@ public class miner extends robot {
 		}
 		//Ce ni dela gremo po najblizjo surovino
 		if (goal == null) {
-			goal=Util.closest(rc.senseNearbySoup(), rc.getLocation());
+			MapLocation[]soupLocations=rc.senseNearbySoup();
+			goal=Util.closest(soupLocations, rc.getLocation());
 		}
 		
 //		int t=Clock.getBytecodesLeft();
 		if (goal != null) {
-			rc.setIndicatorDot(goal, 0, 255, 255);
+//			rc.setIndicatorDot(goal, 0, 255, 255);
 			path_finder.moveTowards(goal);
 		}else {
 			//Nakljucno raziskovanje ker ni cilja
-			Direction explore=Util.rotateLeft(rc.getLocation().directionTo(hq_location),3);
-			if(rc.canMove(explore)) {
-				rc.move(explore);
+			MapLocation explore=Util.randomPoint(h,w);
+			Direction d=path_finder.get_move_direction(explore);
+			if(d!=null&&rc.canMove(d)) {
+				rc.move(d);
 				return;
 			}
 		}
@@ -436,7 +484,7 @@ public class miner extends robot {
 	//Util
 	public boolean tryDepositSoup() throws GameActionException {
 		for (Direction d : Util.dir) {
-			if (rc.canDepositSoup(d)) {
+			if (rc.canDepositSoup(d)&&rc.senseRobotAtLocation(rc.getLocation().add(d)).team==rc.getTeam()) {
 				rc.depositSoup(d, rc.getSoupCarrying());
 				return true;
 			}

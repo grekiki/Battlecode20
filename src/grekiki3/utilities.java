@@ -3,6 +3,7 @@ package grekiki3;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
@@ -22,12 +23,13 @@ class c {
 }
 
 /**
- * Razred z raznimi pomo�nimi funkcijami.
+ * Razred z raznimi pomoznimi funkcijami.
  * 
  * @author grego
  *
  */
 class Util {
+	public static Random r=new Random(c.pkey);
 	public static Direction[] dir = { Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST };
 
 	public static Direction getRandomDirection() {
@@ -59,7 +61,7 @@ class Util {
 
 	public static MapLocation closest(MapLocation[] q, MapLocation source) {
 		int closest = c.inf;
-		int i = q.length - 1;
+		int i = q.length;
 		MapLocation ans = null;
 		while (i-- > 0) {
 			int d2 = source.distanceSquaredTo(q[i]);
@@ -88,6 +90,10 @@ class Util {
 			System.out.println("Nabljizja lokacija iz prazne mnozice?");
 		}
 		return ans;
+	}
+
+	public static MapLocation randomPoint(int h,int w) {
+		return new MapLocation(r.nextInt(w),r.nextInt(h));
 	}
 	
 }
