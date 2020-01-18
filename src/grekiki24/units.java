@@ -1,4 +1,4 @@
-package grekiki22;
+package grekiki24;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -115,8 +115,7 @@ class miner extends robot{
 			}
 		}
 		if(!baseWorker&&Util.d_inf(rc.getLocation(),hq)<=konst.min_base_dist_miner_suicide&&phase==3){
-			int t=1/0;
-			System.out.println(t);
+			rc.disintegrate();
 		}
 		if(phase==0||phase==1||phase==2||phase==3){//TO-DO optimiziraj fazo 3. 
 			//Obdelamo potrebo po refineriji
@@ -580,7 +579,7 @@ class landscaper extends robot{
 				MapLocation curr=rc.getLocation();
 				Direction[] dir={best,best.rotateLeft(),best.rotateRight()};
 				for(Direction d:dir){
-					if(rc.senseRobotAtLocation(curr.add(d))!=null){
+					if(rc.canSenseLocation(curr.add(d))&&rc.senseRobotAtLocation(curr.add(d))!=null){
 						continue;
 					}
 					if(rc.senseFlooding(curr.add(d))){
@@ -591,6 +590,7 @@ class landscaper extends robot{
 							for(Direction d2:Util.dir){
 								if(!d2.equals(d)&&rc.senseRobotAtLocation(curr.add(d))==null){
 									rc.digDirt(d2);
+									return;
 								}
 							}
 						}
@@ -746,7 +746,11 @@ class delivery_drone extends robot{
 			}
 		}
 		if(s==null&&drain!=null&&full){
-			System.out.println(drain.x+" "+drain.y);
+			if(rc.getRoundNum()-time>konst.abort_time){
+				s=null;
+				drain=null;
+			}
+//			System.out.println(drain.x+" "+drain.y);
 			if(rc.getLocation().distanceSquaredTo(drain)<=2){
 				if(rc.getLocation().distanceSquaredTo(drain)==0){
 					for(Direction d:Util.dir){
@@ -803,7 +807,7 @@ class delivery_drone extends robot{
 			//ni dobrih opcij
 			int dist=Util.d_inf(goal,rc.getLocation());
 			int neBlizje=f(timeToReach);
-			System.out.println(dist+" "+neBlizje);
+//			System.out.println(dist+" "+neBlizje);
 			if(dist<neBlizje||dist<(goal.equals(hq)?konst.hq_min:konst.nhq_min)){
 				Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(goal).opposite());
 				if(d!=null){

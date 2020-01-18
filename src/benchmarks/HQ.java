@@ -6,7 +6,7 @@ import battlecode.common.Clock;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
-import grekiki22.pc;
+import grekiki24.pc;
 
 public class HQ extends robot{
 

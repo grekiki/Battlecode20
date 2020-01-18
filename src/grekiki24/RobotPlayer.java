@@ -1,4 +1,4 @@
-package grekiki22;
+package grekiki24;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -267,10 +267,6 @@ public strictfp class RobotPlayer {
 					System.out.println("Prevec racunanja!");
 				}
 				Clock.yield();
-			}catch(ArithmeticException e) {
-				System.out.println("DIE!");
-				int t=1/0;
-				System.out.println(t);
 			} catch (Exception e) {
 				e.printStackTrace();
 				Clock.yield();
