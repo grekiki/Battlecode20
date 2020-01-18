@@ -29,10 +29,6 @@ class MapCell {
 }
 
 class minerPathFinder {
-	// 0 : naravnost
-	// > 0 : desno
-	// < 0 : levo
-	private static int[] directions = { 0, -1, 1, -2, 2 };
 	private static final int NO_WALL = 0;  // Ne sledi zidu.
 	private static final int LEFT_WALL = 1;  // Zid je na levi.
 	private static final int RIGHT_WALL = 2;
@@ -42,9 +38,9 @@ class minerPathFinder {
 
 	private MapLocation goal;
 	private MapLocation closest;  // Uporablja se pri bug navigation.
-	private Direction bug_wall_dir;
-	private int bug_wall_tangent = NO_WALL;
-	private MapLocation tangent_shortcut;
+	private Direction bug_wall_dir;  // V kateri smeri je zid, ki mu sledimo?
+	private int bug_wall_tangent = NO_WALL;  // Na kateri strani je zid, ki mu sledimo?
+	private MapLocation tangent_shortcut;  // Pomozna bliznjica.
 
 	minerPathFinder(RobotController rc) {
 		this.rc = rc;
@@ -136,23 +132,38 @@ class minerPathFinder {
 		return null;
 	}
 
-	private MapLocation bug_step_simulate(MapLocation cur, MapLocation dest, int wall, int steps) {
-		MapLocation prev_closest = this.closest;
-		Direction prev_bug_wall_dir = this.bug_wall_dir;
+	private Object[] bug_step_simulate(MapLocation cur, MapLocation dest, int wall, int steps) {
+		// Vrne [0]: direction po prvem koraku
+		// 	    [1]: wall dir po prvem koraku
+		//      [2]: wall dir po zadnjem koraku
+		//      [3]: koncna lokacija
+		Object[] result = new Object[4];
+
+		MapLocation prev_closest = closest;
+		Direction prev_bug_wall_dir = bug_wall_dir;
 
 		MapLocation end = cur;
 		for (int i = 0; i < steps; ++i) {
 			Direction dir = bug_step(end, dest, wall);
+			if (i == 0) {
+				result[0] = dir;
+				result[1] = bug_wall_dir;
+			}
+
 			end = end.add(dir);
 			if (end.distanceSquaredTo(dest) < closest.distanceSquaredTo(dest)) {
-				closest = cur;
+				closest = end;
 			}
+			rc.setIndicatorDot(end, (255 / steps) * i, wall * 100, 255);
 		}
 
-		this.bug_wall_dir = prev_bug_wall_dir;
-		this.closest = prev_closest;
+		result[2] = bug_wall_dir;
+		result[3] = end;
 
-		return end;
+		bug_wall_dir = prev_bug_wall_dir;
+		closest = prev_closest;
+
+		return result;
 	}
 
 	private boolean exists_straight_path(MapLocation cur, MapLocation dest) {
@@ -182,23 +193,29 @@ class minerPathFinder {
 			// Zgubili smo se
 			tangent_shortcut = null;
 			bug_wall_tangent = NO_WALL;
+			bug_wall_dir = null;
 		}
 
     	// Stran zidu je ze izbrana
 		// Simularmo pot z izbranim zidom
 		if (bug_wall_tangent != NO_WALL) {
 			// bug_step(cur, dest, bug_wall_tangent);
-			MapLocation shortcut = bug_step_simulate(cur, dest, bug_wall_tangent, LOOKAHEAD_STEPS);
+			Object[] simulation = bug_step_simulate(cur, dest, bug_wall_tangent, LOOKAHEAD_STEPS);
+			MapLocation shortcut = (MapLocation) simulation[3];
 			if (exists_straight_path(cur, shortcut)) {
 				tangent_shortcut = shortcut;
+				bug_wall_dir = (Direction) simulation[2];
 				return cur.directionTo(tangent_shortcut);
 			}
-			return bug_step(cur, dest, bug_wall_tangent);
+			bug_wall_dir = (Direction) simulation[1];
+			return (Direction) simulation[0];
 		}
 
 		// Odlocimo se med levo in desno stranjo
-		MapLocation left_pos = bug_step_simulate(cur, dest, LEFT_WALL, LOOKAHEAD_STEPS);
-		MapLocation right_pos = bug_step_simulate(cur, dest, RIGHT_WALL, LOOKAHEAD_STEPS);
+        Object[] left_simulation = bug_step_simulate(cur, dest, LEFT_WALL, LOOKAHEAD_STEPS);
+		Object[] right_simulation = bug_step_simulate(cur, dest, RIGHT_WALL, LOOKAHEAD_STEPS);
+		MapLocation left_pos = (MapLocation) left_simulation[3];
+		MapLocation right_pos = (MapLocation) right_simulation[3];
 
 		int d1 = right_pos.distanceSquaredTo(dest);
 		int d2 = left_pos.distanceSquaredTo(dest);
@@ -206,16 +223,21 @@ class minerPathFinder {
 			bug_wall_tangent = RIGHT_WALL;
 			if (exists_straight_path(cur, right_pos)) {
 				tangent_shortcut = right_pos;
+				bug_wall_dir = (Direction) right_simulation[2];
 				return cur.directionTo(tangent_shortcut);
 			}
+			bug_wall_dir = (Direction) right_simulation[1];
+			return (Direction) right_simulation[0];
 		} else {
 			bug_wall_tangent = LEFT_WALL;
 			if (exists_straight_path(cur, left_pos)) {
 				tangent_shortcut = left_pos;
+				bug_wall_dir = (Direction) left_simulation[2];
 				return cur.directionTo(tangent_shortcut);
 			}
+			bug_wall_dir = (Direction) left_simulation[1];
+			return (Direction) left_simulation[0];
 		}
-		return bug_step(cur, dest, bug_wall_tangent);
 	}
 
 	public Direction get_move_direction(MapLocation dest) {
@@ -233,8 +255,18 @@ class minerPathFinder {
 		}
 		// fuzzy(goal);
 		// tangent_bug(dest);
-		Direction dir = bug_step(cur, dest, RIGHT_WALL);
-		// Direction dir = tangent_bug(dest);
+		// Direction dir = bug_step(cur, dest, RIGHT_WALL);
+
+		if (tangent_shortcut != null)
+			rc.setIndicatorDot(tangent_shortcut, 255, 0, 0);
+
+		/*
+		MapLocation tmp = bug_step_simulate(cur, dest, LEFT_WALL, LOOKAHEAD_STEPS);
+		if (tmp != null)
+			rc.setIndicatorDot(tmp, 255, 0, 255);
+		 */
+
+		Direction dir = tangent_bug(dest);
 		return dir;
 	}
 
