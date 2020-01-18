@@ -151,6 +151,7 @@ class minerPathFinder {
 				result[0] = dir;
 				result[1] = bug_wall_dir;
 			}
+			if (dir == null) break;
 
 			end = end.add(dir);
 			if (end.distanceSquaredTo(dest) < closest.distanceSquaredTo(dest)) {
@@ -177,7 +178,16 @@ class minerPathFinder {
 		return true;
 	}
 
-	// TODO NE DELA
+	private boolean exists_fuzzy_path(MapLocation cur, MapLocation dest, int max_steps) {
+		Direction dir = fuzzy_step(cur, dest);
+		for (int steps = 0; dir != null && !cur.equals(dest) && steps < max_steps; ++steps) {
+			if (!can_move(cur, dir)) return false;
+			cur = cur.add(dir);
+			dir = fuzzy_step(cur, dest);
+		}
+		return cur.equals(dest);
+	}
+
 	private Direction tangent_bug(MapLocation dest) {
 		// Odlocimo se med levo in desno stranjo in potem
 		// nadaljujemo po izbrani poti.
@@ -189,10 +199,10 @@ class minerPathFinder {
     		tangent_shortcut = null;
 		}
     	if (tangent_shortcut != null) {
-			// Naj bi obstajala ravna pot do tam ...?
-    		Direction dir = cur.directionTo(tangent_shortcut);
+			// Naj bi obstajala fuzzy pot do tam ...?
+    		Direction dir = fuzzy(tangent_shortcut);
     		if (can_move(cur, dir)) return dir;
-			// Zgubili smo se
+			// Zgubili smo se ali pa je ovira ...
 			tangent_shortcut = null;
 			bug_wall_tangent = NO_WALL;
 			bug_wall_dir = null;
@@ -204,10 +214,10 @@ class minerPathFinder {
 			// bug_step(cur, dest, bug_wall_tangent);
 			Object[] simulation = bug_step_simulate(cur, dest, bug_wall_tangent, LOOKAHEAD_STEPS);
 			MapLocation shortcut = (MapLocation) simulation[3];
-			if (exists_straight_path(cur, shortcut)) {
+			if (exists_fuzzy_path(cur, shortcut, LOOKAHEAD_STEPS - 1)) {
 				tangent_shortcut = shortcut;
 				bug_wall_dir = (Direction) simulation[2];
-				return cur.directionTo(tangent_shortcut);
+				return fuzzy(tangent_shortcut);
 			}
 			bug_wall_dir = (Direction) simulation[1];
 			return (Direction) simulation[0];
@@ -223,19 +233,19 @@ class minerPathFinder {
 		int d2 = left_pos.distanceSquaredTo(dest);
 		if (d1 <= d2) {
 			bug_wall_tangent = RIGHT_WALL;
-			if (exists_straight_path(cur, right_pos)) {
+			if (exists_fuzzy_path(cur, right_pos, LOOKAHEAD_STEPS - 1)) {
 				tangent_shortcut = right_pos;
 				bug_wall_dir = (Direction) right_simulation[2];
-				return cur.directionTo(tangent_shortcut);
+				return fuzzy(tangent_shortcut);
 			}
 			bug_wall_dir = (Direction) right_simulation[1];
 			return (Direction) right_simulation[0];
 		} else {
 			bug_wall_tangent = LEFT_WALL;
-			if (exists_straight_path(cur, left_pos)) {
+			if (exists_fuzzy_path(cur, left_pos, LOOKAHEAD_STEPS - 1)) {
 				tangent_shortcut = left_pos;
 				bug_wall_dir = (Direction) left_simulation[2];
-				return cur.directionTo(tangent_shortcut);
+				return fuzzy(tangent_shortcut);
 			}
 			bug_wall_dir = (Direction) left_simulation[1];
 			return (Direction) left_simulation[0];
