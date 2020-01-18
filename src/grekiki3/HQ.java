@@ -44,10 +44,9 @@ public class HQ extends robot {
 		}
 		if (strategy == 2000) {
 			// Na zacetku potrebujemo vsaj dva minerja. Vedno.
-			if (miners_spawned < 1 ) {
-				if (try_spawn_miner(pick_miner_direction()))
-					return;
-			}
+			if (try_spawn_miner(pick_miner_direction()))
+				return;
+			
 		}
 		if (strategy == 3000) {
 
@@ -66,7 +65,7 @@ public class HQ extends robot {
 		return 2000;
 	}
 
-	// Pomo�ne metode
+	// Pomozne metode
 	Direction pick_miner_direction() {
 		// TODO doloci najboljso smer (proti surovinam)
 		return Direction.SOUTH;
