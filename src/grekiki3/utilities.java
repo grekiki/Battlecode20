@@ -38,7 +38,7 @@ class Util {
 		return Math.max(Math.abs(l2.x - l1.x), Math.abs(l2.y - l1.y));
 	}
 
-	public static Direction rotate(Direction aim, int lturns) {
+	public static Direction rotateLeft(Direction aim, int lturns) {
 		if (lturns == 0) {
 			return aim;
 		}
@@ -184,12 +184,19 @@ class blockchain {
 			parse_transaction(msg);
 		}
 	}
-
-	public void read_next_round() throws GameActionException {
+	/**
+	 * Prebere naslednjo rundo ali pove da je ze bila prebrana
+	 * @return
+	 * @throws GameActionException
+	 */
+	public boolean read_next_round() throws GameActionException {
 		// Trenutne runde ne moremo prebrati ...
 		if (rounds_read < rc.getRoundNum() - 1) {
 			rounds_read++;
 			read_round(rounds_read);
+			return true;
+		}else {
+			return false;
 		}
 	}
 
