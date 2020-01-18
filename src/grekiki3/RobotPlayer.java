@@ -14,7 +14,7 @@ abstract class robot {
 				System.out.println("" + type + " " + pos);
 			    switch (type) {
 					case LOC_SUROVINA: bc_surovina(pos); break;
-					case LOC_POLJE: bc_polje(pos); break;
+					case LOC_SUROVINA_PRAZNO: bc_polje(pos); break;
 					case LOC_RAFINERIJA: bc_rafinerija(pos); break;
 					case LOC_TOVARNA_DRONOV: bc_tovarna_dronov(pos);
 					case LOC_HOME_HQ: bc_home_hq(pos);

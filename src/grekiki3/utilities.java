@@ -89,7 +89,7 @@ class Util {
 		}
 		return ans;
 	}
-
+	
 }
 
 /**
@@ -123,7 +123,7 @@ class blockchain {
 	static final int PRIVATE_KEY = 123456789;
 
 	static final int LOC_SUROVINA = 1;
-	static final int LOC_POLJE = 2;
+	static final int LOC_SUROVINA_PRAZNO = 2;
 	static final int LOC_RAFINERIJA = 3;
 	static final int LOC_TOVARNA_DRONOV = 4;
 	static final int LOC_HOME_HQ = 5;

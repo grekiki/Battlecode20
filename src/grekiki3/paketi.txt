@@ -9,3 +9,6 @@ int1==3--> na (int2,int3) sedaj stoji refinerija.
 int1==4--> na (int2,int3) sedaj stoji tovarna dronov. 
 
 int1==5--> na (int2,int3) so koordinate našega hq. 
+
+
+int1==11--> na (int2,int3) caka enota na drona da jo odpelje do (int4,int5)

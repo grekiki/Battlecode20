@@ -197,6 +197,7 @@ public class miner extends robot {
 		}
 	}
 
+	//Util
 	public boolean tryDepositSoup() throws GameActionException {
 		for (Direction d : Util.dir) {
 			if (rc.canDepositSoup(d)) {
