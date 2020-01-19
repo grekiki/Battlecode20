@@ -132,18 +132,18 @@ class miner extends robot{
 						if(dist==konst.min_ref_ref_dist){//ni refinerije bližje kot 20
 							//Potrebujemo refinerijo.
 							//Poskusimo èe smo dovolj blizu
-							if(ref.distanceSquaredTo(rc.getLocation())<=2){
-								int sum=0;
-								for(int i=0;i<=konst.ref_soup_scan_range;i++){
-									for(MapLocation mm:pc.range[i]){
-										MapLocation m=new MapLocation(ref.x+mm.x,ref.y+mm.y);
-										if(rc.canSenseLocation(m)){
-											sum+=rc.senseSoup(m);
-										}
+							int sum=0;
+							for(int i=0;i<=konst.ref_soup_scan_range;i++){
+								for(MapLocation mm:pc.range[i]){
+									MapLocation m=new MapLocation(ref.x+mm.x,ref.y+mm.y);
+									if(rc.canSenseLocation(m)){
+										sum+=rc.senseSoup(m);
 									}
 								}
-//								System.out.println(sum);
-								if(sum>konst.min_soup_nearby||refinery.size()<konst.refinery_low_count){
+							}
+//							System.out.println(sum);
+							if(sum>konst.min_soup_nearby||refinery.size()<konst.refinery_low_count){
+								if(ref.distanceSquaredTo(rc.getLocation())<=2){
 									Direction d=rc.getLocation().directionTo(ref);
 									if(rc.getTeamSoup()>=RobotType.REFINERY.cost){
 										if(rc.canBuildRobot(RobotType.REFINERY,d)){
@@ -153,12 +153,12 @@ class miner extends robot{
 											return;
 										}
 									}
-								}
-							}else{
-								Direction d=Util.tryMove(rc,rc.getLocation().directionTo(ref));
-								if(d!=null&&rc.canMove(d)){
-									rc.move(d);
-									return;
+								}else{
+									Direction d=Util.tryMove(rc,rc.getLocation().directionTo(ref));
+									if(d!=null&&rc.canMove(d)){
+										rc.move(d);
+										return;
+									}
 								}
 							}
 						}
@@ -386,7 +386,7 @@ class miner extends robot{
 			return false;
 		}
 		Direction d=Util.tryMove(rc,rc.getLocation().directionTo(best));
-		if(d!=null){
+		if(d!=null&&rc.canMove(d)){
 			rc.move(d);
 			return true;
 		}else{
@@ -695,7 +695,7 @@ class delivery_drone extends robot{
 			return;
 		}
 		if(dist<25){
-			if(rc.getRoundNum()>2000) {
+			if(rc.getRoundNum()>2000){
 				MapLocation rightdown=new MapLocation(rc.getMapWidth()-hq.x-1,rc.getMapHeight()-hq.y-1);
 				goal=rightdown;
 				timeToReach=2100;
@@ -891,13 +891,12 @@ class delivery_drone extends robot{
 		}
 	}
 
-
 	private int f(int timeToReach2){
 		//Vsaj tako dalec moramo biti
 		int turn=rc.getRoundNum();
-		if(turn>timeToReach2) {
+		if(turn>timeToReach2){
 			return 0;
-		}else {
+		}else{
 			return Math.min(konst.f_max,(int)Math.floor((timeToReach2-turn)*konst.dist_factor));
 		}
 	}
@@ -932,7 +931,7 @@ class delivery_drone extends robot{
 		return best;
 	}
 	@Override public void postcompute() throws Exception{
-		if(rc.getRoundNum()>1000) {
+		if(rc.getRoundNum()>1000){
 			return;
 		}
 		int range=rc.getCurrentSensorRadiusSquared();
