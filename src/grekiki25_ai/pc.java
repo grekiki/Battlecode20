@@ -1,4 +1,4 @@
-package grekiki25_gen1;
+package grekiki25_ai;
 
 import battlecode.common.MapLocation;
 

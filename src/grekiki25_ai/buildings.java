@@ -1,4 +1,4 @@
-package grekiki25_gen1;
+package grekiki25_ai;
 
 import java.util.ArrayList;
 import battlecode.common.*;

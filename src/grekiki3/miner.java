@@ -223,7 +223,7 @@ class minerPathFinder {
 				return false;
 			cur = cur.add(dir);
 			dir = fuzzy_step_short(cur, dest);
-			rc.setIndicatorDot(cur, 255, 0, 0);
+//			rc.setIndicatorDot(cur, 255, 0, 0);
 		}
 		return true;
 	}
@@ -416,15 +416,11 @@ class naloga {
 	}
 
 	private void premikanje_juhe_v_bazo() throws GameActionException {
-		for (Direction d : Util.dir) {
-			if (m.rc.canDepositSoup(d) && m.rc.senseRobotAtLocation(m.rc.getLocation().add(d)).team == m.rc.getTeam()) {
-				m.rc.depositSoup(d, m.rc.getSoupCarrying());
-				value = -1;
-				return;
-			}
+		if(m.tryDepositSoup()) {
+			value=0;
+			return;
 		}
 		m.path_finder.moveTowards(m.hq_location);
-//		m.path_finder.moveTowards(this.mesto); //To bi bilo tudi ok
 
 	}
 
@@ -444,14 +440,9 @@ class naloga {
 			m.findBestTask();
 			return;
 		}
-		for (Direction d : Direction.allDirections()) {
-			if (m.rc.canMineSoup(d)) {
-				m.rc.mineSoup(d);
-				if (m.rc.getSoupCarrying() == RobotType.MINER.soupLimit) {
-					value = 0;
-				}
-				return;
-			}
+		if(m.tryMine()) {
+			value=0;
+			return;
 		}
 		m.path_finder.moveTowards(this.mesto);
 	}
@@ -510,7 +501,7 @@ public class miner extends robot {
 		slaba_polja = new ArrayList<MapLocation>();
 		refinerije = new ArrayList<MapLocation>();
 		refinerije.add(hq_location);
-		while (Clock.getBytecodesLeft() > 800||rc.getCooldownTurns()>1) {
+		while (Clock.getBytecodesLeft() > 800 || rc.getCooldownTurns() > 1) {
 			if (!b.read_next_round()) {
 				return;
 			}
@@ -560,7 +551,7 @@ public class miner extends robot {
 		Iterator<MapLocation> iterator = juhe.iterator();
 		while (iterator.hasNext()) {
 			MapLocation m = iterator.next();
-//			rc.setIndicatorDot(m, 0, 255, 0);
+			rc.setIndicatorDot(m, 0, 255, 0);
 			if (rc.canSenseLocation(m) && rc.senseSoup(m) == 0) {
 				iterator.remove();
 			}
@@ -568,7 +559,7 @@ public class miner extends robot {
 		iterator = slabe_juhe.iterator();
 		while (iterator.hasNext()) {
 			MapLocation m = iterator.next();
-//			rc.setIndicatorDot(m, 255, 0, 0);
+			rc.setIndicatorDot(m, 255, 0, 0);
 			if (rc.canSenseLocation(m) && rc.senseSoup(m) == 0) {
 				iterator.remove();
 			}
@@ -601,6 +592,12 @@ public class miner extends robot {
 		 * 2. V tem obmocju ni nobene dosegljive juhe.
 		 * 
 		 */
+//		for(MapLocation m:polja) {
+//			rc.setIndicatorDot(m, 0, 255, 0);
+//		}
+//		for(MapLocation m:slaba_polja) {
+//			rc.setIndicatorDot(m, 0, 255, 0);
+//		}
 	}
 
 	// Util
@@ -664,7 +661,6 @@ public class miner extends robot {
 
 	@Override
 	public void bc_polje_found(MapLocation pos) {
-		System.out.println("BC POLJE: " + pos);
 		if (!polja.contains(pos)) {
 			polja.add(pos);
 		}
@@ -672,7 +668,6 @@ public class miner extends robot {
 
 	@Override
 	public void bc_polje_empty(MapLocation pos) {
-		System.out.println("BC POLJE PRAZNO: " + pos);
 		if (polja.contains(pos)) {
 			polja.remove(pos);
 		}
@@ -683,7 +678,6 @@ public class miner extends robot {
 
 	@Override
 	public void bc_polje_slabo(MapLocation pos) {
-		System.out.println("BC SLABO POLJE: " + pos);
 		if (!slaba_polja.contains(pos)) {
 			slaba_polja.add(pos);
 		}
@@ -691,7 +685,6 @@ public class miner extends robot {
 
 	@Override
 	public void bc_polje_upgrade(MapLocation pos) {
-		System.out.println("BC POLJE JE SEDAJ DOBRO: " + pos);
 		if (slaba_polja.contains(pos)) {
 			slaba_polja.remove(pos);
 		}
@@ -702,7 +695,6 @@ public class miner extends robot {
 
 	@Override
 	public void bc_rafinerija(MapLocation pos) {
-		System.out.println("BC REFINERIJA: " + pos);
 		if (polja.contains(pos)) {
 			polja.remove(pos);
 		}
