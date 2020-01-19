@@ -11,7 +11,6 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
-import grekiki26.konst;
 
 class MapCell {
 	int soupCount = 0;
@@ -32,21 +31,37 @@ class MapCell {
 }
 
 class minerPathFinder {
+	private static final int LOOKAHEAD_STEPS = 5;
+	private static final int UNIT_MAX_WAIT = 2;
+
 	private static final int NO_WALL = 0; // Ne sledi zidu.
 	private static final int LEFT_WALL = 1; // Zid je na levi.
 	private static final int RIGHT_WALL = 2;
-	private static final int LOOKAHEAD_STEPS = 5;
 
 	private RobotController rc;
 
 	private MapLocation goal;
 	private MapLocation closest; // Uporablja se pri bug navigation.
-	private Direction bug_wall_dir; // V kateri smeri je zid, ki mu sledimo?
+	private MapLocation bug_wall; // Kje je zid, ki mu sledimo?
 	private int bug_wall_tangent = NO_WALL; // Na kateri strani je zid, ki mu sledimo?
 	private MapLocation tangent_shortcut; // Pomozna bliznjica.
+    private boolean ignore_units = true;
+    private int unit_wait_time = 0;
 
 	minerPathFinder(RobotController rc) {
 		this.rc = rc;
+	}
+
+	private boolean is_unit_obstruction(MapLocation at) {
+		if (rc.canSenseLocation(at)) {
+			try {
+				RobotInfo robot = rc.senseRobotAtLocation(at);
+				return robot != null && robot.getID() != rc.getID();
+			} catch (GameActionException e) {
+				return false;
+			}
+		}
+		return false;
 	}
 
 	private boolean can_move(MapLocation from, Direction to) {
@@ -54,12 +69,12 @@ class minerPathFinder {
 
 		MapLocation p = from.add(to);
 		try {
-			if (!rc.onTheMap(p) || rc.senseFlooding(p))
+			if (!rc.canSenseLocation(p) || rc.senseFlooding(p))
 				return false;
 			if (Math.abs(rc.senseElevation(from) - rc.senseElevation(p)) > 3)
 				return false;
 			RobotInfo robot = rc.senseRobotAtLocation(p);
-			if (robot != null && robot.getID() != rc.getID())
+			if (robot != null && robot.getID() != rc.getID() && (!ignore_units || robot.getType().isBuilding()))
 				return false;
 		} catch (GameActionException e) {
 			return false;
@@ -123,22 +138,24 @@ class minerPathFinder {
 	private Direction bug_step(MapLocation cur, MapLocation dest, int wall) {
 		Direction dir = fuzzy_step(cur, dest);
 		if (dir != null && cur.add(dir).distanceSquaredTo(dest) < closest.distanceSquaredTo(dest)) {
-			bug_wall_dir = null;
+			bug_wall = null;
 			return dir;
 		}
 
 		// Ne moremo blizje, zato se drzimo zidu.
 		// Drzimo se lahko leve ali desne strani: parameter 'wall'.
-		if (bug_wall_dir == null)
+        Direction bug_wall_dir;
+		if (bug_wall == null)
 			bug_wall_dir = cur.directionTo(dest);
+		else
+			bug_wall_dir = cur.directionTo(bug_wall);
 
 		if (wall == LEFT_WALL) {
 			// V smeri urinega kazalca
 			Direction right = bug_wall_dir;
 			for (int i = 0; i < 8; ++i) {
 				if (can_move(cur, right)) {
-					MapLocation wall_loc = cur.add(right.rotateLeft());
-					bug_wall_dir = cur.add(right).directionTo(wall_loc);
+					bug_wall = cur.add(right.rotateLeft());
 					return right;
 				}
 				right = right.rotateRight();
@@ -148,8 +165,7 @@ class minerPathFinder {
 			Direction left = bug_wall_dir;
 			for (int i = 0; i < 8; ++i) {
 				if (can_move(cur, left)) {
-					MapLocation wall_loc = cur.add(left.rotateRight());
-					bug_wall_dir = cur.add(left).directionTo(wall_loc);
+					bug_wall = cur.add(left.rotateRight());
 					return left;
 				}
 				left = left.rotateLeft();
@@ -162,20 +178,20 @@ class minerPathFinder {
 
 	private Object[] bug_step_simulate(MapLocation cur, MapLocation dest, int wall, int steps) {
 		// Vrne [0]: direction po prvem koraku
-		// [1]: wall dir po prvem koraku
-		// [2]: wall dir po zadnjem koraku
+		// [1]: wall loc po prvem koraku
+		// [2]: wall loc po zadnjem koraku
 		// [3]: koncna lokacija
 		Object[] result = new Object[4];
 
 		MapLocation prev_closest = closest;
-		Direction prev_bug_wall_dir = bug_wall_dir;
+		MapLocation prev_bug_wall = bug_wall;
 
 		MapLocation end = cur;
 		for (int i = 0; i < steps; ++i) {
 			Direction dir = bug_step(end, dest, wall);
 			if (i == 0) {
 				result[0] = dir;
-				result[1] = bug_wall_dir;
+				result[1] = bug_wall;
 			}
 			if (dir == null) {
 //				rc.setIndicatorDot(end, 255, 255, 0);
@@ -194,10 +210,10 @@ class minerPathFinder {
 			}
 		}
 
-		result[2] = bug_wall_dir;
+		result[2] = bug_wall;
 		result[3] = end;
 
-		bug_wall_dir = prev_bug_wall_dir;
+		bug_wall = prev_bug_wall;
 		closest = prev_closest;
 
 		return result;
@@ -244,10 +260,10 @@ class minerPathFinder {
 		bug_wall_tangent = wall;
 		if (exists_fuzzy_path(cur, end, LOOKAHEAD_STEPS - 1)) {
 			tangent_shortcut = end;
-			bug_wall_dir = (Direction) simulation[2];
-			return fuzzy(tangent_shortcut);
+			bug_wall = (MapLocation) simulation[2];
+			return fuzzy_step(cur, tangent_shortcut);
 		}
-		bug_wall_dir = (Direction) simulation[1];
+		bug_wall = (MapLocation) simulation[1];
 		return (Direction) simulation[0];
 	}
 
@@ -263,18 +279,16 @@ class minerPathFinder {
 		}
 		if (tangent_shortcut != null) {
 			// Naj bi obstajala fuzzy pot do tam ...?
-			Direction dir = fuzzy(tangent_shortcut);
+			Direction dir = fuzzy_step(cur, tangent_shortcut);
 			if (can_move(cur, dir))
 				return dir;
 			// Zgubili smo se ali pa je ovira ...
-			tangent_shortcut = null;
-			bug_wall_tangent = NO_WALL;
-			bug_wall_dir = null;
+            reset_tangent();
 		}
 
-		/*
-		 * if (bug_wall_dir == null) { bug_wall_tangent = NO_WALL; }
-		 */
+		if (bug_wall != null && can_move(cur, cur.directionTo(bug_wall))) {
+			reset_tangent();
+		}
 
 		// Stran zidu je ze izbrana
 		// Simularmo pot z izbranim zidom
@@ -311,12 +325,28 @@ class minerPathFinder {
 		return adj;
 	}
 
+	private Object[] save_state() {
+		return new Object[] { closest, bug_wall, bug_wall_tangent, tangent_shortcut };
+	}
+
+	private void set_state(Object[] state) {
+		closest = (MapLocation) state[0];
+		bug_wall = (MapLocation) state[1];
+		bug_wall_tangent = (int) state[2];
+		tangent_shortcut = (MapLocation) state[3];
+	}
+
+	private void reset_tangent() {
+		tangent_shortcut = null;
+		bug_wall_tangent = NO_WALL;
+		bug_wall = null;
+		closest = rc.getLocation();
+	}
+
 	public void reset() {
 		goal = null;
-		closest = rc.getLocation();
-		bug_wall_dir = null;
-		bug_wall_tangent = NO_WALL;
-		tangent_shortcut = null;
+		// closest = rc.getLocation();
+		reset_tangent();
 	}
 
 	public Direction get_move_direction(MapLocation dest) {
@@ -334,14 +364,26 @@ class minerPathFinder {
 				closest = cur;
 			}
 		}
-		// fuzzy(goal);
-		// tangent_bug(dest);
-		// Direction dir = bug_step(cur, dest, RIGHT_WALL);
 
 //		if (tangent_shortcut != null)
 //			rc.setIndicatorDot(tangent_shortcut, 255, 0, 0);
 
+		if (unit_wait_time >= UNIT_MAX_WAIT) {
+			ignore_units = false;
+			unit_wait_time = 0;
+		} else {
+			ignore_units = true;
+		}
+		Object[] prev_state = save_state();
 		Direction dir = tangent_bug(dest);
+		if (is_unit_obstruction(cur.add(dir))) {
+			unit_wait_time++;
+			set_state(prev_state);
+			rc.setIndicatorDot(cur.add(dir), 200, 0, 255);
+			return null;
+		} else {
+			unit_wait_time = 0;
+		}
 		return dir;
 	}
 
