@@ -202,8 +202,8 @@ class blockchain{
 	static final int LOC_HOME_HQ=30;
 	static final int LOC2_DRONE=100;
 	
-	private static final int LOC_MAX=99;
-	private static final int LOC2_MAX=999;
+	private static final int LOC_MAX=99;//do 99 je en mapLocation
+	private static final int LOC2_MAX=999;//od 100 do 999 sta 2
 
 	List<paket> messages; // TODO lahko bi uporabili Heap (prioritetna vrsta glede na ceno)
 	RobotController rc;

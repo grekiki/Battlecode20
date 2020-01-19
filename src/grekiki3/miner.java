@@ -326,13 +326,59 @@ class minerPathFinder{
 	}
 
 }
+class naloga{
+	//ID-ji nalog ki jih lahko delamo
+	final static int GRADNJA=10;
+	final static int NABIRANJE=20;
+	final static int PREMIK_DO_JUHE=30;
+	final static int PREMIKANJE_JUHE_V_BAZO=40;
+	final static int RAZISKOVANJE_JUHE=50;
+	final static int RAZISKOVANJE_MAPE=60;
+	MapLocation mesto;
+	int value;
+	int type;
+	naloga(MapLocation m,int c,int t){
+		mesto=m;
+		value=c;
+		type=t;
+	}
+	public void run(){
+		switch(type){
+			case GRADNJA:
+				gradnja();
+				break;
+			case NABIRANJE:
+				gradnja();
+				break;
+			case PREMIK_DO_JUHE:
+				gradnja();
+				break;
+			case PREMIKANJE_JUHE_V_BAZO:
+				gradnja();
+				break;
+			case RAZISKOVANJE_JUHE:
+				gradnja();
+				break;
+			case RAZISKOVANJE_MAPE:
+				gradnja();
+				break;
+		}
+	}
+	private void gradnja(){
 
+	}
+}
 public class miner extends robot{
 	public static final int MINER_COST=RobotType.MINER.cost;
 	public static final int razmik_med_polji=30;
 
-	MapLocation goal;// kam hoce miner priti
-	//TO-DO dodaj sistem prioritet. Recimo gradnja-1000, nabiranje-200, premikanje juhe v bazo-300, raziskovanje-100
+	naloga task;
+	final static int GRADNJA=1000;
+	final static int PREMIKANJE_JUHE_V_BAZO=300;
+	final static int NABIRANJE=200;//Vidimo juho do katere lahko dokazano pridemo
+	final static int PREMIK_DO_JUHE=200;//Baje da se do polja da priti. Pathfinding
+	final static int RAZISKOVANJE_JUHE=100;//Poiscemo pot do slabe juhe
+	final static int RAZISKOVANJE_MAPE=50;
 
 	minerPathFinder path_finder;
 	HashSet<MapLocation> juhe;
@@ -380,30 +426,10 @@ public class miner extends robot{
 		if(!rc.isReady()){
 			return;
 		}
-		// Ce smo polni gremo do baze
-		if(rc.getSoupCarrying()==RobotType.MINER.soupLimit){
-			goal=hq_location;
-			if(tryDepositSoup()){
-				goal=null;
-				return;
-			}else{
-				if(path_finder.moveTowards(goal)){
-					return;
-				}
-			}
+		findBestTask();
+		if(task!=null){
+			task.run();
 		}
-
-		if(tryMine()){
-			goal=null;//nasli smo surovino, zato jo izbrisemo da se ne bi kaj zaciklalo ce se sprazne
-			return;
-		}
-
-		//ce nimamo dela ga najdemo
-		if(goal==null){
-			goal=findWork();
-		}
-		System.out.println(goal);
-		path_finder.moveTowards(goal);
 
 	}
 
@@ -416,37 +442,42 @@ public class miner extends robot{
 	}
 
 	//Util
-	private MapLocation findWork() throws GameActionException{
-		//Ce je najblizja juha blizu jo vzamemo
-		MapLocation ans=Util.closest(juhe,rc.getLocation());
-		if(ans!=null&&ans.distanceSquaredTo(rc.getLocation())<40){//neka konstanta!
-			return ans;
+	private void findBestTask() throws GameActionException{
+		int currentValue=(task==null?0:task.value);
+		if(currentValue<PREMIKANJE_JUHE_V_BAZO){
+			if(rc.getSoupCarrying()==RobotType.MINER.soupLimit){
+				task=new naloga(hq_location,PREMIKANJE_JUHE_V_BAZO,naloga.PREMIKANJE_JUHE_V_BAZO);
+				currentValue=PREMIKANJE_JUHE_V_BAZO;
+			}
 		}
-		//drugace pogledamo ce je kje kaksno polje
-		ans=Util.closest(polja,rc.getLocation());
-		//Nakljucno raziskovanje ker ni cilja
-		if(ans!=null){
-			return ans;
+		if(currentValue<NABIRANJE){
+			MapLocation ans=Util.closest(juhe,rc.getLocation());
+			if(ans!=null&&path_finder.exists_path2(rc.getLocation(),ans)){
+				task=new naloga(ans,NABIRANJE,naloga.NABIRANJE);
+				currentValue=NABIRANJE;
+			}
 		}
-		//drugace pa gremo do poljubne najblizje surovine
-		ans=Util.closest(juhe,rc.getLocation());
-		if(ans!=null){//neka konstanta!
-			return ans;
+		if(currentValue<PREMIK_DO_JUHE){
+			MapLocation ans=Util.closest(juhe,rc.getLocation());
+			if(ans!=null){
+				task=new naloga(ans,PREMIK_DO_JUHE,naloga.PREMIK_DO_JUHE);
+				currentValue=PREMIK_DO_JUHE;
+			}
 		}
-		//ce smo tukaj ni niti surovin, niti polj do katerih verjetno obstaja dostop. 
-		//morda bi bilo dobro poklicati kaksnega drona ali landscaperja
-
-		//poiscemo polje, morda v resnici obstaja kaksna pot
-		ans=Util.closest(slaba_polja,rc.getLocation());
-		if(ans!=null){
-			return ans;
+		if(currentValue<RAZISKOVANJE_JUHE){
+			MapLocation ans=Util.closest(slabe_juhe,rc.getLocation());
+			if(ans!=null){
+				task=new naloga(ans,RAZISKOVANJE_JUHE,naloga.RAZISKOVANJE_JUHE);
+				currentValue=RAZISKOVANJE_JUHE;
+			}
 		}
-		//ali pa kaksna slaba surovina?
-		ans=Util.closest(slabe_juhe,rc.getLocation());
-		if(ans!=null){
-			return ans;
+		if(currentValue<RAZISKOVANJE_MAPE){
+			MapLocation ans=Util.randomPoint(h,w);
+			if(ans!=null){
+				task=new naloga(ans,RAZISKOVANJE_MAPE,naloga.RAZISKOVANJE_MAPE);
+				currentValue=RAZISKOVANJE_MAPE;
+			}
 		}
-		return Util.randomPoint(h,w);
 	}
 	public boolean tryDepositSoup() throws GameActionException{
 		for(Direction d:Util.dir){
@@ -469,18 +500,33 @@ public class miner extends robot{
 	}
 
 	@Override public void bc_polje_found(MapLocation pos){
-		System.out.println("BC SUROVINA: "+pos);
+		System.out.println("BC POLJE: "+pos);
 		polja.add(pos);
 	}
 	@Override public void bc_polje_empty(MapLocation pos){
-		System.out.println("BC SUROVINA: "+pos);
+		System.out.println("BC POLJE PRAZNO: "+pos);
 		if(polja.contains(pos)){
 			polja.remove(pos);
 		}
 	}
 
-	@Override public void bc_drone(MapLocation from,MapLocation to){
-		System.out.println("BC DRONE: "+from+" "+to);
+	@Override public void bc_polje_slabo(MapLocation pos){
+		System.out.println("BC SLABO POLJE: "+pos);
+		if(polja.contains(pos)){
+			polja.remove(pos);
+		}
+	}
+	@Override public void bc_polje_upgrade(MapLocation pos){
+		System.out.println("BC POLJE JE SEDAJ DOBRO: "+pos);
+		if(polja.contains(pos)){
+			polja.remove(pos);
+		}
+	}
+	@Override public void bc_rafinerija(MapLocation pos){
+		System.out.println("BC REFINERIJA: "+pos);
+		if(polja.contains(pos)){
+			polja.remove(pos);
+		}
 	}
 
 }
