@@ -1,4 +1,4 @@
-package grekiki25;
+package grekiki26;
 
 public class konst {
 	public static int min_cena_transakcije=1;
