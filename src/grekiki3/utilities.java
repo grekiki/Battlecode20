@@ -195,11 +195,15 @@ class blockchain{
 
 	static final int LOC_SUROVINA=1;
 	static final int LOC_SUROVINA_PRAZNO=2;
-	static final int LOC_RAFINERIJA=3;
-	static final int LOC_TOVARNA_DRONOV=4;
-	static final int LOC_HOME_HQ=5;
-	static final int LOC2_DRONE=11;
-	private static final int LOC_MAX=LOC_HOME_HQ;
+	static final int LOC_SLABA_SUROVINA=3;
+	static final int NADGRADNJA_SUROVINE=4;
+	static final int LOC_RAFINERIJA=10;
+	static final int LOC_TOVARNA_DRONOV=20;
+	static final int LOC_HOME_HQ=30;
+	static final int LOC2_DRONE=100;
+	
+	private static final int LOC_MAX=99;
+	private static final int LOC2_MAX=999;
 
 	List<paket> messages; // TODO lahko bi uporabili Heap (prioritetna vrsta glede na ceno)
 	RobotController rc;
@@ -216,7 +220,8 @@ class blockchain{
 
 	public void handle_location2(int type,MapLocation m1,MapLocation m2){
 	}
-
+	public void handle_packet(int type,int[]message) {
+	}
 	// VSAKIC KO POSLJEMO SPOROCILO, JE POTREBNO KLICATI checkQueue
 	public void send_location(int type,MapLocation pos) throws GameActionException{
 		int[] msg={PRIVATE_KEY,type,pos.x,pos.y,0,0,0};
@@ -238,13 +243,16 @@ class blockchain{
 			return;
 
 		int type=msg[1];
-		if(type<=LOC_MAX){
-			MapLocation m=new MapLocation(msg[2],msg[3]);
-			handle_location(type,m);
-		}else if(type==LOC2_DRONE){
+		if(type>=LOC2_MAX) {
+			handle_packet(type,msg);
+		}
+		else if(type>=LOC_MAX){
 			MapLocation m1=new MapLocation(msg[2],msg[3]);
 			MapLocation m2=new MapLocation(msg[4],msg[5]);
 			handle_location2(LOC2_DRONE,m1,m2);
+		}else{
+			MapLocation m=new MapLocation(msg[2],msg[3]);
+			handle_location(type,m);
 		}
 	}
 

@@ -15,6 +15,8 @@ abstract class robot {
 			    switch (type) {
 					case LOC_SUROVINA: bc_polje_found(pos); break;
 					case LOC_SUROVINA_PRAZNO: bc_polje_empty(pos); break;
+					case LOC_SLABA_SUROVINA: bc_polje_slabo(pos); break;
+					case NADGRADNJA_SUROVINE: bc_polje_upgrade(pos); break;
 					case LOC_RAFINERIJA: bc_rafinerija(pos); break;
 					case LOC_TOVARNA_DRONOV: bc_tovarna_dronov(pos);
 					case LOC_HOME_HQ: bc_home_hq(pos);
@@ -25,6 +27,12 @@ abstract class robot {
 			public void handle_location2(int type, MapLocation m1, MapLocation m2) {
 				switch (type) {
 					case LOC2_DRONE: bc_drone(m1, m2); break;
+				}
+			}
+			@Override
+			public void handle_packet(int type,int[]message) {
+				switch(type) {
+					
 				}
 			}
 		};
@@ -46,6 +54,8 @@ abstract class robot {
 	// Za branje blockchaina se uporabi: b.read_next_round();
 	public void bc_polje_found(MapLocation pos) {}
 	public void bc_polje_empty(MapLocation pos) {}
+	public void bc_polje_slabo(MapLocation pos) {}
+	public void bc_polje_upgrade(MapLocation pos) {}
 	public void bc_rafinerija(MapLocation pos) {}
 	public void bc_tovarna_dronov(MapLocation pos) {}
 	public void bc_home_hq(MapLocation pos) {}
