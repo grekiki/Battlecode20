@@ -2,6 +2,7 @@ package grekiki3;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 
 import battlecode.common.Clock;
 import battlecode.common.Direction;
@@ -10,6 +11,7 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
+import grekiki26.konst;
 
 class MapCell {
 	int soupCount = 0;
@@ -57,7 +59,7 @@ class minerPathFinder {
 			if (Math.abs(rc.senseElevation(from) - rc.senseElevation(p)) > 3)
 				return false;
 			RobotInfo robot = rc.senseRobotAtLocation(p);
-			if(robot!=null && robot.getID() != rc.getID())
+			if (robot != null && robot.getID() != rc.getID())
 				return false;
 		} catch (GameActionException e) {
 			return false;
@@ -175,7 +177,7 @@ class minerPathFinder {
 				result[0] = dir;
 				result[1] = bug_wall_dir;
 			}
-			if(dir==null) {
+			if (dir == null) {
 				rc.setIndicatorDot(end, 255, 255, 0);
 				break;
 			}
@@ -184,10 +186,10 @@ class minerPathFinder {
 			if (end.distanceSquaredTo(dest) < closest.distanceSquaredTo(dest)) {
 				closest = end;
 			}
-			rc.setIndicatorDot(end,(255/steps)*i,wall*100,255);
+			rc.setIndicatorDot(end, (255 / steps) * i, wall * 100, 255);
 
 			if (is_at_goal(end, dest)) {
-			    rc.setIndicatorDot(dest,0,255,0);
+				rc.setIndicatorDot(dest, 0, 255, 0);
 				break;
 			}
 		}
@@ -214,7 +216,7 @@ class minerPathFinder {
 	public boolean exists_path2(MapLocation cur, MapLocation dest) {
 		Direction dir = fuzzy_step_short(cur, dest);
 		while (!cur.equals(dest)) {
-			if(cur.isWithinDistanceSquared(dest, 2)) {
+			if (cur.isWithinDistanceSquared(dest, 2)) {
 				return true;
 			}
 			if (dir == null || !can_move(cur, dir))
@@ -237,17 +239,17 @@ class minerPathFinder {
 
 	private Direction run_simulation(MapLocation cur, Object[] simulation, int wall) {
 		MapLocation end = (MapLocation) simulation[3];
-		bug_wall_tangent=wall;
-		if(exists_fuzzy_path(cur,end,LOOKAHEAD_STEPS-1)){
-			tangent_shortcut=end;
-			bug_wall_dir=(Direction)simulation[2];
+		bug_wall_tangent = wall;
+		if (exists_fuzzy_path(cur, end, LOOKAHEAD_STEPS - 1)) {
+			tangent_shortcut = end;
+			bug_wall_dir = (Direction) simulation[2];
 			return fuzzy(tangent_shortcut);
 		}
-		bug_wall_dir=(Direction)simulation[1];
-		return (Direction)simulation[0];
+		bug_wall_dir = (Direction) simulation[1];
+		return (Direction) simulation[0];
 	}
 
-	private Direction tangent_bug(MapLocation dest){
+	private Direction tangent_bug(MapLocation dest) {
 		// Odlocimo se med levo in desno stranjo in potem
 		// nadaljujemo po izbrani poti.
 		// Ce najdemo bliznjico, gremo do nje po najkrajsi poti
@@ -269,17 +271,15 @@ class minerPathFinder {
 		}
 
 		/*
-		if (bug_wall_dir == null) {
-			bug_wall_tangent = NO_WALL;
-		}
-		*/
+		 * if (bug_wall_dir == null) { bug_wall_tangent = NO_WALL; }
+		 */
 
 		// Stran zidu je ze izbrana
 		// Simularmo pot z izbranim zidom
 		if (bug_wall_tangent != NO_WALL) {
 			// bug_step(cur, dest, bug_wall_tangent);
-			Object[] simulation=bug_step_simulate(cur,dest,bug_wall_tangent,LOOKAHEAD_STEPS);
-			return run_simulation(cur,simulation,bug_wall_tangent);
+			Object[] simulation = bug_step_simulate(cur, dest, bug_wall_tangent, LOOKAHEAD_STEPS);
+			return run_simulation(cur, simulation, bug_wall_tangent);
 		}
 
 		// Odlocimo se med levo in desno stranjo
@@ -288,16 +288,16 @@ class minerPathFinder {
 		MapLocation left_pos = (MapLocation) left_simulation[3];
 		MapLocation right_pos = (MapLocation) right_simulation[3];
 
-		int d1=right_pos.distanceSquaredTo(dest);
-		int d2=left_pos.distanceSquaredTo(dest);
+		int d1 = right_pos.distanceSquaredTo(dest);
+		int d2 = left_pos.distanceSquaredTo(dest);
 		if (d1 == d2) {
-			rc.setIndicatorDot(cur,0,0,0);
+			rc.setIndicatorDot(cur, 0, 0, 0);
 			// Preverimo, katera smer je blizja po enem koraku
 		}
-		if(d1<=d2){
-			return run_simulation(cur,right_simulation,RIGHT_WALL);
-		}else{
-		    return run_simulation(cur,left_simulation,LEFT_WALL);
+		if (d1 <= d2) {
+			return run_simulation(cur, right_simulation, RIGHT_WALL);
+		} else {
+			return run_simulation(cur, left_simulation, LEFT_WALL);
 		}
 	}
 
@@ -306,26 +306,26 @@ class minerPathFinder {
 	}
 
 	public void reset() {
-		goal=null;
-		closest=rc.getLocation();
-		bug_wall_dir=null;
-		bug_wall_tangent=NO_WALL;
-		tangent_shortcut=null;
+		goal = null;
+		closest = rc.getLocation();
+		bug_wall_dir = null;
+		bug_wall_tangent = NO_WALL;
+		tangent_shortcut = null;
 	}
 
-	public Direction get_move_direction(MapLocation dest){
-		MapLocation cur=rc.getLocation();
-		if(is_at_goal(cur, dest)) {
+	public Direction get_move_direction(MapLocation dest) {
+		MapLocation cur = rc.getLocation();
+		if (is_at_goal(cur, dest)) {
 			reset();
 			return null;
 		}
 
-		if(!dest.equals(goal)){
-		    reset();
-			goal=dest;
-		}else{
-			if(cur.distanceSquaredTo(dest)<closest.distanceSquaredTo(dest)){
-				closest=cur;
+		if (!dest.equals(goal)) {
+			reset();
+			goal = dest;
+		} else {
+			if (cur.distanceSquaredTo(dest) < closest.distanceSquaredTo(dest)) {
+				closest = cur;
 			}
 		}
 		// fuzzy(goal);
@@ -335,7 +335,7 @@ class minerPathFinder {
 		if (tangent_shortcut != null)
 			rc.setIndicatorDot(tangent_shortcut, 255, 0, 0);
 
-		Direction dir=tangent_bug(dest);
+		Direction dir = tangent_bug(dest);
 		return dir;
 	}
 
@@ -372,7 +372,7 @@ class naloga {
 	}
 
 	public void run() throws GameActionException {
-		System.out.println("Naloga "+type);
+		System.out.println("Naloga " + type);
 		switch (type) {
 		case GRADNJA:
 			gradnja();
@@ -396,6 +396,11 @@ class naloga {
 	}
 
 	private void raziskovanje_mape() throws GameActionException {
+		if (Math.random() < 0.05) {// Menjamo smer vsake toliko casa
+			value = 0;
+			m.findBestTask();
+			return;
+		}
 		m.path_finder.moveTowards(this.mesto);
 	}
 
@@ -418,14 +423,27 @@ class naloga {
 	}
 
 	private void premik_do_juhe() throws GameActionException {
+		if (m.juhe.size() == 0) {
+			value = 0;
+			m.findBestTask();
+			return;
+		}
 		m.path_finder.moveTowards(this.mesto);
 
 	}
 
 	private void nabiranje() throws GameActionException {
+		if (m.rc.canSenseLocation(mesto) && m.rc.senseSoup(mesto) == 0) {
+			value = 0;
+			m.findBestTask();
+			return;
+		}
 		for (Direction d : Direction.allDirections()) {
 			if (m.rc.canMineSoup(d)) {
 				m.rc.mineSoup(d);
+				if (m.rc.getSoupCarrying() == RobotType.MINER.soupLimit) {
+					value = 0;
+				}
 				return;
 			}
 		}
@@ -467,7 +485,6 @@ public class miner extends robot {
 		path_finder = new minerPathFinder(rc);
 		w = rc.getMapWidth();
 		h = rc.getMapHeight();
-
 		for (RobotInfo r : rc.senseNearbyRobots(2, rc.getTeam())) {
 			if (r.type == RobotType.HQ) {
 				hq_location = r.location;
@@ -484,7 +501,7 @@ public class miner extends robot {
 		b.checkQueue();
 		for (MapLocation m : rc.senseNearbySoup()) {
 			if (!juhe.contains(m) && !slabe_juhe.contains(m)) {
-				if (path_finder.exists_path2(rc.getLocation(), m)) {
+				if (Util.d_inf(rc.getLocation(), m) <= 5 && path_finder.exists_path2(rc.getLocation(), m)) {
 					juhe.add(m);
 				} else {
 					slabe_juhe.add(m);
@@ -506,6 +523,29 @@ public class miner extends robot {
 	}
 
 	public void postcompute() throws GameActionException {
+		// Tako se brise iz seta. Vir
+		// :https://stackoverflow.com/questions/1110404/remove-elements-from-a-hashset-while-iterating
+		Iterator<MapLocation> iterator = juhe.iterator();
+		while (iterator.hasNext()) {
+			MapLocation m = iterator.next();
+			rc.setIndicatorDot(m, 0, 255, 0);
+			if (rc.canSenseLocation(m) && rc.senseSoup(m) == 0) {
+				iterator.remove();
+			}
+		}
+		iterator = slabe_juhe.iterator();
+		while (iterator.hasNext()) {
+			MapLocation m = iterator.next();
+			rc.setIndicatorDot(m, 255, 0, 0);
+			if (rc.canSenseLocation(m) && rc.senseSoup(m) == 0) {
+				iterator.remove();
+			}
+			if (Util.d_inf(rc.getLocation(), m) <= 5 && path_finder.exists_path2(rc.getLocation(), m)) {
+				juhe.add(m);
+				iterator.remove();
+			}
+		}
+
 		while (Clock.getBytecodesLeft() > 800) {
 			if (!b.read_next_round()) {
 				return;
@@ -514,7 +554,7 @@ public class miner extends robot {
 	}
 
 	// Util
-	private void findBestTask() throws GameActionException {
+	public void findBestTask() throws GameActionException {
 		int currentValue = (task == null ? 0 : task.value);
 		if (currentValue < PREMIKANJE_JUHE_V_BAZO) {
 			if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) {
@@ -522,14 +562,14 @@ public class miner extends robot {
 				currentValue = PREMIKANJE_JUHE_V_BAZO;
 			}
 		}
-		if (currentValue < NABIRANJE) {
+		if (currentValue < NABIRANJE && rc.getSoupCarrying() < RobotType.MINER.soupLimit) {
 			MapLocation ans = Util.closest(juhe, rc.getLocation());
 			if (ans != null && path_finder.exists_path2(rc.getLocation(), ans)) {
 				task = new naloga(this, ans, NABIRANJE, naloga.NABIRANJE);
 				currentValue = NABIRANJE;
 			}
 		}
-		if (currentValue < PREMIK_DO_JUHE) {
+		if (currentValue < PREMIK_DO_JUHE && rc.getSoupCarrying() < RobotType.MINER.soupLimit) {
 			MapLocation ans = Util.closest(juhe, rc.getLocation());
 			if (ans != null) {
 				task = new naloga(this, ans, PREMIK_DO_JUHE, naloga.PREMIK_DO_JUHE);
