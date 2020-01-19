@@ -56,7 +56,8 @@ class minerPathFinder{
 				return false;
 			if(Math.abs(rc.senseElevation(from)-rc.senseElevation(p))>3)
 				return false;
-			if(rc.senseRobotAtLocation(p)!=null)
+			RobotInfo robot = rc.senseRobotAtLocation(p);
+			if(robot!=null && robot.getID() != rc.getID())
 				return false;
 		}catch(GameActionException e){
 			return false;
@@ -172,14 +173,21 @@ class minerPathFinder{
 				result[0]=dir;
 				result[1]=bug_wall_dir;
 			}
-			if(dir==null)
+			if(dir==null) {
+				rc.setIndicatorDot(end, 255, 255, 0);
 				break;
+			}
 
 			end=end.add(dir);
 			if(end.distanceSquaredTo(dest)<closest.distanceSquaredTo(dest)){
 				closest=end;
 			}
 			rc.setIndicatorDot(end,(255/steps)*i,wall*100,255);
+
+			if (is_at_goal(end, dest)) {
+			    rc.setIndicatorDot(dest,0,255,0);
+				break;
+			}
 		}
 
 		result[2]=bug_wall_dir;
@@ -221,6 +229,18 @@ class minerPathFinder{
 		return cur.equals(dest);
 	}
 
+	private Direction run_simulation(MapLocation cur, Object[] simulation, int wall) {
+		MapLocation end = (MapLocation) simulation[3];
+		bug_wall_tangent=wall;
+		if(exists_fuzzy_path(cur,end,LOOKAHEAD_STEPS-1)){
+			tangent_shortcut=end;
+			bug_wall_dir=(Direction)simulation[2];
+			return fuzzy(tangent_shortcut);
+		}
+		bug_wall_dir=(Direction)simulation[1];
+		return (Direction)simulation[0];
+	}
+
 	private Direction tangent_bug(MapLocation dest){
 		// Odlocimo se med levo in desno stranjo in potem
 		// nadaljujemo po izbrani poti.
@@ -242,19 +262,18 @@ class minerPathFinder{
 			bug_wall_dir=null;
 		}
 
+		/*
+		if (bug_wall_dir == null) {
+			bug_wall_tangent = NO_WALL;
+		}
+		*/
+
 		// Stran zidu je ze izbrana
 		// Simularmo pot z izbranim zidom
 		if(bug_wall_tangent!=NO_WALL){
 			// bug_step(cur, dest, bug_wall_tangent);
 			Object[] simulation=bug_step_simulate(cur,dest,bug_wall_tangent,LOOKAHEAD_STEPS);
-			MapLocation shortcut=(MapLocation)simulation[3];
-			if(exists_fuzzy_path(cur,shortcut,LOOKAHEAD_STEPS-1)){
-				tangent_shortcut=shortcut;
-				bug_wall_dir=(Direction)simulation[2];
-				return fuzzy(tangent_shortcut);
-			}
-			bug_wall_dir=(Direction)simulation[1];
-			return (Direction)simulation[0];
+			return run_simulation(cur,simulation,bug_wall_tangent);
 		}
 
 		// Odlocimo se med levo in desno stranjo
@@ -265,36 +284,39 @@ class minerPathFinder{
 
 		int d1=right_pos.distanceSquaredTo(dest);
 		int d2=left_pos.distanceSquaredTo(dest);
-		if(d1<=d2){
-			bug_wall_tangent=RIGHT_WALL;
-			if(exists_fuzzy_path(cur,right_pos,LOOKAHEAD_STEPS-1)){
-				tangent_shortcut=right_pos;
-				bug_wall_dir=(Direction)right_simulation[2];
-				return fuzzy(tangent_shortcut);
-			}
-			bug_wall_dir=(Direction)right_simulation[1];
-			return (Direction)right_simulation[0];
-		}else{
-			bug_wall_tangent=LEFT_WALL;
-			if(exists_fuzzy_path(cur,left_pos,LOOKAHEAD_STEPS-1)){
-				tangent_shortcut=left_pos;
-				bug_wall_dir=(Direction)left_simulation[2];
-				return fuzzy(tangent_shortcut);
-			}
-			bug_wall_dir=(Direction)left_simulation[1];
-			return (Direction)left_simulation[0];
+		if (d1 == d2) {
+			rc.setIndicatorDot(cur,0,0,0);
+			// Preverimo, katera smer je blizja po enem koraku
 		}
+		if(d1<=d2){
+			return run_simulation(cur,right_simulation,RIGHT_WALL);
+		}else{
+		    return run_simulation(cur,left_simulation,LEFT_WALL);
+		}
+	}
+
+	private boolean is_at_goal(MapLocation cur, MapLocation dest) {
+		return cur.isAdjacentTo(dest);
+	}
+
+	public void reset() {
+		goal=null;
+		closest=rc.getLocation();
+		bug_wall_dir=null;
+		bug_wall_tangent=NO_WALL;
+		tangent_shortcut=null;
 	}
 
 	public Direction get_move_direction(MapLocation dest){
 		MapLocation cur=rc.getLocation();
-		if(cur.isAdjacentTo(dest))
+		if(is_at_goal(cur, dest)) {
+			reset();
 			return null;
+		}
 
 		if(!dest.equals(goal)){
+		    reset();
 			goal=dest;
-			closest=cur;
-			bug_wall_dir=null;
 		}else{
 			if(cur.distanceSquaredTo(dest)<closest.distanceSquaredTo(dest)){
 				closest=cur;
@@ -306,10 +328,6 @@ class minerPathFinder{
 
 		if(tangent_shortcut!=null)
 			rc.setIndicatorDot(tangent_shortcut,255,0,0);
-
-		/*
-		 * MapLocation tmp = bug_step_simulate(cur, dest, LEFT_WALL, LOOKAHEAD_STEPS); if (tmp != null) rc.setIndicatorDot(tmp, 255, 0, 255);
-		 */
 
 		Direction dir=tangent_bug(dest);
 		return dir;
