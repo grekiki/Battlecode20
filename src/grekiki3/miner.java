@@ -3,6 +3,7 @@ package grekiki3;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 
 import battlecode.common.Clock;
 import battlecode.common.Direction;
@@ -11,7 +12,6 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
-import grekiki26.konst;
 
 class MapCell {
 	int soupCount = 0;
@@ -32,10 +32,12 @@ class MapCell {
 }
 
 class minerPathFinder {
+	private static final int LOOKAHEAD_STEPS = 5;
+	private static final int UNIT_MAX_WAIT = 2;
+
 	private static final int NO_WALL = 0; // Ne sledi zidu.
 	private static final int LEFT_WALL = 1; // Zid je na levi.
 	private static final int RIGHT_WALL = 2;
-	private static final int LOOKAHEAD_STEPS = 5;
 
 	private RobotController rc;
 
@@ -44,9 +46,24 @@ class minerPathFinder {
 	private Direction bug_wall_dir; // V kateri smeri je zid, ki mu sledimo?
 	private int bug_wall_tangent = NO_WALL; // Na kateri strani je zid, ki mu sledimo?
 	private MapLocation tangent_shortcut; // Pomozna bliznjica.
+    private boolean ignore_units = true;
+    private int unit_wait_time = 0;
+    // private int fuzzy_time = 0;
 
 	minerPathFinder(RobotController rc) {
 		this.rc = rc;
+	}
+
+	private boolean is_unit_obstruction(MapLocation at) {
+		if (rc.canSenseLocation(at)) {
+			try {
+				RobotInfo robot = rc.senseRobotAtLocation(at);
+				return robot != null && robot.getID() != rc.getID();
+			} catch (GameActionException e) {
+				return false;
+			}
+		}
+		return false;
 	}
 
 	private boolean can_move(MapLocation from, Direction to) {
@@ -54,12 +71,12 @@ class minerPathFinder {
 
 		MapLocation p = from.add(to);
 		try {
-			if (!rc.onTheMap(p) || rc.senseFlooding(p))
+			if (!rc.canSenseLocation(p) || rc.senseFlooding(p))
 				return false;
 			if (Math.abs(rc.senseElevation(from) - rc.senseElevation(p)) > 3)
 				return false;
 			RobotInfo robot = rc.senseRobotAtLocation(p);
-			if (robot != null && robot.getID() != rc.getID())
+			if (robot != null && robot.getID() != rc.getID() && (!ignore_units || robot.getType().isBuilding()))
 				return false;
 		} catch (GameActionException e) {
 			return false;
@@ -243,7 +260,7 @@ class minerPathFinder {
 		if (exists_fuzzy_path(cur, end, LOOKAHEAD_STEPS - 1)) {
 			tangent_shortcut = end;
 			bug_wall_dir = (Direction) simulation[2];
-			return fuzzy(tangent_shortcut);
+			return fuzzy_step(cur, tangent_shortcut);
 		}
 		bug_wall_dir = (Direction) simulation[1];
 		return (Direction) simulation[0];
@@ -261,18 +278,12 @@ class minerPathFinder {
 		}
 		if (tangent_shortcut != null) {
 			// Naj bi obstajala fuzzy pot do tam ...?
-			Direction dir = fuzzy(tangent_shortcut);
+			Direction dir = fuzzy_step(cur, tangent_shortcut);
 			if (can_move(cur, dir))
 				return dir;
 			// Zgubili smo se ali pa je ovira ...
-			tangent_shortcut = null;
-			bug_wall_tangent = NO_WALL;
-			bug_wall_dir = null;
+            reset_tangent();
 		}
-
-		/*
-		 * if (bug_wall_dir == null) { bug_wall_tangent = NO_WALL; }
-		 */
 
 		// Stran zidu je ze izbrana
 		// Simularmo pot z izbranim zidom
@@ -309,12 +320,28 @@ class minerPathFinder {
 		return adj;
 	}
 
+	private Object[] save_state() {
+		return new Object[] { closest, bug_wall_dir, bug_wall_tangent, tangent_shortcut };
+	}
+
+	private void set_state(Object[] state) {
+		closest = (MapLocation) state[0];
+		bug_wall_dir = (Direction) state[1];
+		bug_wall_tangent = (int) state[2];
+		tangent_shortcut = (MapLocation) state[3];
+	}
+
+	private void reset_tangent() {
+		tangent_shortcut = null;
+		bug_wall_tangent = NO_WALL;
+		bug_wall_dir = null;
+	}
+
 	public void reset() {
+	    history.clear();
 		goal = null;
 		closest = rc.getLocation();
-		bug_wall_dir = null;
-		bug_wall_tangent = NO_WALL;
-		tangent_shortcut = null;
+		reset_tangent();
 	}
 
 	public Direction get_move_direction(MapLocation dest) {
@@ -332,14 +359,39 @@ class minerPathFinder {
 				closest = cur;
 			}
 		}
-		// fuzzy(goal);
-		// tangent_bug(dest);
-		// Direction dir = bug_step(cur, dest, RIGHT_WALL);
+
+		/*
+		if (fuzzy_time > 0) {
+		    fuzzy_time--;
+			return fuzzy(dest);
+		}
+		 */
 
 		if (tangent_shortcut != null)
 			rc.setIndicatorDot(tangent_shortcut, 255, 0, 0);
 
+		if (unit_wait_time >= UNIT_MAX_WAIT) {
+			ignore_units = false;
+			unit_wait_time = 0;
+			/*
+			fuzzy_time = 3;
+			reset();
+			goal = dest;
+			return fuzzy(dest);
+			*/
+		} else {
+			ignore_units = true;
+		}
+		Object[] prev_state = save_state();
 		Direction dir = tangent_bug(dest);
+		if (is_unit_obstruction(cur.add(dir))) {
+			unit_wait_time++;
+			set_state(prev_state);
+			rc.setIndicatorDot(cur.add(dir), 200, 0, 255);
+			return null;
+		} else {
+			unit_wait_time = 0;
+		}
 		return dir;
 	}
 
