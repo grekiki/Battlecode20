@@ -1,5 +1,6 @@
 package benchmarks;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import battlecode.common.Clock;
@@ -8,6 +9,15 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import grekiki26.pc;
 
+class bfs{
+	int[]qq;
+	public bfs(ArrayList<Integer>q) {
+		qq=new int[q.size()];
+		for(int i=0;i<q.size();i++) {
+			qq[i]=q.get(i);
+		}
+	}
+}
 public class HQ extends robot{
 
 	public HQ(RobotController rc){
@@ -29,8 +39,15 @@ public class HQ extends robot{
 //		iskanje0();
 //		iskanje1();
 
-		tabela0(new boolean[] {true,true,false,true});
-		tabela1(new boolean[] {true,true,false,true});
+//		tabela0(new boolean[] {true,true,false,true});
+//		tabela1(new boolean[] {true,true,false,true});
+		int[]q=new int[100];
+		for(int i=0;i<100;i++) {
+			q[i]=((i+7)*i)%117;
+		}
+		int t=Clock.getBytecodesLeft();
+		Arrays.sort(q);
+		System.out.println(t-Clock.getBytecodesLeft()+" operacij");
 		rc.disintegrate();
 	}
 	

@@ -359,9 +359,10 @@ class minerPathFinder {
 
 class naloga {
 	// ID-ji nalog ki jih lahko delamo
-	final static int GRADNJA = 10;
+	final static int GRADNJA_REFINERIJE = 10;
 	final static int NABIRANJE = 20;
 	final static int PREMIK_DO_JUHE = 30;
+	final static int PREMIK_DO_POLJA = 31;
 	final static int PREMIKANJE_JUHE_V_BAZO = 40;
 	final static int RAZISKOVANJE_JUHE = 50;
 	final static int RAZISKOVANJE_MAPE = 60;
@@ -380,14 +381,17 @@ class naloga {
 	public void run() throws GameActionException {
 		System.out.println("Naloga " + type);
 		switch (type) {
-		case GRADNJA:
-			gradnja();
+		case GRADNJA_REFINERIJE:
+			gradnja_refinerije();
 			break;
 		case NABIRANJE:
 			nabiranje();
 			break;
 		case PREMIK_DO_JUHE:
 			premik_do_juhe();
+			break;
+		case PREMIK_DO_POLJA:
+			premik_do_polja();
 			break;
 		case PREMIKANJE_JUHE_V_BAZO:
 			premikanje_juhe_v_bazo();
@@ -402,9 +406,8 @@ class naloga {
 	}
 
 	private void raziskovanje_mape() throws GameActionException {
-		if (Math.random() < 0.05) {// Menjamo smer vsake toliko casa
+		if (Math.random() < 0.05||m.rc.getLocation().distanceSquaredTo(this.mesto)<=2) {// Menjamo smer vsake toliko casa
 			value = 0;
-			m.findBestTask();
 			return;
 		}
 		m.path_finder.moveTowards(this.mesto);
@@ -412,12 +415,11 @@ class naloga {
 
 	private void raziskovanje_juhe() throws GameActionException {
 		m.path_finder.moveTowards(this.mesto);
-
 	}
 
 	private void premikanje_juhe_v_bazo() throws GameActionException {
-		if(m.tryDepositSoup()) {
-			value=0;
+		if (m.tryDepositSoup()) {
+			value = 0;
 			return;
 		}
 		m.path_finder.moveTowards(m.hq_location);
@@ -425,30 +427,43 @@ class naloga {
 	}
 
 	private void premik_do_juhe() throws GameActionException {
-		if (m.juhe.size() == 0) {
-			value = 0;
-			m.findBestTask();
-			return;
-		}
-		m.path_finder.moveTowards(this.mesto);
-
-	}
-
-	private void nabiranje() throws GameActionException {
-		if (m.rc.canSenseLocation(mesto) && m.rc.senseSoup(mesto) == 0) {
-			value = 0;
-			m.findBestTask();
-			return;
-		}
-		if(m.tryMine()) {
+		if(!m.juhe.contains(this.mesto)) {
 			value=0;
 			return;
 		}
 		m.path_finder.moveTowards(this.mesto);
 	}
+	
+	private void premik_do_polja() throws GameActionException {
+		if(!m.polja.contains(this.mesto)) {
+			value=0;
+			return;
+		}
+		m.path_finder.moveTowards(this.mesto);
+	}
+	
+	private void nabiranje() throws GameActionException {
+		if (m.rc.canSenseLocation(mesto) && m.rc.senseSoup(mesto) == 0) {
+			value = 0;
+			return;
+		}
+		if (m.tryMine()) {
+			value = 0;
+			return;
+		}
+		m.path_finder.moveTowards(this.mesto);
+	}
 
-	private void gradnja() {
-
+	private void gradnja_refinerije() throws GameActionException {
+		if (m.rc.getLocation().distanceSquaredTo(mesto) <= 2) {
+			Direction d = m.rc.getLocation().directionTo(mesto);
+			if (m.rc.canBuildRobot(RobotType.REFINERY, d)) {
+				m.rc.buildRobot(RobotType.REFINERY, d);
+				value = 0;
+				return;
+			}
+		}
+		m.path_finder.moveTowards(this.mesto);
 	}
 }
 
@@ -464,10 +479,11 @@ public class miner extends robot {
 	public static final int razmik_med_polji = 20;
 
 	naloga task;
-	final static int GRADNJA = 1000;
+	final static int GRADNJA_REFINERIJE = 1000;
 	final static int PREMIKANJE_JUHE_V_BAZO = 300;
 	final static int NABIRANJE = 250;// Vidimo juho do katere lahko dokazano pridemo
-	final static int PREMIK_DO_JUHE = 200;// Baje da se do polja da priti. Pathfinding
+	final static int PREMIK_DO_JUHE = 200;// Baje da se do juhe da priti. Pathfinding
+	final static int PREMIK_DO_POLJA = 150;// Baje da se do juhe da priti. Pathfinding
 	final static int RAZISKOVANJE_JUHE = 100;// Poiscemo pot do slabe juhe
 	final static int RAZISKOVANJE_MAPE = 50;
 
@@ -551,7 +567,7 @@ public class miner extends robot {
 		Iterator<MapLocation> iterator = juhe.iterator();
 		while (iterator.hasNext()) {
 			MapLocation m = iterator.next();
-			rc.setIndicatorDot(m, 0, 255, 0);
+//			rc.setIndicatorDot(m, 0, 255, 0);
 			if (rc.canSenseLocation(m) && rc.senseSoup(m) == 0) {
 				iterator.remove();
 			}
@@ -559,7 +575,7 @@ public class miner extends robot {
 		iterator = slabe_juhe.iterator();
 		while (iterator.hasNext()) {
 			MapLocation m = iterator.next();
-			rc.setIndicatorDot(m, 255, 0, 0);
+//			rc.setIndicatorDot(m, 255, 0, 0);
 			if (rc.canSenseLocation(m) && rc.senseSoup(m) == 0) {
 				iterator.remove();
 			}
@@ -621,6 +637,13 @@ public class miner extends robot {
 			if (ans != null) {
 				task = new naloga(this, ans, PREMIK_DO_JUHE, naloga.PREMIK_DO_JUHE);
 				currentValue = PREMIK_DO_JUHE;
+			}
+		}
+		if (currentValue < PREMIK_DO_POLJA && rc.getSoupCarrying() < RobotType.MINER.soupLimit) {
+			MapLocation ans = Util.closest(juhe, rc.getLocation());
+			if (ans != null) {
+				task = new naloga(this, ans, PREMIK_DO_POLJA, naloga.PREMIK_DO_POLJA);
+				currentValue = PREMIK_DO_POLJA;
 			}
 		}
 		if (currentValue < RAZISKOVANJE_JUHE) {
