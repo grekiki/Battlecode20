@@ -222,6 +222,8 @@ class minerPathFinder {
 			if (dir == null || !can_move(cur, dir))
 				return false;
 			cur = cur.add(dir);
+			dir = fuzzy_step_short(cur, dest);
+			rc.setIndicatorDot(cur, 255, 0, 0);
 		}
 		return true;
 	}
@@ -458,8 +460,11 @@ class naloga {
 
 	}
 }
+
 /**
- * TO-DO ce se do neke surovine sprehajamo vec kot recimo 50 potez, potem recemo da je tezka
+ * TO-DO ce se do neke surovine sprehajamo vec kot recimo 50 potez, potem recemo
+ * da je tezka
+ * 
  * @author Gregor
  *
  */
@@ -505,6 +510,11 @@ public class miner extends robot {
 		slaba_polja = new ArrayList<MapLocation>();
 		refinerije = new ArrayList<MapLocation>();
 		refinerije.add(hq_location);
+		while (Clock.getBytecodesLeft() > 800||rc.getCooldownTurns()>1) {
+			if (!b.read_next_round()) {
+				return;
+			}
+		}
 	}
 
 	@Override
@@ -567,9 +577,30 @@ public class miner extends robot {
 				iterator.remove();
 			}
 		}
-		for(MapLocation m:juhe) {
-			
+		// Pogledamo ce imamo juho ki ni pokrita z poljem
+		for (MapLocation m : juhe) {
+			MapLocation morebitno_polje = m;
+			MapLocation najblizjePolje = Util.closest(polja, morebitno_polje);
+			if (najblizjePolje == null || morebitno_polje.distanceSquaredTo(najblizjePolje) > razmik_med_polji) {
+				polja.add(morebitno_polje);
+				b.send_location(b.LOC_SUROVINA, morebitno_polje);
+			}
 		}
+		// pogledamo ce imamo slabo juho ki ni pokrita s slabimm poljem
+		for (MapLocation m : slabe_juhe) {
+			MapLocation morebitno_polje = m;
+			MapLocation najblizjePolje = Util.closest(slaba_polja, morebitno_polje);
+			if (najblizjePolje == null || morebitno_polje.distanceSquaredTo(najblizjePolje) > razmik_med_polji) {
+				slaba_polja.add(morebitno_polje);
+				b.send_location(b.LOC_SLABA_SUROVINA, morebitno_polje);
+			}
+		}
+		/**
+		 * pogledamo ce imamo polje, da velja<br>
+		 * 1. Vidimo vsaj razmik_med_polji stran od polje<br>
+		 * 2. V tem obmocju ni nobene dosegljive juhe.
+		 * 
+		 */
 	}
 
 	// Util

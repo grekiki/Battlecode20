@@ -156,9 +156,9 @@ class Util{
 				ans=m;
 			}
 		}
-		if(ans==null){
-			System.out.println("Nabljizja lokacija iz prazne mnozice?");
-		}
+//		if(ans==null){
+//			System.out.println("Nabljizja lokacija iz prazne mnozice?");
+//		}
 		return ans;
 	}
 
