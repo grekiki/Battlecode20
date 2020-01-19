@@ -2,7 +2,7 @@ package grekiki25;
 
 public class konst {
 	public static int min_cena_transakcije=1;
-	public static int private_key=123456789;
+	public static int private_key=12345678;
 	public static int min_base_dist_miner_suicide=2;
 	public static int refinery_build_buffer=200;
 	public static int refinery_low_count=2;
