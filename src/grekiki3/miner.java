@@ -302,7 +302,11 @@ class minerPathFinder {
 	}
 
 	private boolean is_at_goal(MapLocation cur, MapLocation dest) {
-		return cur.isAdjacentTo(dest);
+		boolean adj = cur.isAdjacentTo(dest);
+		if (adj && can_move(cur, cur.directionTo(dest))) {
+			return false;
+		}
+		return adj;
 	}
 
 	public void reset() {
