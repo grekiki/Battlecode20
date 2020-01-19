@@ -52,7 +52,7 @@ public class HQ extends robot {
 		}
 		if (strategy == 2000) {
 			// Na zacetku potrebujemo vsaj dva minerja. Vedno.
-			if (this.miners_spawned <= 5)
+			if (this.miners_spawned <= 5||Math.random()<2)
 				if (try_spawn_miner(pick_miner_direction()))
 					return;
 

@@ -178,7 +178,7 @@ class minerPathFinder {
 				result[1] = bug_wall_dir;
 			}
 			if (dir == null) {
-				rc.setIndicatorDot(end, 255, 255, 0);
+//				rc.setIndicatorDot(end, 255, 255, 0);
 				break;
 			}
 
@@ -186,10 +186,10 @@ class minerPathFinder {
 			if (end.distanceSquaredTo(dest) < closest.distanceSquaredTo(dest)) {
 				closest = end;
 			}
-			rc.setIndicatorDot(end, (255 / steps) * i, wall * 100, 255);
+//			rc.setIndicatorDot(end, (255 / steps) * i, wall * 100, 255);
 
 			if (is_at_goal(end, dest)) {
-				rc.setIndicatorDot(dest, 0, 255, 0);
+//				rc.setIndicatorDot(dest, 0, 255, 0);
 				break;
 			}
 		}
@@ -291,7 +291,7 @@ class minerPathFinder {
 		int d1 = right_pos.distanceSquaredTo(dest);
 		int d2 = left_pos.distanceSquaredTo(dest);
 		if (d1 == d2) {
-			rc.setIndicatorDot(cur, 0, 0, 0);
+//			rc.setIndicatorDot(cur, 0, 0, 0);
 			// Preverimo, katera smer je blizja po enem koraku
 		}
 		if (d1 <= d2) {
@@ -336,8 +336,8 @@ class minerPathFinder {
 		// tangent_bug(dest);
 		// Direction dir = bug_step(cur, dest, RIGHT_WALL);
 
-		if (tangent_shortcut != null)
-			rc.setIndicatorDot(tangent_shortcut, 255, 0, 0);
+//		if (tangent_shortcut != null)
+//			rc.setIndicatorDot(tangent_shortcut, 255, 0, 0);
 
 		Direction dir = tangent_bug(dest);
 		return dir;
@@ -458,10 +458,14 @@ class naloga {
 
 	}
 }
-
+/**
+ * TO-DO ce se do neke surovine sprehajamo vec kot recimo 50 potez, potem recemo da je tezka
+ * @author Gregor
+ *
+ */
 public class miner extends robot {
 	public static final int MINER_COST = RobotType.MINER.cost;
-	public static final int razmik_med_polji = 30;
+	public static final int razmik_med_polji = 20;
 
 	naloga task;
 	final static int GRADNJA = 1000;
@@ -476,6 +480,7 @@ public class miner extends robot {
 	HashSet<MapLocation> slabe_juhe;// tiste za katere ne vemo kako priti do njih
 	ArrayList<MapLocation> polja;
 	ArrayList<MapLocation> slaba_polja;// ne vemo a se da priti do njih
+	ArrayList<MapLocation> refinerije;
 	int w, h;// dimenzije mape
 
 	MapLocation hq_location;
@@ -498,20 +503,13 @@ public class miner extends robot {
 		slabe_juhe = new HashSet<MapLocation>();
 		polja = new ArrayList<MapLocation>();
 		slaba_polja = new ArrayList<MapLocation>();
+		refinerije = new ArrayList<MapLocation>();
+		refinerije.add(hq_location);
 	}
 
 	@Override
 	public void precompute() throws GameActionException {
 		b.checkQueue();
-		for (MapLocation m : rc.senseNearbySoup()) {
-			if (!juhe.contains(m) && !slabe_juhe.contains(m)) {
-				if (Util.d_inf(rc.getLocation(), m) <= 5 && path_finder.exists_path2(rc.getLocation(), m)) {
-					juhe.add(m);
-				} else {
-					slabe_juhe.add(m);
-				}
-			}
-		}
 	}
 
 	@Override
@@ -527,12 +525,32 @@ public class miner extends robot {
 	}
 
 	public void postcompute() throws GameActionException {
+		update_soup();
+
+		while (Clock.getBytecodesLeft() > 800) {
+			if (!b.read_next_round()) {
+				return;
+			}
+		}
+	}
+
+	private void update_soup() throws GameActionException {
+		// Dodamo juhe ki jih vidimo
+		for (MapLocation m : rc.senseNearbySoup()) {
+			if (!juhe.contains(m) && !slabe_juhe.contains(m)) {
+				if (Util.d_inf(rc.getLocation(), m) <= 5 && path_finder.exists_path2(rc.getLocation(), m)) {
+					juhe.add(m);
+				} else {
+					slabe_juhe.add(m);
+				}
+			}
+		}
 		// Tako se brise iz seta. Vir
 		// :https://stackoverflow.com/questions/1110404/remove-elements-from-a-hashset-while-iterating
 		Iterator<MapLocation> iterator = juhe.iterator();
 		while (iterator.hasNext()) {
 			MapLocation m = iterator.next();
-			rc.setIndicatorDot(m, 0, 255, 0);
+//			rc.setIndicatorDot(m, 0, 255, 0);
 			if (rc.canSenseLocation(m) && rc.senseSoup(m) == 0) {
 				iterator.remove();
 			}
@@ -540,20 +558,17 @@ public class miner extends robot {
 		iterator = slabe_juhe.iterator();
 		while (iterator.hasNext()) {
 			MapLocation m = iterator.next();
-			rc.setIndicatorDot(m, 255, 0, 0);
+//			rc.setIndicatorDot(m, 255, 0, 0);
 			if (rc.canSenseLocation(m) && rc.senseSoup(m) == 0) {
 				iterator.remove();
 			}
 			if (Util.d_inf(rc.getLocation(), m) <= 5 && path_finder.exists_path2(rc.getLocation(), m)) {
-				juhe.add(m);
+				juhe.add(m);// vedno ko dodamo juho, preverimo ce dodamo polje
 				iterator.remove();
 			}
 		}
-
-		while (Clock.getBytecodesLeft() > 800) {
-			if (!b.read_next_round()) {
-				return;
-			}
+		for(MapLocation m:juhe) {
+			
 		}
 	}
 
@@ -619,7 +634,9 @@ public class miner extends robot {
 	@Override
 	public void bc_polje_found(MapLocation pos) {
 		System.out.println("BC POLJE: " + pos);
-		polja.add(pos);
+		if (!polja.contains(pos)) {
+			polja.add(pos);
+		}
 	}
 
 	@Override
@@ -628,21 +645,27 @@ public class miner extends robot {
 		if (polja.contains(pos)) {
 			polja.remove(pos);
 		}
+		if (slaba_polja.contains(pos)) {
+			slaba_polja.remove(pos);
+		}
 	}
 
 	@Override
 	public void bc_polje_slabo(MapLocation pos) {
 		System.out.println("BC SLABO POLJE: " + pos);
-		if (polja.contains(pos)) {
-			polja.remove(pos);
+		if (!slaba_polja.contains(pos)) {
+			slaba_polja.add(pos);
 		}
 	}
 
 	@Override
 	public void bc_polje_upgrade(MapLocation pos) {
 		System.out.println("BC POLJE JE SEDAJ DOBRO: " + pos);
-		if (polja.contains(pos)) {
-			polja.remove(pos);
+		if (slaba_polja.contains(pos)) {
+			slaba_polja.remove(pos);
+		}
+		if (!polja.contains(pos)) {
+			polja.add(pos);
 		}
 	}
 
