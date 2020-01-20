@@ -30,7 +30,8 @@ class c {
  */
 class Util {
 	public static Random r = new Random(c.pkey);
-	public static Direction[] dir = { Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST };
+	public static Direction[] dir = { Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST,
+			Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST };
 
 	/**
 	 * Returns the round elevation gets flooded.
@@ -149,7 +150,8 @@ class Util {
 		return ans;
 	}
 
-	public static MapLocation closest(Iterable<? extends MapLocation> somethings, MapLocation source) throws GameActionException {
+	public static MapLocation closest(Iterable<? extends MapLocation> somethings, MapLocation source)
+			throws GameActionException {
 		MapLocation ans = null;
 		int dist = c.inf;
 		for (MapLocation m : somethings) {
@@ -192,22 +194,45 @@ class paket {
  * po�ljejo. Vsako potezo naj bi se poklical blockchain.checkQueue() da se
  * znebimo paketov iz seznama. Razred bo preveril cene v prej�njem bloku, in
  * glede na le te dolo�il koliko pla�ati da pridemo v naslednji blok. �e
- * prej�nji blok ni poln, potem placamo 1. Druga�e matchamo najcenejsi paket v
- * prejsnjem bloku.
+ * prej�nji blok ni poln, potem placamo 1. Druga�e matchamo najcenejsi paket
+ * v prejsnjem bloku.
  * 
  * @author grego
  *
  */
 class blockchain {
 	final int PRIVATE_KEY = 123456789;
-
+	/**
+	 * Na tem mestu je dosegljivo surovinsko polje
+	 */
 	final int LOC_SUROVINA = 1;
+	/**
+	 * Tukaj surovine ni vec
+	 */
 	final int LOC_SUROVINA_PRAZNO = 2;
+	/**
+	 * Tukaj je surovinsko polje, ki pa morda ni dosegljivo
+	 */
 	final int LOC_SLABA_SUROVINA = 3;
+	/**
+	 * Tukaj je surovinsko polje ki ni bilo dosegljivo, sedaj pa je
+	 */
 	final int NADGRADNJA_SUROVINE = 4;
+	/**
+	 * Tukaj je refinerija
+	 */
 	final int LOC_RAFINERIJA = 10;
+	/**
+	 * Tukaj je tovarna dronov
+	 */
 	final int LOC_TOVARNA_DRONOV = 20;
+	/**
+	 * Lokacija domace baze
+	 */
 	final int LOC_HOME_HQ = 30;
+	/**
+	 * Enota zeli prevoz z dronom iz prve do druge lokacije
+	 */
 	final int LOC2_DRONE = 100;
 
 	private final int LOC_MAX = 99;// do 99 je en mapLocation
