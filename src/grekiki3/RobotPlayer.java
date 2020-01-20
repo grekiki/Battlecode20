@@ -18,8 +18,10 @@ abstract class robot {
 					case LOC_SLABA_SUROVINA: bc_polje_slabo(pos); break;
 					case NADGRADNJA_SUROVINE: bc_polje_upgrade(pos); break;
 					case LOC_RAFINERIJA: bc_rafinerija(pos); break;
-					case LOC_TOVARNA_DRONOV: bc_tovarna_dronov(pos);
-					case LOC_HOME_HQ: bc_home_hq(pos);
+					case LOC_TOVARNA_DRONOV: bc_tovarna_dronov(pos); break;
+					case LOC_HOME_HQ: bc_home_hq(pos); break;
+					case LOC_WATER: bc_water(pos); break;
+					case LOC_ENEMY_NETGUN: bc_enemy_netgun(pos); break;
 				}
 			}
 
@@ -37,6 +39,7 @@ abstract class robot {
 			}
 		};
 	}
+
 	/**
 	 * Ta metoda se poklice ko se robot spawna. 
 	 * @throws Exception 
@@ -61,6 +64,8 @@ abstract class robot {
 	public void bc_home_hq(MapLocation pos) {}
 
 	public void bc_drone(MapLocation from, MapLocation to) {}
+	public void bc_water(MapLocation pos) {}
+	public void bc_enemy_netgun(MapLocation pos) {}
 }
 
 public strictfp class RobotPlayer {
