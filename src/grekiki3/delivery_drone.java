@@ -1,5 +1,7 @@
 package grekiki3;
 
+import battlecode.common.Clock;
+import battlecode.common.GameActionException;
 import battlecode.common.RobotController;
 
 public class delivery_drone extends robot{
@@ -9,14 +11,16 @@ public class delivery_drone extends robot{
 		
 	}
 
-	@Override public void init(){
-		
-
+	@Override public void init() throws GameActionException {
+		while (Clock.getBytecodesLeft() > 800 || rc.getCooldownTurns() > 1) {
+			if (!b.read_next_round()) {
+				return;
+			}
+		}
 	}
 
-	@Override public void precompute(){
-		
-
+	@Override public void precompute() throws GameActionException {
+		b.checkQueue();
 	}
 
 	@Override public void runTurn(){
@@ -24,9 +28,12 @@ public class delivery_drone extends robot{
 
 	}
 
-	@Override public void postcompute(){
-		
-
+	@Override public void postcompute() throws GameActionException {
+		while (Clock.getBytecodesLeft() > 500) {
+			if (!b.read_next_round()) {
+				break;
+			}
+		}
 	}
 
 }
