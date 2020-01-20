@@ -1,0 +1,6 @@
+23   generation_16_id_186063151 : 23  0   
+21   generation_14_id_414329352 : 0   21  
+
+
+generation_14_id_414329352
+generation_16_id_186063151

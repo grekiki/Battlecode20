@@ -1,4 +1,3 @@
-
 package grekiki25_ai;
 
 public class konst {

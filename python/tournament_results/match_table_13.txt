@@ -1,0 +1,6 @@
+27   generation_12_id_677085754 : 27  0   
+23   generation_4_id_655583086 : 0   23  
+
+
+generation_4_id_655583086
+generation_12_id_677085754

@@ -1,0 +1,6 @@
+25   generation_13_id_982850361 : 25  0   
+20   generation_12_id_677085754 : 0   20  
+
+
+generation_12_id_677085754
+generation_13_id_982850361

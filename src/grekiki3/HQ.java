@@ -92,16 +92,11 @@ public class HQ extends robot {
 
 	public int choose_strategy() {
 		wallRadius = 2;
-		if (rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 0) {
-			return 1000;
-		} else {
-			return 2000;
-		}
+		return 2000;
 	}
 
 	// Pomozne metode
 	Direction pick_miner_direction() {
-		// TODO doloci najboljso smer (proti surovinam)
 		return Direction.SOUTH;
 	}
 
