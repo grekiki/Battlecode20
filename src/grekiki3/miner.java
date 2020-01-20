@@ -650,12 +650,12 @@ public class miner extends robot {
 		 * 2. V tem obmocju ni nobene dosegljive juhe.
 		 * 
 		 */
-//		for(MapLocation m:polja) {
-//			rc.setIndicatorDot(m, 0, 255, 0);
-//		}
-//		for(MapLocation m:slaba_polja) {
-//			rc.setIndicatorDot(m, 0, 255, 0);
-//		}
+		for(MapLocation m:polja) {
+			rc.setIndicatorDot(m, 0, 255, 0);
+		}
+		for(MapLocation m:slaba_polja) {
+			rc.setIndicatorDot(m, 0, 255, 0);
+		}
 	}
 
 	// Util
