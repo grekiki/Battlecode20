@@ -35,11 +35,12 @@ MAPS = [
 
 class Referee(threading.Thread):
 
-    def __init__(self, ids, q, results):
+    def __init__(self, ids, q, results, generation):
         threading.Thread.__init__(self)
         self.id = ids
         self.q = q
         self.results = results
+        self.generation = generation
 
     def run(self):
         
@@ -53,11 +54,11 @@ class Referee(threading.Thread):
             if game_result == 'PLAYER 1 WINS':
                 self.results[bot1][bot2][0] += 1
                 self.results[bot2][bot1][1] += 1
-                print(f'BOT {bot1} WINS VS BOT {bot2} ON MAP {play_map}')
+                print(f'GEN:{self.generation} - BOT {bot1} WINS VS BOT {bot2} ON MAP {play_map}')
             elif game_result == 'PLAYER 2 WINS':
                 self.results[bot1][bot2][1] += 1
                 self.results[bot2][bot1][0] += 1
-                print(f'BOT {bot2} WINS VS BOT {bot1} ON MAP {play_map}')
+                print(f'GEN:{self.generation} - BOT {bot2} WINS VS BOT {bot1} ON MAP {play_map}')
             else:
                 print('There was an error in current game')
                 print(bot1, bot2, play_map)
@@ -80,7 +81,7 @@ def play_tournament(generation, bot_names, referees=4):
     
     referees_force = []
     for i in range(referees):
-        referee = Referee(i, matches, results)
+        referee = Referee(i, matches, results, generation)
         referee.start()
         referees_force.append(referee)
     
@@ -122,23 +123,62 @@ def play_tournament(generation, bot_names, referees=4):
             
     for result in standings:
         print(result)
+    
+    return standings
 
+def basic_evolution(bots, generation=4):
+
+    while True:
+
+        tournament_results = play_tournament(generation, bots, referees=5)
+
+        next_generation = []
+
+        bot_id = 0
+        for parent in tournament_results[:5]:
+            
+            parent_bot = parent[1]
+            next_generation.append(parent_bot) # Automatically advances as top5
+            
+            bot_name = f'generation_{generation}_id_{bot_id}'
+            create_new_bot(parent_bot, generation, bot_id)
+            next_generation.append(bot_name)
+            
+            bot_name = f'generation_{generation}_id_{bot_id+1}'
+            create_new_bot(parent_bot, generation, bot_id+1)
+            next_generation.append(bot_name)
+            
+            bot_id += 2
+
+            bots = next_generation
+        
+        print('WE ARE ADVANCING TO NEXT GENERATION')
+        generation += 1
 
 
 
 if __name__ == '__main__':
 
-    generation = 3
-    bots = []
-    # for i in range(3):
+    initial_bots = [
+        'grekiki25_gen1',
+        'generation_4_id_2',
+        'generation_4_id_4',
+        'generation_2_id_0',
+        'generation_4_id_5',
+        ]
+    basic_evolution(initial_bots, generation=6)
+
+    # generation = 3
+    # bots = []
+    # for i in range(5):
     #     bot_name = f'generation_{generation}_id_{i}'
-    #     create_new_bot('grekiki25', generation, i)
+    #     create_new_bot('grekiki25_gen1', generation, i)
     #     bots.append(bot_name)
     
-    bots.append('generation_0_id_0') # Previous winner
-    bots.append('grekiki25')
+    # bots.append('generation_0_id_0') # Previous winner
+    # bots.append('grekiki25_gen1')
     
-    play_tournament(generation, bots)
+    # play_tournament(generation, bots, referees=10)
     
 
     # bot_1 = (0, 0)

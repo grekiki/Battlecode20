@@ -10,7 +10,8 @@ def play_game(bot1, bot2, maps):
     current_dir = os.getcwd()
 
     command = f'..\gradlew -p .. run ' + f'-PteamA={bot1} -PteamB={bot2} -Pmaps={maps}'
-    result = subprocess.run(command, capture_output=True, shell=True, cwd=current_dir)
+    result = subprocess.run(command, stdout=subprocess.PIPE, shell=True, cwd=current_dir)
+    # print(result)
     decoded_match_string = result.stdout.decode('utf-8')
     # print(decoded_match_string)
     match_result = decoded_match_string[-500:]
@@ -20,8 +21,9 @@ def play_game(bot1, bot2, maps):
     elif '(B) wins' in match_result:
         return 'PLAYER 2 WINS'
     else:
+        print(result)
         return 'Something went wrong?'
 
 
 if __name__ == '__main__':
-    print(play_game('grekiki25', 'grekiki3', 'FourLakeLand'))
+    print(play_game('grekiki25_gen1', 'grekiki3', 'FourLakeLand'))

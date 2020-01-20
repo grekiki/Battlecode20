@@ -10,8 +10,6 @@ import subprocess
 import json
 import random
 
-from jinja2 import Template
-
 DOUBLES = set([
     "dist_optrange_factor",
     "dist_factor",
@@ -68,14 +66,9 @@ def create_new_bot(parent, generation, number):
     with open(f'bot_configurations/{child_name}.json', 'w') as outfile:
         json.dump(child_bot_configurations, outfile, indent=2)
 
-    command = subprocess.run(f'xcopy /s ..\src\grekiki25 ..\src\generation_{generation}_id_{number}\\ /Y', shell=True)
+    command = subprocess.run(f'xcopy /s ..\src\grekiki25_gen1 ..\src\generation_{generation}_id_{number}\\ /Y', shell=True)
 
-
-    # Load template
-    with open('konst_java_template.jinja2', 'r') as template_file:
-        template = Template(template_file.read())
-
-    with open(f'..\src\generation_{generation}_id_{number}\konst.java', 'w') as outfile:
+    with open(f'..\\src\\generation_{generation}_id_{number}\\konst.java', 'w') as outfile:
         # print(template.render(child_bot_configurations), file=outfile)
         print(f'package {child_name};', file=outfile)
         print('public class konst {', file=outfile)
@@ -97,4 +90,4 @@ def create_new_bot(parent, generation, number):
         
 
 if __name__ == '__main__':
-    create_new_bot('grekiki25', 1, 15)
+    create_new_bot('grekiki25_gen1', 1, 15)
