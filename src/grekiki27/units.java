@@ -391,71 +391,71 @@ class miner extends robot {
 		if (fazaBaze == -2 && phase == 3) {
 			fazaBaze = 1;
 		}
-		if (fazaBaze == 1) {// NetCatcher
-			int[] msg = { konst.private_key, 7, rc.getLocation().x, rc.getLocation().y, hq.x + 1, hq.y, 0 };
-			b.sendMsg(new paket(msg, 1));
-			fazaBaze = 2;
-		}
-		if (fazaBaze == 2) {
-			if (rc.getLocation().x == hq.x + 1 && rc.getLocation().y == hq.y) {
-				if (rc.canBuildRobot(RobotType.NET_GUN, Direction.NORTH)) {
-					rc.buildRobot(RobotType.NET_GUN, Direction.NORTH);
-					return true;
-				}
-				if (rc.canBuildRobot(RobotType.NET_GUN, Direction.NORTHWEST)) {
-					rc.buildRobot(RobotType.NET_GUN, Direction.NORTHWEST);
-					return true;
-				}
-				if (rc.senseRobotAtLocation(rc.getLocation().add(Direction.NORTH)) != null
-						&& rc.senseRobotAtLocation(rc.getLocation().add(Direction.NORTH)).type == RobotType.NET_GUN
-						&& rc.senseRobotAtLocation(rc.getLocation().add(Direction.NORTHWEST)) != null
-						&& rc.senseRobotAtLocation(
-								rc.getLocation().add(Direction.NORTHWEST)).type == RobotType.NET_GUN) {
-					fazaBaze = 3;
-				} else {
-					return true;
-				}
-			} else {
-				return true;
-			}
-		}
-		if (fazaBaze == 3) {
-			int[] msg = { konst.private_key, 7, rc.getLocation().x, rc.getLocation().y, hq.x - 1, hq.y, 0 };
-			b.sendMsg(new paket(msg, 1));
-			fazaBaze = 4;
-		}
-		if (fazaBaze == 4) {
-			if (rc.getLocation().x == hq.x - 1 && rc.getLocation().y == hq.y) {
-				if (rc.canBuildRobot(RobotType.NET_GUN, Direction.SOUTH)) {
-					rc.buildRobot(RobotType.NET_GUN, Direction.SOUTH);
-					return true;
-				}
-				if (rc.canBuildRobot(RobotType.NET_GUN, Direction.SOUTHEAST)) {
-					rc.buildRobot(RobotType.NET_GUN, Direction.SOUTHEAST);
-					return true;
-				}
-				if (rc.senseRobotAtLocation(rc.getLocation().add(Direction.SOUTH)) != null
-						&& rc.senseRobotAtLocation(rc.getLocation().add(Direction.SOUTH)).type == RobotType.NET_GUN
-						&& rc.senseRobotAtLocation(rc.getLocation().add(Direction.SOUTHEAST)) != null
-						&& rc.senseRobotAtLocation(
-								rc.getLocation().add(Direction.SOUTHEAST)).type == RobotType.NET_GUN) {
-					fazaBaze = 5;
-				} else {
-					return true;
-				}
-			} else {
-				return true;
-			}
-		}
-		if (fazaBaze == 5) {
-			int[] msg = { konst.private_key, 7, rc.getLocation().x, rc.getLocation().y, rc.getLocation().x - 2,
-					rc.getLocation().y, 0 };
-			b.sendMsg(new paket(msg, 1));
-			fazaBaze = 6;
-			return true;
-		} else if (fazaBaze == 6) {
-			return false;
-		}
+//		if (fazaBaze == 1) {// NetCatcher
+//			int[] msg = { konst.private_key, 7, rc.getLocation().x, rc.getLocation().y, hq.x + 1, hq.y, 0 };
+//			b.sendMsg(new paket(msg, 1));
+//			fazaBaze = 2;
+//		}
+//		if (fazaBaze == 2) {
+//			if (rc.getLocation().x == hq.x + 1 && rc.getLocation().y == hq.y) {
+//				if (rc.canBuildRobot(RobotType.NET_GUN, Direction.NORTH)) {
+//					rc.buildRobot(RobotType.NET_GUN, Direction.NORTH);
+//					return true;
+//				}
+//				if (rc.canBuildRobot(RobotType.NET_GUN, Direction.NORTHWEST)) {
+//					rc.buildRobot(RobotType.NET_GUN, Direction.NORTHWEST);
+//					return true;
+//				}
+//				if (rc.senseRobotAtLocation(rc.getLocation().add(Direction.NORTH)) != null
+//						&& rc.senseRobotAtLocation(rc.getLocation().add(Direction.NORTH)).type == RobotType.NET_GUN
+//						&& rc.senseRobotAtLocation(rc.getLocation().add(Direction.NORTHWEST)) != null
+//						&& rc.senseRobotAtLocation(
+//								rc.getLocation().add(Direction.NORTHWEST)).type == RobotType.NET_GUN) {
+//					fazaBaze = 3;
+//				} else {
+//					return true;
+//				}
+//			} else {
+//				return true;
+//			}
+//		}
+//		if (fazaBaze == 3) {
+//			int[] msg = { konst.private_key, 7, rc.getLocation().x, rc.getLocation().y, hq.x - 1, hq.y, 0 };
+//			b.sendMsg(new paket(msg, 1));
+//			fazaBaze = 4;
+//		}
+//		if (fazaBaze == 4) {
+//			if (rc.getLocation().x == hq.x - 1 && rc.getLocation().y == hq.y) {
+//				if (rc.canBuildRobot(RobotType.NET_GUN, Direction.SOUTH)) {
+//					rc.buildRobot(RobotType.NET_GUN, Direction.SOUTH);
+//					return true;
+//				}
+//				if (rc.canBuildRobot(RobotType.NET_GUN, Direction.SOUTHEAST)) {
+//					rc.buildRobot(RobotType.NET_GUN, Direction.SOUTHEAST);
+//					return true;
+//				}
+//				if (rc.senseRobotAtLocation(rc.getLocation().add(Direction.SOUTH)) != null
+//						&& rc.senseRobotAtLocation(rc.getLocation().add(Direction.SOUTH)).type == RobotType.NET_GUN
+//						&& rc.senseRobotAtLocation(rc.getLocation().add(Direction.SOUTHEAST)) != null
+//						&& rc.senseRobotAtLocation(
+//								rc.getLocation().add(Direction.SOUTHEAST)).type == RobotType.NET_GUN) {
+//					fazaBaze = 5;
+//				} else {
+//					return true;
+//				}
+//			} else {
+//				return true;
+//			}
+//		}
+//		if (fazaBaze == 5) {
+//			int[] msg = { konst.private_key, 7, rc.getLocation().x, rc.getLocation().y, rc.getLocation().x - 2,
+//					rc.getLocation().y, 0 };
+//			b.sendMsg(new paket(msg, 1));
+//			fazaBaze = 6;
+//			return true;
+//		} else if (fazaBaze == 6) {
+//			return false;
+//		}
 		return false;
 	}
 
@@ -591,9 +591,14 @@ class landscaper extends robot {
 	RobotController rc;
 	MapLocation hq;
 	int phase = 0;
+	blockchain b;
 	public static MapLocation[] place = { new MapLocation(0, -2), new MapLocation(0, 2), new MapLocation(-2, 0),
 			new MapLocation(2, 0), new MapLocation(2, -2), new MapLocation(2, 2), new MapLocation(-2, 2),
 			new MapLocation(-2, -2) };
+	public static MapLocation[] place_inside = { new MapLocation(0, 1), new MapLocation(-1, 0), new MapLocation(1, 1),
+			new MapLocation(-1, -1), new MapLocation(0, -1) };
+	boolean internal_goal = false;
+	MapLocation ig = null;
 
 	landscaper(RobotController rc) {
 		this.rc = rc;
@@ -606,6 +611,7 @@ class landscaper extends robot {
 				hq = r.location;
 			}
 		}
+		b = new blockchain(rc);
 
 	}
 
@@ -626,6 +632,7 @@ class landscaper extends robot {
 
 	@Override
 	public void precompute() throws GameActionException {
+		b.checkQueue();
 		boolean ok = true;
 		for (MapLocation m : landscaper.place) {
 			MapLocation check = new MapLocation(hq.x + m.x, hq.y + m.y);
@@ -638,6 +645,15 @@ class landscaper extends robot {
 		}
 		if (ok) {
 			phase = 3;
+		}
+		internal_goal = false;
+		for (MapLocation m : place_inside) {
+			MapLocation g = new MapLocation(hq.x + m.x, hq.y + m.y);
+			if (rc.canSenseLocation(g) && rc.senseRobotAtLocation(g) == null) {
+				internal_goal = true;
+				ig = g;
+				return;
+			}
 		}
 	}
 
@@ -652,7 +668,10 @@ class landscaper extends robot {
 		if (rc.getLocation().equals(new MapLocation(hq.x + place[p].x, hq.y + place[p].y))) {
 			positioned = true;
 		}
-		if (phase == 3) {
+		if (rc.getLocation().equals(ig)) {
+			positioned = true;
+		}
+		if (phase == 3 && !internal_goal) {
 			positioned = true;
 		}
 		int dist = Util.d_inf(rc.getLocation(), hq);
@@ -693,16 +712,8 @@ class landscaper extends robot {
 						}
 					}
 				}
-			} else if (dist == 3) {
+			} else if (dist == 1) {
 				if (rc.getDirtCarrying() > 0) {
-					for (Direction d : Direction.allDirections()) {
-						if (rc.canDepositDirt(d)) {
-							if (rc.senseElevation(rc.getLocation().add(d)) < 20) {
-								rc.depositDirt(d);
-								return;
-							}
-						}
-					}
 					int min = 10000000;
 					Direction best = null;
 					for (Direction d : Direction.allDirections()) {
@@ -724,6 +735,15 @@ class landscaper extends robot {
 				}
 			}
 		} else {
+			if (internal_goal) {
+				System.out.println("Gremo do " + ig);
+				Direction good = Util.tryMoveLite(rc, rc.getLocation().directionTo(ig));
+				if (good != null) {
+					rc.move(good);
+				}
+				return;
+			}
+			System.out.println("Drugi cilji");
 			for (int i = 0; i < 8; i++) {
 				MapLocation check = new MapLocation(hq.x + place[i].x, hq.y + place[i].y);
 				if (rc.canSenseLocation(check) && (rc.senseRobotAtLocation(check) == null
@@ -778,6 +798,8 @@ class landscaper extends robot {
 						}
 					}
 				}
+				int[] msg = { konst.private_key, 7, hq.x + 1, hq.y, goal.x, goal.y, 0 };
+				b.sendMsg(new paket(msg, 1));
 			}
 		}
 
@@ -850,7 +872,7 @@ class delivery_drone extends robot {
 			Transaction[] q = rc.getBlock(rc.getRoundNum() - 1);
 //			System.out.println(Clock.getBytecodesLeft());
 			for (Transaction t : q) {
-				if (t.getMessage()[0] == konst.private_key && t.getMessage()[1] == 7&&(Math.random()<1||rc.getLocation().distanceSquaredTo(hq)<100)) {
+				if (t.getMessage()[0] == konst.private_key && t.getMessage()[1] == 7) {
 					s = new MapLocation(t.getMessage()[2], t.getMessage()[3]);
 					drain = new MapLocation(t.getMessage()[4], t.getMessage()[5]);
 					time = rc.getRoundNum();
@@ -862,40 +884,39 @@ class delivery_drone extends robot {
 
 	@Override
 	public void runTurn() throws GameActionException {
-		if (rc.getRoundNum() > 300 && rc.getRoundNum() < 1000) {
-			working = false;
-		} else {
-			working = true;
-		}
+//		if (rc.getRoundNum() > 300 && rc.getRoundNum() < 1000) {
+//			working = false;
+//		} else {
+//			working = true;
+//		}
 		if (!rc.isReady()) {
 			return;
 		}
 
-		if (dist < 25) {
-			if (rc.getRoundNum() > 2000) {
-				MapLocation rightdown = new MapLocation(rc.getMapWidth() - hq.x - 1, rc.getMapHeight() - hq.y - 1);
-				goal = rightdown;
-				timeToReach = 2100;
-			}
-		} else {
-			if (rc.getRoundNum() > 1600) {
-				goal = hq;
-				timeToReach = 1600;
-			}
-			else if (rc.getRoundNum() > 1500) {
-				MapLocation down = new MapLocation(hq.x, rc.getMapHeight() - hq.y - 1);
-				goal = down;
-				timeToReach = 1600;
-			} else if (rc.getRoundNum() > 1300) {
-				MapLocation rightdown = new MapLocation(rc.getMapWidth() - hq.x - 1, rc.getMapHeight() - hq.y - 1);
-				goal = rightdown;
-				timeToReach = 1400;
-			} else if (rc.getRoundNum() > 1100) {
-				MapLocation right = new MapLocation(rc.getMapWidth() - hq.x - 1, hq.y);
-				goal = right;
-				timeToReach = 1200;
-			}
-		}
+//		if (dist < 25) {
+//			if (rc.getRoundNum() > 2000) {
+//				MapLocation rightdown = new MapLocation(rc.getMapWidth() - hq.x - 1, rc.getMapHeight() - hq.y - 1);
+//				goal = rightdown;
+//				timeToReach = 2100;
+//			}
+//		} else {
+//			if (rc.getRoundNum() > 1600) {
+//				goal = hq;
+//				timeToReach = 1600;
+//			} else if (rc.getRoundNum() > 1500) {
+//				MapLocation down = new MapLocation(hq.x, rc.getMapHeight() - hq.y - 1);
+//				goal = down;
+//				timeToReach = 1600;
+//			} else if (rc.getRoundNum() > 1300) {
+//				MapLocation rightdown = new MapLocation(rc.getMapWidth() - hq.x - 1, rc.getMapHeight() - hq.y - 1);
+//				goal = rightdown;
+//				timeToReach = 1400;
+//			} else if (rc.getRoundNum() > 1100) {
+//				MapLocation right = new MapLocation(rc.getMapWidth() - hq.x - 1, hq.y);
+//				goal = right;
+//				timeToReach = 1200;
+//			}
+//		}
 		full = rc.isCurrentlyHoldingUnit();
 		System.out.println(s + " " + drain);
 		a: if (s != null && !full) {

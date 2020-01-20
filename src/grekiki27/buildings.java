@@ -199,6 +199,15 @@ class HQ extends robot{
 			}
 		}else if(phase==1||phase==2){
 			if((cooldown<=0||rc.getTeamSoup()>konst.ref_soup_buffer)&&rc.getTeamSoup()>=(phase>1?konst.ref_soup_buffer2:konst.ref_soup_buffer3)&&miners<f(polja.size())){//Nakup minerjev?
+				int diggerCount=0;
+				for(RobotInfo r:rc.senseNearbyRobots(-1, rc.getTeam())) {
+					if(r.type==RobotType.LANDSCAPER) {
+						diggerCount++;
+					}
+				}
+				if(diggerCount>4) {
+					return;
+				}
 				if(polja.size()>0){//Ce imamo polja minerje usmerimo da so blizje
 					MapLocation best=null;
 					int dist=64*64;
@@ -379,7 +388,7 @@ class design_school extends robot{
 	int p=0;
 	int delta=-1;
 	ArrayList<MapLocation> zid=new ArrayList<MapLocation>();
-	ArrayList<MapLocation> zid2=new ArrayList<MapLocation>();
+//	ArrayList<MapLocation> zid2=new ArrayList<MapLocation>();
 	public design_school(RobotController r){
 		rc=r;
 	}
@@ -428,9 +437,9 @@ class design_school extends robot{
 				if(Util.d_inf(new MapLocation(0,0),m)==2){
 					zid.add(m);
 				}
-				if(Util.d_inf(new MapLocation(0,0),m)==3) {
-					zid2.add(m);
-				}
+//				if(Util.d_inf(new MapLocation(0,0),m)==3) {
+//					zid2.add(m);
+//				}
 			}
 			
 		}
@@ -453,7 +462,7 @@ class design_school extends robot{
 				return;
 			}
 		}
-		if(diggers<8){
+		if(diggers<13){
 //			System.out.println(diggers);
 			if(rc.getTeamSoup()>=konst.digger_buffer||polja.size()==0){
 				for(Direction d:new Direction[]{Direction.NORTH,Direction.WEST}){
@@ -477,7 +486,7 @@ class design_school extends robot{
 					cw++;
 				}
 			}
-			if(count==4&&cw==0){
+			if(cw==0){
 				if(delta==-1) {
 					delta=rc.getRoundNum();
 				}
