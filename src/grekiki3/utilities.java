@@ -280,7 +280,7 @@ class blockchain {
 	public void handle_location(int type, MapLocation pos) {
 	}
 
-	public void handle_location2(int type, MapLocation m1, MapLocation m2) {
+	public void handle_location2(int type, MapLocation m1, MapLocation m2, int id) {
 	}
 
 	public void handle_packet(int type, int[] message) {
@@ -292,8 +292,8 @@ class blockchain {
 		sendMsg(new paket(msg, 1));
 	}
 
-	public void send_location2(int type, MapLocation p1, MapLocation p2) throws GameActionException {
-		int[] msg = { PRIVATE_KEY, type, p1.x, p1.y, p2.x, p2.y, 0 };
+	public void send_location2(int type, MapLocation p1, MapLocation p2, int id) throws GameActionException {
+		int[] msg = { PRIVATE_KEY, type, p1.x, p1.y, p2.x, p2.y, id };
 		sendMsg(new paket(msg, 1));
 	}
 
@@ -316,7 +316,8 @@ class blockchain {
 		} else if (type >= LOC_MAX) {
 			MapLocation m1 = new MapLocation(msg[2], msg[3]);
 			MapLocation m2 = new MapLocation(msg[4], msg[5]);
-			handle_location2(LOC2_DRONE, m1, m2);
+			int id = msg[6];
+			handle_location2(LOC2_DRONE, m1, m2, id);
 		} else {
 			MapLocation m = new MapLocation(msg[2], msg[3]);
 			handle_location(type, m);
@@ -716,7 +717,7 @@ abstract class BasePathFinder {
 		}
 		Object[] prev_state = save_state();
 		Direction dir = tangent_bug(dest);
-		if (is_unit_obstruction(cur.add(dir))) {
+		if (dir == null || is_unit_obstruction(cur.add(dir))) {
 			unit_wait_time++;
 			set_state(prev_state);
 //			rc.setIndicatorDot(cur.add(dir), 200, 0, 255);
