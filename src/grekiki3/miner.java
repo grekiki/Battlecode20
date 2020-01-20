@@ -87,13 +87,41 @@ class MapCell {
 	}
 }
 
-class minerPathFinder extends BasePathFinder {
+class minerPathFinder {
+	private static final int LOOKAHEAD_STEPS = 5;
+	private static final int UNIT_MAX_WAIT = 2;
+
+	private static final int NO_WALL = 0; // Ne sledi zidu.
+	private static final int LEFT_WALL = 1; // Zid je na levi.
+	private static final int RIGHT_WALL = 2;
+
+	private RobotController rc;
+
+	private MapLocation goal;
+	private MapLocation closest; // Uporablja se pri bug navigation.
+	private MapLocation bug_wall; // Kje je zid, ki mu sledimo?
+	private int bug_wall_tangent = NO_WALL; // Na kateri strani je zid, ki mu sledimo?
+	private MapLocation tangent_shortcut; // Pomozna bliznjica.
+	private boolean ignore_units = true;
+	private int unit_wait_time = 0;
+
 	minerPathFinder(RobotController rc) {
-	    super(rc);
+		this.rc = rc;
 	}
 
-	@Override
-	boolean can_move(MapLocation from, Direction dir) throws GameActionException {
+	private boolean is_unit_obstruction(MapLocation at) {
+		if (rc.canSenseLocation(at)) {
+			try {
+				RobotInfo robot = rc.senseRobotAtLocation(at);
+				return robot != null && robot.getID() != rc.getID();
+			} catch (GameActionException e) {
+				return false;
+			}
+		}
+		return false;
+	}
+
+	private boolean can_move(MapLocation from, Direction dir) throws GameActionException {
 		// Ta metoda ignorira cooldown ...
 
 		MapLocation to = from.add(dir);
@@ -107,6 +135,302 @@ class minerPathFinder extends BasePathFinder {
 		return true;
 	}
 
+	@SuppressWarnings("unused")
+	private Direction fuzzy(MapLocation dest) {
+		MapLocation cur = rc.getLocation();
+		Direction straight = cur.directionTo(dest);
+		if (rc.canMove(straight))
+			return straight;
+		Direction left = straight.rotateLeft();
+		if (rc.canMove(left))
+			return left;
+		Direction right = straight.rotateRight();
+		if (rc.canMove(right))
+			return right;
+		left = left.rotateLeft();
+		if (rc.canMove(left))
+			return left;
+		right = right.rotateRight();
+		if (rc.canMove(right))
+			return right;
+		return null;
+	}
+
+	private Direction fuzzy_step(MapLocation cur, MapLocation dest) throws GameActionException {
+		Direction straight = cur.directionTo(dest);
+		if (can_move(cur, straight))
+			return straight;
+		Direction left = straight.rotateLeft();
+		if (can_move(cur, left))
+			return left;
+		Direction right = straight.rotateRight();
+		if (can_move(cur, right))
+			return right;
+		left = left.rotateLeft();
+		if (can_move(cur, left))
+			return left;
+		right = right.rotateRight();
+		if (can_move(cur, right))
+			return right;
+		return null;
+	}
+
+	private Direction fuzzy_step_short(MapLocation cur, MapLocation dest) throws GameActionException {
+		Direction straight = cur.directionTo(dest);
+		if (can_move(cur, straight))
+			return straight;
+		Direction left = straight.rotateLeft();
+		if (can_move(cur, left))
+			return left;
+		Direction right = straight.rotateRight();
+		if (can_move(cur, right))
+			return right;
+		return null;
+	}
+
+	private Direction bug_step(MapLocation cur, MapLocation dest, int wall) throws GameActionException {
+		Direction dir = fuzzy_step(cur, dest);
+		if (dir != null && cur.add(dir).distanceSquaredTo(dest) < closest.distanceSquaredTo(dest)) {
+			bug_wall = null;
+			return dir;
+		}
+
+		// Ne moremo blizje, zato se drzimo zidu.
+		// Drzimo se lahko leve ali desne strani: parameter 'wall'.
+		Direction bug_wall_dir;
+		if (bug_wall == null)
+			bug_wall_dir = cur.directionTo(dest);
+		else
+			bug_wall_dir = cur.directionTo(bug_wall);
+
+		if (wall == LEFT_WALL) {
+			// V smeri urinega kazalca
+			Direction right = bug_wall_dir;
+			for (int i = 0; i < 8; ++i) {
+				if (can_move(cur, right)) {
+					bug_wall = cur.add(right.rotateLeft());
+					return right;
+				}
+				right = right.rotateRight();
+			}
+		} else {
+			// Nasprotna smer urinega kazalca
+			Direction left = bug_wall_dir;
+			for (int i = 0; i < 8; ++i) {
+				if (can_move(cur, left)) {
+					bug_wall = cur.add(left.rotateRight());
+					return left;
+				}
+				left = left.rotateLeft();
+			}
+		}
+
+		// To se lahko zgodi samo, ce je obkoljen ...
+		return null;
+	}
+
+	private Object[] bug_step_simulate(MapLocation cur, MapLocation dest, int wall, int steps)
+			throws GameActionException {
+		// Vrne [0]: direction po prvem koraku
+		// [1]: wall loc po prvem koraku
+		// [2]: wall loc po zadnjem koraku
+		// [3]: koncna lokacija
+		Object[] result = new Object[4];
+
+		MapLocation prev_closest = closest;
+		MapLocation prev_bug_wall = bug_wall;
+
+		MapLocation end = cur;
+		for (int i = 0; i < steps; ++i) {
+			Direction dir = bug_step(end, dest, wall);
+			if (i == 0) {
+				result[0] = dir;
+				result[1] = bug_wall;
+			}
+			if (dir == null) {
+//				rc.setIndicatorDot(end, 255, 255, 0);
+				break;
+			}
+
+			end = end.add(dir);
+			if (end.distanceSquaredTo(dest) < closest.distanceSquaredTo(dest)) {
+				closest = end;
+			}
+//			rc.setIndicatorDot(end, (255 / steps) * i, wall * 100, 255);
+
+			if (is_at_goal(end, dest)) {
+//				rc.setIndicatorDot(dest, 0, 255, 0);
+				break;
+			}
+		}
+
+		result[2] = bug_wall;
+		result[3] = end;
+
+		bug_wall = prev_bug_wall;
+		closest = prev_closest;
+
+		return result;
+	}
+
+	public boolean exists_path(MapLocation cur, MapLocation dest) throws GameActionException {
+		Direction dir = fuzzy_step_short(cur, dest);
+		while (!cur.equals(dest)) {
+			if (cur.isWithinDistanceSquared(dest, 2)) {
+				return true;
+			}
+			if (dir == null || !can_move(cur, dir))
+				return false;
+			cur = cur.add(dir);
+			dir = fuzzy_step_short(cur, dest);
+//			rc.setIndicatorDot(cur, 255, 0, 0);
+		}
+		return true;
+	}
+
+	private boolean exists_fuzzy_path(MapLocation cur, MapLocation dest, int max_steps) throws GameActionException {
+		Direction dir = fuzzy_step(cur, dest);
+		for (int steps = 0; dir != null && !cur.equals(dest) && steps < max_steps; ++steps) {
+			if (!can_move(cur, dir))
+				return false;
+			cur = cur.add(dir);
+			dir = fuzzy_step(cur, dest);
+		}
+		return cur.equals(dest);
+	}
+
+	private Direction run_simulation(MapLocation cur, Object[] simulation, int wall) throws GameActionException {
+		MapLocation end = (MapLocation) simulation[3];
+		bug_wall_tangent = wall;
+		if (exists_fuzzy_path(cur, end, LOOKAHEAD_STEPS - 1)) {
+			tangent_shortcut = end;
+			bug_wall = (MapLocation) simulation[2];
+			return fuzzy_step(cur, tangent_shortcut);
+		}
+		bug_wall = (MapLocation) simulation[1];
+		return (Direction) simulation[0];
+	}
+
+	private Direction tangent_bug(MapLocation dest) throws GameActionException {
+		// Odlocimo se med levo in desno stranjo in potem
+		// nadaljujemo po izbrani poti.
+		// Ce najdemo bliznjico, gremo do nje po najkrajsi poti
+		// in potem nadaljujemo pot.
+
+		MapLocation cur = rc.getLocation();
+		if (cur.equals(tangent_shortcut)) {
+			tangent_shortcut = null;
+		}
+		if (tangent_shortcut != null) {
+			// Naj bi obstajala fuzzy pot do tam ...?
+			Direction dir = fuzzy_step(cur, tangent_shortcut);
+			if (dir != null && can_move(cur, dir))
+				return dir;
+			// Zgubili smo se ali pa je ovira ...
+			reset_tangent();
+		}
+
+		if (bug_wall != null && can_move(cur, cur.directionTo(bug_wall))) {
+			reset_tangent();
+		}
+
+		// Stran zidu je ze izbrana
+		// Simularmo pot z izbranim zidom
+		if (bug_wall_tangent != NO_WALL) {
+			// bug_step(cur, dest, bug_wall_tangent);
+			Object[] simulation = bug_step_simulate(cur, dest, bug_wall_tangent, LOOKAHEAD_STEPS);
+			return run_simulation(cur, simulation, bug_wall_tangent);
+		}
+
+		// Odlocimo se med levo in desno stranjo
+		Object[] left_simulation = bug_step_simulate(cur, dest, LEFT_WALL, LOOKAHEAD_STEPS);
+		Object[] right_simulation = bug_step_simulate(cur, dest, RIGHT_WALL, LOOKAHEAD_STEPS);
+		MapLocation left_pos = (MapLocation) left_simulation[3];
+		MapLocation right_pos = (MapLocation) right_simulation[3];
+
+		int d1 = right_pos.distanceSquaredTo(dest);
+		int d2 = left_pos.distanceSquaredTo(dest);
+		if (d1 == d2) {
+//			rc.setIndicatorDot(cur, 0, 0, 0);
+			// Preverimo, katera smer je blizja po enem koraku
+		}
+		if (d1 <= d2) {
+			return run_simulation(cur, right_simulation, RIGHT_WALL);
+		} else {
+			return run_simulation(cur, left_simulation, LEFT_WALL);
+		}
+	}
+
+	private boolean is_at_goal(MapLocation cur, MapLocation dest) throws GameActionException {
+		boolean adj = cur.isAdjacentTo(dest);
+		if (adj && can_move(cur, cur.directionTo(dest))) {
+			return false;
+		}
+		return adj || cur.equals(dest);
+	}
+
+	private Object[] save_state() {
+		return new Object[] { closest, bug_wall, bug_wall_tangent, tangent_shortcut };
+	}
+
+	private void set_state(Object[] state) {
+		closest = (MapLocation) state[0];
+		bug_wall = (MapLocation) state[1];
+		bug_wall_tangent = (int) state[2];
+		tangent_shortcut = (MapLocation) state[3];
+	}
+
+	private void reset_tangent() {
+		tangent_shortcut = null;
+		bug_wall_tangent = NO_WALL;
+		bug_wall = null;
+		closest = rc.getLocation();
+	}
+
+	public void reset() {
+		goal = null;
+		// closest = rc.getLocation();
+		reset_tangent();
+	}
+
+	public Direction get_move_direction(MapLocation dest) throws GameActionException {
+		MapLocation cur = rc.getLocation();
+		if (is_at_goal(cur, dest)) {
+			reset();
+			return null;
+		}
+
+		if (!dest.equals(goal)) {
+			reset();
+			goal = dest;
+		} else {
+			if (cur.distanceSquaredTo(dest) < closest.distanceSquaredTo(dest)) {
+				closest = cur;
+			}
+		}
+
+//		if (tangent_shortcut != null)
+//			rc.setIndicatorDot(tangent_shortcut, 255, 0, 0);
+
+		if (unit_wait_time >= UNIT_MAX_WAIT) {
+			ignore_units = false;
+			unit_wait_time = 0;
+		} else {
+			ignore_units = true;
+		}
+		Object[] prev_state = save_state();
+		Direction dir = tangent_bug(dest);
+		if (is_unit_obstruction(cur.add(dir))) {
+			unit_wait_time++;
+			set_state(prev_state);
+//			rc.setIndicatorDot(cur.add(dir), 200, 0, 255);
+			return null;
+		} else {
+			unit_wait_time = 0;
+		}
+		return dir;
+	}
+
 	public boolean moveTowards(MapLocation dest) throws GameActionException {
 		Direction dir = get_move_direction(dest);
 
@@ -116,6 +440,7 @@ class minerPathFinder extends BasePathFinder {
 		}
 		return false;
 	}
+
 }
 
 class naloga {
