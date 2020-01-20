@@ -151,8 +151,8 @@ def basic_evolution(bots, generation=4):
             next_generation.append(parent_bot) # Automatically advances as top3
         
         first_seed = load_constants(next_generation[0])
-        second_seed = load_constants(next_generation[0])
-        third_seed = load_constants(next_generation[0])
+        second_seed = load_constants(next_generation[1])
+        third_seed = load_constants(next_generation[2])
     
         child_constants = modify_constants(first_seed)
         next_generation.append(create_child(child_constants, generation))
@@ -183,7 +183,7 @@ if __name__ == '__main__':
     initial_bots = [
         'generation_7_id_1',
         'generation_6_id_3',
-        # 'generation_6_id_4',
+        'generation_6_id_4',
         # 'generation_4_id_2',
         ]
     basic_evolution(initial_bots, generation=9)
