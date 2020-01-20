@@ -1,0 +1,6 @@
+24   generation_18_id_562091637 : 24  0   
+23   generation_16_id_186063151 : 0   23  
+
+
+generation_16_id_186063151
+generation_18_id_562091637

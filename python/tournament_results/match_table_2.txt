@@ -1,12 +1,6 @@
-119  generation_2_id_1    : 31  0   31  26  31  
-100  generation_2_id_0    : 0   19  26  28  27  
-94   grekiki25            : 23  19  24  28  0   
-94   generation_2_id_2    : 24  19  0   25  26  
-93   generation_0_id_0    : 22  24  25  0   22  
+26   grekiki26                 : 0   26  
+24   generation_1_id_987045971 : 24  0   
 
 
-generation_2_id_0
-generation_2_id_1
-generation_2_id_2
-generation_0_id_0
-grekiki25
+grekiki26
+generation_1_id_987045971

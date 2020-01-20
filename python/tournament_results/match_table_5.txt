@@ -1,20 +1,6 @@
-215  grekiki25_gen1       : 26  29  26  0   23  32  24  27  28  
-214  generation_4_id_2    : 29  27  27  27  0   29  24  26  25  
-203  generation_4_id_4    : 25  24  26  23  24  25  29  0   27  
-198  generation_2_id_0    : 19  31  25  26  26  26  0   21  24  
-196  generation_4_id_5    : 26  25  28  22  25  21  26  23  0   
-193  generation_2_id_1    : 0   19  20  24  21  29  31  25  24  
-192  generation_4_id_1    : 24  24  0   24  23  26  25  24  22  
-187  generation_4_id_3    : 21  25  24  18  21  0   24  25  29  
-177  generation_4_id_0    : 12  0   26  21  23  25  19  26  25  
+25   generation_4_id_655583086 : 25  0   
+22   generation_3_id_732550905 : 0   22  
 
 
-generation_2_id_1
-generation_4_id_0
-generation_4_id_1
-grekiki25_gen1
-generation_4_id_2
-generation_4_id_3
-generation_2_id_0
-generation_4_id_4
-generation_4_id_5
+generation_3_id_732550905
+generation_4_id_655583086
