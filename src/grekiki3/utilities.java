@@ -716,7 +716,7 @@ abstract class BasePathFinder {
 		}
 		Object[] prev_state = save_state();
 		Direction dir = tangent_bug(dest);
-		if (is_unit_obstruction(cur.add(dir))) {
+		if (dir == null || is_unit_obstruction(cur.add(dir))) {
 			unit_wait_time++;
 			set_state(prev_state);
 //			rc.setIndicatorDot(cur.add(dir), 200, 0, 255);
@@ -735,5 +735,15 @@ abstract class BasePathFinder {
 			return true;
 		}
 		return false;
+	}
+}
+
+class MapLocationPair {
+	MapLocation p1;
+	MapLocation p2;
+
+	MapLocationPair(MapLocation p1, MapLocation p2) {
+		this.p1 = p1;
+		this.p2 = p2;
 	}
 }
