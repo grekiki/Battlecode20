@@ -114,9 +114,13 @@ public strictfp class RobotPlayer {
 		}
 		while (true) {
 			try {
+				int init=rc.getRoundNum();
 				r.precompute();
 				r.runTurn();
 				r.postcompute();
+				if(rc.getRoundNum()!=init) {
+					System.out.println("Prevec racunanja!");
+				}
 				Clock.yield();
 			} catch (Exception e) {
 				e.printStackTrace();
