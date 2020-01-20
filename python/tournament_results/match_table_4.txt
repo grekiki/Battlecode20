@@ -1,0 +1,8 @@
+55   generation_2_id_1    : 31  0   24  
+50   grekiki25_gen1       : 24  26  0   
+45   generation_2_id_0    : 0   19  26  
+
+
+generation_2_id_0
+generation_2_id_1
+grekiki25_gen1

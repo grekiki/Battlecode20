@@ -1,0 +1,112 @@
+{
+  "grekiki25_gen1": {
+    "grekiki25_gen1": [
+      0,
+      0
+    ],
+    "generation_4_id_2": [
+      23,
+      27
+    ],
+    "generation_4_id_4": [
+      27,
+      23
+    ],
+    "generation_2_id_0": [
+      24,
+      26
+    ],
+    "generation_4_id_5": [
+      28,
+      22
+    ]
+  },
+  "generation_4_id_2": {
+    "grekiki25_gen1": [
+      27,
+      23
+    ],
+    "generation_4_id_2": [
+      0,
+      0
+    ],
+    "generation_4_id_4": [
+      26,
+      24
+    ],
+    "generation_2_id_0": [
+      24,
+      26
+    ],
+    "generation_4_id_5": [
+      25,
+      25
+    ]
+  },
+  "generation_4_id_4": {
+    "grekiki25_gen1": [
+      23,
+      27
+    ],
+    "generation_4_id_2": [
+      24,
+      26
+    ],
+    "generation_4_id_4": [
+      0,
+      0
+    ],
+    "generation_2_id_0": [
+      29,
+      21
+    ],
+    "generation_4_id_5": [
+      27,
+      23
+    ]
+  },
+  "generation_2_id_0": {
+    "grekiki25_gen1": [
+      26,
+      24
+    ],
+    "generation_4_id_2": [
+      26,
+      24
+    ],
+    "generation_4_id_4": [
+      21,
+      29
+    ],
+    "generation_2_id_0": [
+      0,
+      0
+    ],
+    "generation_4_id_5": [
+      24,
+      26
+    ]
+  },
+  "generation_4_id_5": {
+    "grekiki25_gen1": [
+      22,
+      28
+    ],
+    "generation_4_id_2": [
+      25,
+      25
+    ],
+    "generation_4_id_4": [
+      23,
+      27
+    ],
+    "generation_2_id_0": [
+      26,
+      24
+    ],
+    "generation_4_id_5": [
+      0,
+      0
+    ]
+  }
+}

@@ -280,7 +280,7 @@ class minerPathFinder {
 		if (tangent_shortcut != null) {
 			// Naj bi obstajala fuzzy pot do tam ...?
 			Direction dir = fuzzy_step(cur, tangent_shortcut);
-			if (can_move(cur, dir))
+			if (dir != null && can_move(cur, dir))
 				return dir;
 			// Zgubili smo se ali pa je ovira ...
             reset_tangent();
@@ -322,7 +322,7 @@ class minerPathFinder {
 		if (adj && can_move(cur, cur.directionTo(dest))) {
 			return false;
 		}
-		return adj;
+		return adj || cur.equals(dest);
 	}
 
 	private Object[] save_state() {
@@ -390,7 +390,7 @@ class minerPathFinder {
 	public boolean moveTowards(MapLocation dest) throws GameActionException {
 		Direction dir = get_move_direction(dest);
 
-		if (dir != null) {
+		if (dir != null && rc.canMove(dir)) {
 			rc.move(dir);
 			return true;
 		}

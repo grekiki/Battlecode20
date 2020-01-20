@@ -1,6 +1,16 @@
-28   grekiki25            : 28  0   
-22   generation_0_id_0    : 0   22  
+275  grekiki25_gen1       : 50  50  50  50  50  25  0   
+275  generation_0_id_0    : 50  50  50  50  50  0   25  
+105  generation_3_id_4    : 26  26  30  23  0   0   0   
+102  generation_3_id_3    : 26  23  26  0   27  0   0   
+102  generation_3_id_2    : 26  32  0   24  20  0   0   
+98   generation_3_id_0    : 0   26  24  24  24  0   0   
+93   generation_3_id_1    : 24  0   18  27  24  0   0   
 
 
+generation_3_id_0
+generation_3_id_1
+generation_3_id_2
+generation_3_id_3
+generation_3_id_4
 generation_0_id_0
-grekiki25
+grekiki25_gen1

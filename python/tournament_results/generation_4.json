@@ -1,0 +1,44 @@
+{
+  "generation_2_id_0": {
+    "generation_2_id_0": [
+      0,
+      0
+    ],
+    "generation_2_id_1": [
+      19,
+      31
+    ],
+    "grekiki25_gen1": [
+      26,
+      24
+    ]
+  },
+  "generation_2_id_1": {
+    "generation_2_id_0": [
+      31,
+      19
+    ],
+    "generation_2_id_1": [
+      0,
+      0
+    ],
+    "grekiki25_gen1": [
+      24,
+      26
+    ]
+  },
+  "grekiki25_gen1": {
+    "generation_2_id_0": [
+      24,
+      26
+    ],
+    "generation_2_id_1": [
+      26,
+      24
+    ],
+    "grekiki25_gen1": [
+      0,
+      0
+    ]
+  }
+}

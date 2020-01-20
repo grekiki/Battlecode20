@@ -1,0 +1,32 @@
+444  generation_7_id_1    : 27  30  0   31  36  36  32  34  34  34  27  28  33  30  32  
+403  generation_6_id_3    : 0   30  23  28  28  35  23  27  26  33  30  28  31  25  36  
+384  generation_6_id_4    : 27  30  18  26  32  32  0   27  25  26  24  26  29  28  34  
+368  generation_4_id_2    : 22  26  19  0   34  30  24  24  22  29  21  30  28  28  31  
+367  generation_7_id_5    : 24  25  16  28  29  30  25  24  0   26  24  27  31  24  34  
+359  generation_7_id_6    : 20  26  23  29  24  34  26  24  26  25  0   24  25  23  30  
+356  generation_6_id_8    : 19  24  17  22  27  33  21  29  19  30  25  29  0   28  33  
+346  generation_7_id_7    : 22  27  22  20  23  28  24  24  23  28  26  0   21  28  30  
+345  generation_7_id_8    : 25  27  20  22  24  29  22  26  26  23  27  22  22  0   30  
+336  generation_7_id_4    : 23  24  16  26  26  24  23  0   26  20  26  26  21  24  31  
+335  generation_6_id_9    : 17  28  16  21  23  30  24  30  24  0   25  22  20  27  28  
+332  generation_7_id_0    : 18  0   20  24  26  26  20  26  25  22  24  23  26  23  29  
+323  generation_7_id_2    : 22  24  14  16  0   28  18  24  21  27  26  27  23  26  27  
+276  generation_7_id_3    : 15  24  14  20  22  0   18  26  20  20  16  22  17  21  21  
+274  generation_7_id_9    : 14  21  18  19  23  29  16  19  16  22  20  20  17  20  0   
+
+
+generation_6_id_3
+generation_7_id_0
+generation_7_id_1
+generation_4_id_2
+generation_7_id_2
+generation_7_id_3
+generation_6_id_4
+generation_7_id_4
+generation_7_id_5
+generation_6_id_9
+generation_7_id_6
+generation_7_id_7
+generation_6_id_8
+generation_7_id_8
+generation_7_id_9
