@@ -111,7 +111,7 @@ def play_tournament(generation, bot_names, referees=4):
 
         for result in standings:
             output_string = '{:<5}'.format(result[0])
-            output_string += '{:<20} : '.format(result[1])
+            output_string += '{:<25} : '.format(result[1])
             for vs_opp in result[2:]:
                 output_string += '{:<3} '.format(vs_opp)
             
@@ -126,6 +126,12 @@ def play_tournament(generation, bot_names, referees=4):
     
     return standings
 
+def create_child(constants, generation):
+    random_id = random.randint(10**8, 10**9)
+    bot_name = f'generation_{generation}_id_{random_id}'
+    create_new_bot(constants, generation, random_id)
+    return bot_name
+
 def basic_evolution(bots, generation=4):
 
     while True:
@@ -133,24 +139,39 @@ def basic_evolution(bots, generation=4):
         tournament_results = play_tournament(generation, bots, referees=5)
 
         next_generation = []
+        
+        # Top 3 automatically advances
+        # 1 modification of each also appears in next generation
+        # 1st and 2nd bot make children in 2 ways (either take valeu from one or another or average)
+        # 1st and 3rd bot make children in 2 ways 
 
-        bot_id = 0
-        for parent in tournament_results[:5]:
+        for parent in tournament_results[:3]:
             
             parent_bot = parent[1]
-            next_generation.append(parent_bot) # Automatically advances as top5
-            
-            bot_name = f'generation_{generation}_id_{bot_id}'
-            create_new_bot(parent_bot, generation, bot_id)
-            next_generation.append(bot_name)
-            
-            bot_name = f'generation_{generation}_id_{bot_id+1}'
-            create_new_bot(parent_bot, generation, bot_id+1)
-            next_generation.append(bot_name)
-            
-            bot_id += 2
+            next_generation.append(parent_bot) # Automatically advances as top3
+        
+        first_seed = load_constants(next_generation[0])
+        second_seed = load_constants(next_generation[0])
+        third_seed = load_constants(next_generation[0])
+    
+        child_constants = modify_constants(first_seed)
+        next_generation.append(create_child(child_constants, generation))
+        child_constants = modify_constants(second_seed)
+        next_generation.append(create_child(child_constants, generation))
+        child_constants = modify_constants(third_seed)
+        next_generation.append(create_child(child_constants, generation))
 
-            bots = next_generation
+        child_constants = either_from_mother_or_father(first_seed, second_seed)
+        next_generation.append(create_child(child_constants, generation))
+        child_constants = either_from_mother_or_father(first_seed, third_seed)
+        next_generation.append(create_child(child_constants, generation))
+
+        child_constants = combine_two_parents(first_seed, second_seed)
+        next_generation.append(create_child(child_constants, generation))
+        child_constants = combine_two_parents(first_seed, third_seed)
+        next_generation.append(create_child(child_constants, generation))
+
+        bots = next_generation
         
         print('WE ARE ADVANCING TO NEXT GENERATION')
         generation += 1
@@ -160,13 +181,12 @@ def basic_evolution(bots, generation=4):
 if __name__ == '__main__':
 
     initial_bots = [
-        'grekiki25_gen1',
+        'generation_7_id_1',
+        'generation_6_id_3',
+        'generation_6_id_4',
         'generation_4_id_2',
-        'generation_4_id_4',
-        'generation_2_id_0',
-        'generation_4_id_5',
         ]
-    basic_evolution(initial_bots, generation=6)
+    basic_evolution(initial_bots, generation=9)
 
     # generation = 3
     # bots = []

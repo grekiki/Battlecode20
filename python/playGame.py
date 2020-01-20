@@ -26,4 +26,4 @@ def play_game(bot1, bot2, maps):
 
 
 if __name__ == '__main__':
-    print(play_game('grekiki25_gen1', 'grekiki3', 'FourLakeLand'))
+    print(play_game('grekiki25_ai', 'grekiki3', 'FourLakeLand'))
