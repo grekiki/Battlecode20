@@ -1,21 +1,130 @@
 package grekiki3;
 
-import battlecode.common.Clock;
-import battlecode.common.GameActionException;
-import battlecode.common.MapLocation;
-import battlecode.common.RobotController;
+import battlecode.common.*;
 
+import java.util.HashSet;
 import java.util.Set;
 
+class dronePathFinder extends BasePathFinder {
+	dronePathFinder(RobotController rc) {
+		super(rc);
+		LOOKAHEAD_STEPS = 3;
+		UNIT_MAX_WAIT = 1;
+	}
+
+	// Metoda se bo poklicala, ko naletimo na vodo.
+	void found_water(MapLocation pos) { }
+	void found_unit(RobotInfo robot) { }
+
+	@Override
+	protected boolean is_unit_obstruction(MapLocation at) {
+		return super.is_unit_obstruction(at);
+	}
+
+	@Override
+	boolean can_move(MapLocation from, Direction dir) throws GameActionException {
+		// Ta metoda ignorira cooldown ...
+
+		MapLocation to = from.add(dir);
+		if (!rc.canSenseLocation(to))
+			return false;
+		if (rc.senseFlooding(to))
+			found_water(to);
+		RobotInfo robot = rc.senseRobotAtLocation(to);
+		if (robot != null && robot.getID() != rc.getID()) {
+		    found_unit(robot);
+			if (!ignore_units || robot.getType().isBuilding())
+				return false;
+		}
+		return true;
+	}
+}
+
+abstract class DroneTask {
+	delivery_drone drone;
+	MapLocation destination;
+	boolean is_running = false;
+
+	String reason = "BREZ DELA";  // Za debug
+
+	DroneTask(delivery_drone drone) {
+	    this.drone = drone;
+	}
+
+	public abstract boolean run() throws GameActionException;
+	public abstract void on_start();
+	public abstract void on_complete();
+
+	public boolean is_running() {
+		return is_running;
+	}
+
+	public void debug() {
+		if (destination != null) {
+			drone.rc.setIndicatorLine(drone.rc.getLocation(), destination, 255, 255, 0);
+			System.out.println(this);
+		}
+	}
+}
+
+class MoveDroneTask extends DroneTask {
+
+	MoveDroneTask(delivery_drone drone, MapLocation dest) {
+		super(drone);
+		this.destination = dest;
+		this.reason = "MoveDroneTask";
+	}
+
+	@Override
+	public boolean run() throws GameActionException {
+	    if (!is_running) {
+			on_start();
+		}
+		boolean move = drone.path_finder.moveTowards(destination);
+	    if (drone.path_finder.is_at_goal(drone.rc.getLocation(), destination)) {
+	        on_complete();
+		}
+	    return move;
+	}
+
+	@Override
+	public void on_start() {
+		is_running = true;
+	}
+
+	@Override
+	public void on_complete() {
+		is_running = false;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s: --> %s", reason, destination);
+	}
+}
+
 public class delivery_drone extends robot{
-	Set<MapLocation> asdf;
+	MapLocation hq_location;
+
+	Set<MapLocation> water_locations = new HashSet<>();
+	Set<MapLocation> enemy_netguns = new HashSet<>();
+	Set<MapLocation> delivery_locations = new HashSet<>();
+
+	DroneTask task;
+	dronePathFinder path_finder;
 
 	public delivery_drone(RobotController rc){
 		super(rc);
-		
 	}
 
 	@Override public void init() throws GameActionException {
+		path_finder = new dronePathFinder(rc) {
+			@Override
+			void found_water(MapLocation pos) {
+				on_find_water(pos);
+			}
+		};
+
 		while (Clock.getBytecodesLeft() > 800 || rc.getCooldownTurns() > 1) {
 			if (!b.read_next_round()) {
 				return;
@@ -27,9 +136,15 @@ public class delivery_drone extends robot{
 		b.checkQueue();
 	}
 
-	@Override public void runTurn(){
-		
-
+	@Override public void runTurn() throws GameActionException {
+		if (!rc.isReady()) {
+			return;
+		}
+		task = find_best_task();
+		if (task != null) {
+		    task.run();
+		    task.debug();
+		}
 	}
 
 	@Override public void postcompute() throws GameActionException {
@@ -43,5 +158,32 @@ public class delivery_drone extends robot{
 	@Override
 	public void bc_drone(MapLocation from, MapLocation to) {
 
+	}
+
+	@Override
+	public void bc_water(MapLocation pos) {
+	    water_locations.add(pos);
+	}
+
+	@Override
+	public void bc_enemy_netgun(MapLocation pos) {
+	    enemy_netguns.add(pos);
+	}
+
+	@Override
+	public void bc_home_hq(MapLocation pos) {
+	    hq_location = pos;
+	}
+
+	private void on_find_water(MapLocation pos) {
+	    rc.setIndicatorDot(pos,255,255,255);
+		water_locations.add(pos);
+	}
+
+	private DroneTask find_best_task() {
+		if (task == null || !task.is_running()) {
+			return new MoveDroneTask(this, Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()));
+		}
+		return task;
 	}
 }
