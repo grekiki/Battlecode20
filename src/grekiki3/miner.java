@@ -156,7 +156,7 @@ class minerPathFinder {
 		return null;
 	}
 
-	private Direction fuzzy_step(MapLocation cur, MapLocation dest) {
+	private Direction fuzzy_step(MapLocation cur, MapLocation dest) throws GameActionException {
 		Direction straight = cur.directionTo(dest);
 		if (can_move(cur, straight))
 			return straight;
@@ -188,7 +188,7 @@ class minerPathFinder {
 		return null;
 	}
 
-	private Direction bug_step(MapLocation cur, MapLocation dest, int wall) {
+	private Direction bug_step(MapLocation cur, MapLocation dest, int wall) throws GameActionException {
 		Direction dir = fuzzy_step(cur, dest);
 		if (dir != null && cur.add(dir).distanceSquaredTo(dest) < closest.distanceSquaredTo(dest)) {
 			bug_wall = null;
@@ -229,7 +229,7 @@ class minerPathFinder {
 		return null;
 	}
 
-	private Object[] bug_step_simulate(MapLocation cur, MapLocation dest, int wall, int steps) {
+	private Object[] bug_step_simulate(MapLocation cur, MapLocation dest, int wall, int steps) throws GameActionException {
 		// Vrne [0]: direction po prvem koraku
 		// [1]: wall loc po prvem koraku
 		// [2]: wall loc po zadnjem koraku
@@ -563,6 +563,7 @@ class naloga {
 public class miner extends robot {
 	public static final int MINER_COST = RobotType.MINER.cost;
 	public static final int razmik_med_polji = 20;
+	public static final int optimize=10;
 
 	naloga task;
 	final static int GRADNJA_REFINERIJE = 1000;
@@ -612,7 +613,7 @@ public class miner extends robot {
 
 	@Override
 	public void precompute() throws GameActionException {
-		System.out.println("\n" + rc.getRoundNum());
+//		System.out.println("\n" + rc.getRoundNum());
 		b.checkQueue();
 	}
 
@@ -643,13 +644,19 @@ public class miner extends robot {
 	}
 
 	private void update_soup() throws GameActionException {
-		System.out.println("Za juho je ostalo " + Clock.getBytecodesLeft() + " casa");
+//		System.out.println("Za "+juhe.size+" juh je ostalo " + Clock.getBytecodesLeft() + " casa");
 		if (Clock.getBytecodesLeft() < 1000) {
 			System.out.println("tle");
 			return;
 		}
 		// Dodamo juhe ki jih vidimo
-		for (MapLocation m : rc.senseNearbySoup()) {
+		MapLocation[]q=rc.senseNearbySoup();
+		int i=q.length;
+		while(i --> 0) {
+			if (i % optimize != rc.getRoundNum() % optimize) {
+				continue;
+			}
+			MapLocation m=q[i];
 			if (Clock.getBytecodesLeft() < 1000) {
 				System.out.println("tle dodajanje juh");
 				return;
@@ -665,8 +672,11 @@ public class miner extends robot {
 			}
 		}
 
-		System.out.println("Za odstranjevanje juh je ostalo " + Clock.getBytecodesLeft() + " casa");
-		for (int i = 0; i < juhe.size; i++) {
+//		System.out.println("Za odstranjevanje juh je ostalo " + Clock.getBytecodesLeft() + " casa");
+		for (i = 0; i < juhe.size; i++) {
+			if (i % optimize != rc.getRoundNum() % optimize) {
+				continue;
+			}
 			if (Clock.getBytecodesLeft() < 1000) {
 				System.out.println("tle odstranjevanje praznih juh");
 				return;
@@ -680,8 +690,8 @@ public class miner extends robot {
 			}
 		}
 
-		System.out.println("Za odstranjevanje slabih juh je ostalo " + Clock.getBytecodesLeft() + " casa");
-		for (int i = 0; i < slabe_juhe.size; i++) {
+//		System.out.println("Za odstranjevanje slabih juh je ostalo " + Clock.getBytecodesLeft() + " casa");
+		for (i = 0; i < slabe_juhe.size; i++) {
 			MapLocation m = slabe_juhe.get(i);
 			if (Clock.getBytecodesLeft() < 1000) {
 				System.out.println("tle odstanjevanje slabih praznih juh");
@@ -694,10 +704,13 @@ public class miner extends robot {
 			}
 		}
 
-		System.out.println("Za premikanje juh je ostalo " + Clock.getBytecodesLeft() + " casa");
-		for (int i = 0; i < slabe_juhe.size; i++) {
+//		System.out.println("Za premikanje juh je ostalo " + Clock.getBytecodesLeft() + " casa");
+		for (i = 0; i < slabe_juhe.size; i++) {
+			if (i % optimize != rc.getRoundNum() % optimize) {
+				continue;
+			}
 			// To delamo le vsakih 10 potez
-			if (i % 10 != rc.getRoundNum() % 10) {
+			if (i % optimize != rc.getRoundNum() % optimize) {
 				continue;
 			}
 			MapLocation m = slabe_juhe.get(i);
@@ -719,12 +732,12 @@ public class miner extends robot {
 		 * 2. V tem obmocju ni nobene dosegljive juhe.
 		 * 
 		 */
-		System.out.println("Za barvanje juh je ostalo " + Clock.getBytecodesLeft() + " casa");
+//		System.out.println("Za barvanje juh je ostalo " + Clock.getBytecodesLeft() + " casa");
 		if (Clock.getBytecodesLeft() < 1000) {
 			System.out.println("tle pred barvanjem");
 			return;
 		}
-		for (int i = 0; i < polja.size; i++) {
+		for (i = 0; i < polja.size; i++) {
 			MapLocation m = polja.get(i);
 			rc.setIndicatorDot(m, 0, 255, 0);
 		}
@@ -732,7 +745,7 @@ public class miner extends robot {
 			System.out.println("tle med barvanjem");
 			return;
 		}
-		for (int i = 0; i < slaba_polja.size; i++) {
+		for (i = 0; i < slaba_polja.size; i++) {
 			MapLocation m = slaba_polja.get(i);
 			rc.setIndicatorDot(m, 255, 0, 0);
 		}
