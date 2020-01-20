@@ -1,10 +1,6 @@
 package grekiki3;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-
 import battlecode.common.Clock;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
@@ -13,74 +9,90 @@ import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 
-class vector_gl implements Iterable<MapLocation> {
-	MapLocation[] q;
-	int p = 0;
-	int size = 20;
+//class set_mp {
+//	private boolean[][] grid;
+//
+//	public set_mp() {
+//		int t = Clock.getBytecodeNum();
+//		grid = new boolean[64][];
+//		grid[0] = new boolean[64];
+//		for (int i = 1; i < 64; i++) {
+//			grid[i] = grid[0].clone();
+//		}
+//		System.out.println("Cena konstruktorja " + (Clock.getBytecodeNum() - t));
+//	}
+//
+//	public void add(MapLocation m) {
+//		grid[m.x][m.y] = true;
+//	}
+//
+//	public void remove(MapLocation m) {
+//		grid[m.x][m.y] = false;
+//	}
+//
+//	public boolean contains(MapLocation m) {
+//		return grid[m.x][m.y];
+//	}
+//
+//}
 
-	vector_gl() {
+class vector_set_gl {
+	private boolean[][] grid;
+	MapLocation[] q;
+	public int size = 0;
+	private int cappacity = 20;
+	private int load = 0;
+
+	vector_set_gl() {
 		q = new MapLocation[20];
+		grid = new boolean[64][];
+		grid[0] = new boolean[64];
+		for (int i = 1; i < 64; i++) {
+			grid[i] = grid[0].clone();
+		}
 	}
 
 	void add(MapLocation ml) {
-		q[p++] = ml;
-		if (p == size) {
-			q = Arrays.copyOf(q, 2 * size);
-			size *= 2;
+		if (!grid[ml.x][ml.y]) {
+			load++;
+			grid[ml.x][ml.y] = true;
+			q[size++] = ml;
+			if (size == cappacity) {
+				// Ce je load factor precej velik potem kloniramo. Drugace cistimo
+				double limit = 0.7;
+				if (load / (double) cappacity > limit) {
+					q = Arrays.copyOf(q, 2 * cappacity);
+					cappacity *= 2;
+				} else {
+					MapLocation[] q2 = new MapLocation[cappacity];
+					int p = 0;
+					for (int i = 0; i < size; i++) {
+						if (grid[q[i].x][q[i].y]) {
+							q2[p++] = q[i];
+						}
+					}
+					q = q2;
+					size = load;
+				}
+			}
 		}
+
 	}
 
 	MapLocation get(int a) {
-		if (a < 0 || a >= size) {
-			System.out.println("Vector index out of bounds exception");
-			return null;
-		} else {
-			return q[a];
+		return q[a];
+
+	}
+
+	void remove(MapLocation ml) {
+		if (grid[ml.x][ml.y]) {
+			load--;
+			grid[ml.x][ml.y] = false;
 		}
 	}
 
-	boolean remove(MapLocation ml) {
-		for (int i = 0; i < p; i++) {
-			if (q[i].equals(ml)) {
-				for (int j = i; j < p - 1; j++) {
-					q[j] = q[j + 1];
-				}
-				p--;
-				return true;
-			}
-		}
-		return false;
-	}
-
-	@Override
-	public Iterator<MapLocation> iterator() {
-		return new Iterator<MapLocation>() {
-			private int pp = 0;
-
-			@Override
-			public boolean hasNext() {
-				return pp < p;
-			}
-
-			@Override
-			public MapLocation next() {
-				return q[pp++];
-			}
-
-			@Override
-			public void remove() {
-				throw new UnsupportedOperationException("no changes allowed");
-			}
-		};
-	}
-
-	public boolean contains(MapLocation m) {
-		for (int i = 0; i < p; i++) {
-			if (q[i].equals(m)) {
-				return true;
-			}
-		}
-		return false;
+	boolean contains(MapLocation m) {
+		return grid[m.x][m.y];
 	}
 }
 
@@ -154,6 +166,7 @@ class minerPathFinder {
 		return true;
 	}
 
+	@SuppressWarnings("unused")
 	private Direction fuzzy(MapLocation dest) {
 		MapLocation cur = rc.getLocation();
 		Direction straight = cur.directionTo(dest);
@@ -572,79 +585,6 @@ class naloga {
 	}
 }
 
-class set_mp implements Iterable<MapLocation> {
-	public MapLocation[] q;
-	private boolean[][] grid;
-	private int p = 0;
-	private int count = 0;
-
-	public set_mp() {
-		int t = Clock.getBytecodeNum();
-		q = new MapLocation[10];// Upamo da bo dovolj
-		grid = new boolean[64][];
-		grid[0] = new boolean[64];
-		for (int i = 1; i < 64; i++) {
-			grid[i] = grid[0].clone();
-		}
-		System.out.println("Cena konstruktorja " + (Clock.getBytecodeNum() - t));
-	}
-
-	public void add(MapLocation m) {
-		if (grid[m.x][m.y]) {
-			return;
-		}
-		while (q[p] != null && grid[q[p].x][q[p].y]) {
-			p++;
-			p %= q.length;
-		}
-		q[p++] = m;
-		grid[m.x][m.y] = true;
-		count++;
-		if (count == q.length) {
-			q = Arrays.copyOf(q, q.length * 2);
-		}
-	}
-
-	public void remove(MapLocation m) {
-		if (grid[m.x][m.y]) {
-			grid[m.x][m.y] = false;// Lazy updating
-			count--;
-		}
-	}
-
-	public boolean contains(MapLocation m) {
-		return grid[m.x][m.y];
-	}
-
-	@Override
-	public Iterator<MapLocation> iterator() {
-		return new Iterator<MapLocation>() {
-			private int pp = 0;
-			private int returned = 0;
-
-			@Override
-			public boolean hasNext() {
-				return returned < count;
-			}
-
-			@Override
-			public MapLocation next() {
-				while (q[pp] == null || !grid[q[pp].x][q[pp].y]) {
-					pp++;
-				}
-				returned++;
-				return q[pp];
-			}
-
-			@Override
-			public void remove() {
-				throw new UnsupportedOperationException("no changes allowed");
-			}
-		};
-	}
-
-}
-
 /**
  * TO-DO ce se do neke surovine sprehajamo vec kot recimo 50 potez, potem recemo
  * da je tezka
@@ -666,16 +606,14 @@ public class miner extends robot {
 	final static int RAZISKOVANJE_MAPE = 50;
 
 	minerPathFinder path_finder;
-	vector_gl juhe;
-	vector_gl slabe_juhe;// tiste za katere ne vemo kako priti do njih
-	vector_gl polja;
-	vector_gl slaba_polja;// ne vemo a se da priti do njih
-	vector_gl refinerije;
+	vector_set_gl juhe;
+	vector_set_gl slabe_juhe;// tiste za katere ne vemo kako priti do njih
+	vector_set_gl polja;
+	vector_set_gl slaba_polja;// ne vemo a se da priti do njih
+	vector_set_gl refinerije;
 	int w, h;// dimenzije mape
 
 	MapLocation hq_location;
-
-	int sumCost = 0;
 
 	public miner(RobotController rc) {
 		super(rc);
@@ -691,11 +629,11 @@ public class miner extends robot {
 				hq_location = r.location;
 			}
 		}
-		juhe = new vector_gl();
-		slabe_juhe = new vector_gl();
-		polja = new vector_gl();
-		slaba_polja = new vector_gl();
-		refinerije = new vector_gl();
+		juhe = new vector_set_gl();
+		slabe_juhe = new vector_set_gl();
+		polja = new vector_set_gl();
+		slaba_polja = new vector_set_gl();
+		refinerije = new vector_set_gl();
 		refinerije.add(hq_location);
 		while (Clock.getBytecodesLeft() > 800 || rc.getCooldownTurns() > 1) {
 			if (!b.read_next_round()) {
@@ -712,7 +650,7 @@ public class miner extends robot {
 
 	@Override
 	public void runTurn() throws GameActionException {
-		System.out.println("Pred potezo " + Clock.getBytecodesLeft());
+//		System.out.println("Pred potezo " + Clock.getBytecodesLeft());
 		if (!rc.isReady()) {
 			return;
 		}
@@ -724,31 +662,30 @@ public class miner extends robot {
 	}
 
 	public void postcompute() throws GameActionException {
-		System.out.println("Po potezi " + Clock.getBytecodesLeft());
-		int t = Clock.getBytecodesLeft();
+//		System.out.println("Po potezi " + Clock.getBytecodesLeft());
+//		int t = Clock.getBytecodesLeft();
 		update_soup();
-		if ((t - Clock.getBytecodesLeft()) > 0) {
-			sumCost += t - Clock.getBytecodesLeft();
-		}
-		if (rc.getRoundNum() > 100) {
-			System.out.println(sumCost);
-			System.out.println(sumCost);
-			System.out.println(sumCost);
-			System.out.println(sumCost);
-			System.out.println(sumCost);
-		}
-		System.out.println("vmes " + Clock.getBytecodesLeft());
+//		System.out.println("vmes " + Clock.getBytecodesLeft());
 		while (Clock.getBytecodesLeft() > 500) {
 			if (!b.read_next_round()) {
 				break;
 			}
 		}
-		System.out.println("Na koncu " + Clock.getBytecodesLeft());
+//		System.out.println("Na koncu " + Clock.getBytecodesLeft());
 	}
 
 	private void update_soup() throws GameActionException {
+		System.out.println("Za juho je ostalo " + Clock.getBytecodesLeft() + " casa");
+		if (Clock.getBytecodesLeft() < 1000) {
+			System.out.println("tle");
+			return;
+		}
 		// Dodamo juhe ki jih vidimo
 		for (MapLocation m : rc.senseNearbySoup()) {
+			if (Clock.getBytecodesLeft() < 1000) {
+				System.out.println("tle dodajanje juh");
+				return;
+			}
 			if (!juhe.contains(m) && !slabe_juhe.contains(m)) {
 				if (Util.d_inf(rc.getLocation(), m) <= 5 && path_finder.exists_path(rc.getLocation(), m)) {
 					juhe.add(m);
@@ -759,38 +696,79 @@ public class miner extends robot {
 				}
 			}
 		}
-		for (MapLocation m : juhe) {
+
+		for (int i = 0; i < juhe.size; i++) {
+			if (Clock.getBytecodesLeft() < 1000) {
+				System.out.println("tle odstranjevanje praznih juh");
+				return;
+			}
+			MapLocation m = juhe.get(i);
+
 //			rc.setIndicatorDot(m, 0, 255, 0);
 			if (rc.canSenseLocation(m) && rc.senseSoup(m) == 0) {
 				juhe.remove(m);
+				i--;
 			}
 		}
-		for (MapLocation m : slabe_juhe) {
+
+		for (int i = 0; i < slabe_juhe.size; i++) {
+			MapLocation m = slabe_juhe.get(i);
+			if (Clock.getBytecodesLeft() < 1000) {
+				System.out.println("tle odstanjevanje slabih praznih juh");
+				return;
+			}
 //			rc.setIndicatorDot(m, 255, 0, 0);
 			if (rc.canSenseLocation(m) && rc.senseSoup(m) == 0) {
 				slabe_juhe.remove(m);
+				i--;
+			}
+		}
+		for (int i = 0; i < slabe_juhe.size; i++) {
+			//To delamo le vsakih 10 potez 
+			if(i%10!=rc.getRoundNum()%10) {
+				continue;
+			}
+			MapLocation m = slabe_juhe.get(i);
+			if (Clock.getBytecodesLeft() < 1000) {
+				System.out.println("tle premikanje slabih v dobre juhe");
+				return;
 			}
 			if (Util.d_inf(rc.getLocation(), m) <= 5 && path_finder.exists_path(rc.getLocation(), m)) {
 				juhe.add(m);// vedno ko dodamo juho, preverimo ce dodamo polje
 				check_for_field(m);
 				slabe_juhe.remove(m);// TO-DO odstrani polje povezano s to juho?
+				i--;
 			}
 		}
+
 		/**
 		 * pogledamo ce imamo polje, da velja<br>
 		 * 1. Vidimo vsaj razmik_med_polji stran od polje<br>
 		 * 2. V tem obmocju ni nobene dosegljive juhe.
 		 * 
 		 */
-		for (MapLocation m : polja) {
+		if (Clock.getBytecodesLeft() < 1000) {
+			System.out.println("tle pred barvanjem");
+			return;
+		}
+		for (int i = 0; i < polja.size; i++) {
+			MapLocation m = polja.get(i);
 			rc.setIndicatorDot(m, 0, 255, 0);
 		}
-		for (MapLocation m : slaba_polja) {
+		if (Clock.getBytecodesLeft() < 1000) {
+			System.out.println("tle med barvanjem");
+			return;
+		}
+		for (int i = 0; i < slaba_polja.size; i++) {
+			MapLocation m = slaba_polja.get(i);
 			rc.setIndicatorDot(m, 255, 0, 0);
 		}
+
 	}
 
 	private void check_for_field(MapLocation m) throws GameActionException {
+		System.out.println("Preverjamo ce je " + m + "polje ");
+		System.out.println(juhe.size + " " + slabe_juhe.size);
 		MapLocation closest = Util.closest(polja, m);
 		if (closest != null && closest.distanceSquaredTo(m) < razmik_med_polji) {
 			return;

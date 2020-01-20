@@ -410,6 +410,7 @@ class miner extends robot{
 				boolean ok=false;
 				for(int i=0;i<=konst.resource_radius;i++){
 					if(Clock.getBytecodesLeft()<konst.clock_buffer2){
+						System.out.println("Ni casa");
 						return;
 					}
 					MapLocation[] scan=pc.range[i];
@@ -434,12 +435,14 @@ class miner extends robot{
 		for(int i=0;i<range;i++){
 			MapLocation[] scan=pc.range[i];
 			if(Clock.getBytecodesLeft()<1000){
+				System.out.println("Ni casa");
 				return;
 			}
 			for(MapLocation mm:scan){
 				MapLocation m=new MapLocation(rc.getLocation().x+mm.x,rc.getLocation().y+mm.y);
 				if(rc.canSenseLocation(m)&&!rc.senseFlooding(m)&&rc.senseSoup(m)>0){
 					if(Clock.getBytecodesLeft()<konst.clock_buffer3){
+						System.out.println("Ni casa");
 						return;
 					}
 					surovine.add(m);
@@ -468,6 +471,7 @@ class miner extends robot{
 		Iterator<MapLocation> iterator=surovine.iterator();
 		while(iterator.hasNext()){
 			if(Clock.getBytecodesLeft()<konst.clock_buffer4){
+				System.out.println("Ni casa");
 				return;
 			}
 			MapLocation m=iterator.next();

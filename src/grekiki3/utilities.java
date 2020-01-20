@@ -144,9 +144,9 @@ class Util {
 				ans = q[i];
 			}
 		}
-		if (ans == null) {
-			System.out.println("Nabljizja lokacija iz prazne mnozice?");
-		}
+//		if (ans == null) {
+//			System.out.println("Nabljizja lokacija iz prazne mnozice?");
+//		}
 		return ans;
 	}
 
@@ -169,6 +169,24 @@ class Util {
 
 	public static MapLocation randomPoint(int h, int w) {
 		return new MapLocation(r.nextInt(w), r.nextInt(h));
+	}
+
+	public static MapLocation closest(vector_set_gl q, MapLocation source) {
+		int closest = c.inf;
+		int i = q.size;
+		MapLocation ans = null;
+		while (i-- > 0) {
+//			System.out.println(i+" "+q.size+" "+q.get(i)+" "+Arrays.toString(q.q));
+			int d2 = source.distanceSquaredTo(q.get(i));
+			if (d2 < closest) {
+				closest = d2;
+				ans = q.get(i);
+			}
+		}
+//		if (ans == null) {
+//			System.out.println("Nabljizja lokacija iz prazne mnozice?");
+//		}
+		return ans;
 	}
 
 }
