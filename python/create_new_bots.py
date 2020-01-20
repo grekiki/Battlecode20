@@ -64,6 +64,7 @@ def combine_two_parents(parent1_constants, parent2_constants):
             average = (parent1_constants[constant] + parent2_constants[constant]) / 2
             if constant in DOUBLES:
                 average = round(average)
+            child_constants[constant] = average
     child_constants['private_key'] = random.randint(10**8, 10**9)
 
     return child_constants
