@@ -397,8 +397,8 @@ class blockchain {
 
 
 abstract class BasePathFinder {
-	protected static final int LOOKAHEAD_STEPS = 5;
-	protected static final int UNIT_MAX_WAIT = 2;
+	protected int LOOKAHEAD_STEPS = 5;
+	protected int UNIT_MAX_WAIT = 2;
 
 	protected static final int NO_WALL = 0; // Ne sledi zidu.
 	protected static final int LEFT_WALL = 1; // Zid je na levi.
@@ -657,11 +657,12 @@ abstract class BasePathFinder {
 	}
 
 	protected boolean is_at_goal(MapLocation cur, MapLocation dest) throws GameActionException {
+		if (cur.equals(dest)) return true;
 		boolean adj = cur.isAdjacentTo(dest);
 		if (adj && can_move(cur, cur.directionTo(dest))) {
 			return false;
 		}
-		return adj || cur.equals(dest);
+		return adj;
 	}
 
 	protected Object[] save_state() {

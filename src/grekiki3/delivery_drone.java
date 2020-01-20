@@ -8,10 +8,18 @@ import java.util.Set;
 class dronePathFinder extends BasePathFinder {
 	dronePathFinder(RobotController rc) {
 		super(rc);
+		LOOKAHEAD_STEPS = 3;
+		UNIT_MAX_WAIT = 1;
 	}
 
 	// Metoda se bo poklicala, ko naletimo na vodo.
 	void found_water(MapLocation pos) { }
+	void found_unit(RobotInfo robot) { }
+
+	@Override
+	protected boolean is_unit_obstruction(MapLocation at) {
+		return super.is_unit_obstruction(at);
+	}
 
 	@Override
 	boolean can_move(MapLocation from, Direction dir) throws GameActionException {
@@ -23,8 +31,11 @@ class dronePathFinder extends BasePathFinder {
 		if (rc.senseFlooding(to))
 			found_water(to);
 		RobotInfo robot = rc.senseRobotAtLocation(to);
-		if (robot != null && robot.getID() != rc.getID() && (!ignore_units || robot.getType().isBuilding()))
-			return false;
+		if (robot != null && robot.getID() != rc.getID()) {
+		    found_unit(robot);
+			if (!ignore_units || robot.getType().isBuilding())
+				return false;
+		}
 		return true;
 	}
 }
@@ -41,9 +52,18 @@ abstract class DroneTask {
 	}
 
 	public abstract boolean run() throws GameActionException;
+	public abstract void on_start();
+	public abstract void on_complete();
 
 	public boolean is_running() {
 		return is_running;
+	}
+
+	public void debug() {
+		if (destination != null) {
+			drone.rc.setIndicatorLine(drone.rc.getLocation(), destination, 255, 255, 0);
+			System.out.println(this);
+		}
 	}
 }
 
@@ -52,12 +72,29 @@ class MoveDroneTask extends DroneTask {
 	MoveDroneTask(delivery_drone drone, MapLocation dest) {
 		super(drone);
 		this.destination = dest;
+		this.reason = "MoveDroneTask";
 	}
 
 	@Override
 	public boolean run() throws GameActionException {
+	    if (!is_running) {
+			on_start();
+		}
+		boolean move = drone.path_finder.moveTowards(destination);
+	    if (drone.path_finder.is_at_goal(drone.rc.getLocation(), destination)) {
+	        on_complete();
+		}
+	    return move;
+	}
+
+	@Override
+	public void on_start() {
 		is_running = true;
-	    return drone.path_finder.moveTowards(destination);
+	}
+
+	@Override
+	public void on_complete() {
+		is_running = false;
 	}
 
 	@Override
@@ -78,7 +115,6 @@ public class delivery_drone extends robot{
 
 	public delivery_drone(RobotController rc){
 		super(rc);
-		
 	}
 
 	@Override public void init() throws GameActionException {
@@ -107,6 +143,7 @@ public class delivery_drone extends robot{
 		task = find_best_task();
 		if (task != null) {
 		    task.run();
+		    task.debug();
 		}
 	}
 
@@ -133,15 +170,20 @@ public class delivery_drone extends robot{
 	    enemy_netguns.add(pos);
 	}
 
+	@Override
+	public void bc_home_hq(MapLocation pos) {
+	    hq_location = pos;
+	}
+
 	private void on_find_water(MapLocation pos) {
 	    rc.setIndicatorDot(pos,255,255,255);
 		water_locations.add(pos);
 	}
 
 	private DroneTask find_best_task() {
-		if (!this.task.is_running()) {
+		if (task == null || !task.is_running()) {
 			return new MoveDroneTask(this, Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()));
 		}
-		return null;
+		return task;
 	}
 }
