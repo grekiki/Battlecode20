@@ -9,33 +9,6 @@ import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 
-//class set_mp {
-//	private boolean[][] grid;
-//
-//	public set_mp() {
-//		int t = Clock.getBytecodeNum();
-//		grid = new boolean[64][];
-//		grid[0] = new boolean[64];
-//		for (int i = 1; i < 64; i++) {
-//			grid[i] = grid[0].clone();
-//		}
-//		System.out.println("Cena konstruktorja " + (Clock.getBytecodeNum() - t));
-//	}
-//
-//	public void add(MapLocation m) {
-//		grid[m.x][m.y] = true;
-//	}
-//
-//	public void remove(MapLocation m) {
-//		grid[m.x][m.y] = false;
-//	}
-//
-//	public boolean contains(MapLocation m) {
-//		return grid[m.x][m.y];
-//	}
-//
-//}
-
 class vector_set_gl {
 	private boolean[][] grid;
 	MapLocation[] q;
@@ -57,7 +30,8 @@ class vector_set_gl {
 			load++;
 			grid[ml.x][ml.y] = true;
 			q[size++] = ml;
-			if (size == cappacity) {
+			if (size == cappacity) {// Redek pojav
+
 				// Ce je load factor precej velik potem kloniramo. Drugace cistimo
 				double limit = 0.7;
 				if (load / (double) cappacity > limit) {
@@ -81,7 +55,6 @@ class vector_set_gl {
 
 	MapLocation get(int a) {
 		return q[a];
-
 	}
 
 	void remove(MapLocation ml) {
@@ -148,21 +121,17 @@ class minerPathFinder {
 		return false;
 	}
 
-	private boolean can_move(MapLocation from, Direction to) {
+	private boolean can_move(MapLocation from, Direction dir) throws GameActionException {
 		// Ta metoda ignorira cooldown ...
 
-		MapLocation p = from.add(to);
-		try {
-			if (!rc.canSenseLocation(p) || rc.senseFlooding(p))
-				return false;
-			if (Math.abs(rc.senseElevation(from) - rc.senseElevation(p)) > 3)
-				return false;
-			RobotInfo robot = rc.senseRobotAtLocation(p);
-			if (robot != null && robot.getID() != rc.getID() && (!ignore_units || robot.getType().isBuilding()))
-				return false;
-		} catch (GameActionException e) {
+		MapLocation to = from.add(dir);
+		if (!rc.canSenseLocation(to) || rc.senseFlooding(to))
 			return false;
-		}
+		if (!rc.canSenseLocation(from)||Math.abs(rc.senseElevation(from) - rc.senseElevation(to)) > 3)
+			return false;
+		RobotInfo robot = rc.senseRobotAtLocation(to);
+		if (robot != null && robot.getID() != rc.getID() && (!ignore_units || robot.getType().isBuilding()))
+			return false;
 		return true;
 	}
 
@@ -206,7 +175,7 @@ class minerPathFinder {
 		return null;
 	}
 
-	private Direction fuzzy_step_short(MapLocation cur, MapLocation dest) {
+	private Direction fuzzy_step_short(MapLocation cur, MapLocation dest) throws GameActionException {
 		Direction straight = cur.directionTo(dest);
 		if (can_move(cur, straight))
 			return straight;
@@ -216,7 +185,6 @@ class minerPathFinder {
 		Direction right = straight.rotateRight();
 		if (can_move(cur, right))
 			return right;
-		left = left.rotateLeft();
 		return null;
 	}
 
@@ -304,7 +272,7 @@ class minerPathFinder {
 		return result;
 	}
 
-	public boolean exists_path(MapLocation cur, MapLocation dest) {
+	public boolean exists_path(MapLocation cur, MapLocation dest) throws GameActionException {
 		Direction dir = fuzzy_step_short(cur, dest);
 		while (!cur.equals(dest)) {
 			if (cur.isWithinDistanceSquared(dest, 2)) {
@@ -319,7 +287,7 @@ class minerPathFinder {
 		return true;
 	}
 
-	private boolean exists_fuzzy_path(MapLocation cur, MapLocation dest, int max_steps) {
+	private boolean exists_fuzzy_path(MapLocation cur, MapLocation dest, int max_steps) throws GameActionException {
 		Direction dir = fuzzy_step(cur, dest);
 		for (int steps = 0; dir != null && !cur.equals(dest) && steps < max_steps; ++steps) {
 			if (!can_move(cur, dir))
@@ -330,7 +298,7 @@ class minerPathFinder {
 		return cur.equals(dest);
 	}
 
-	private Direction run_simulation(MapLocation cur, Object[] simulation, int wall) {
+	private Direction run_simulation(MapLocation cur, Object[] simulation, int wall) throws GameActionException {
 		MapLocation end = (MapLocation) simulation[3];
 		bug_wall_tangent = wall;
 		if (exists_fuzzy_path(cur, end, LOOKAHEAD_STEPS - 1)) {
@@ -342,7 +310,7 @@ class minerPathFinder {
 		return (Direction) simulation[0];
 	}
 
-	private Direction tangent_bug(MapLocation dest) {
+	private Direction tangent_bug(MapLocation dest) throws GameActionException {
 		// Odlocimo se med levo in desno stranjo in potem
 		// nadaljujemo po izbrani poti.
 		// Ce najdemo bliznjico, gremo do nje po najkrajsi poti
@@ -392,7 +360,7 @@ class minerPathFinder {
 		}
 	}
 
-	private boolean is_at_goal(MapLocation cur, MapLocation dest) {
+	private boolean is_at_goal(MapLocation cur, MapLocation dest) throws GameActionException {
 		boolean adj = cur.isAdjacentTo(dest);
 		if (adj && can_move(cur, cur.directionTo(dest))) {
 			return false;
@@ -424,7 +392,7 @@ class minerPathFinder {
 		reset_tangent();
 	}
 
-	public Direction get_move_direction(MapLocation dest) {
+	public Direction get_move_direction(MapLocation dest) throws GameActionException {
 		MapLocation cur = rc.getLocation();
 		if (is_at_goal(cur, dest)) {
 			reset();
@@ -697,6 +665,7 @@ public class miner extends robot {
 			}
 		}
 
+		System.out.println("Za odstranjevanje juh je ostalo " + Clock.getBytecodesLeft() + " casa");
 		for (int i = 0; i < juhe.size; i++) {
 			if (Clock.getBytecodesLeft() < 1000) {
 				System.out.println("tle odstranjevanje praznih juh");
@@ -711,6 +680,7 @@ public class miner extends robot {
 			}
 		}
 
+		System.out.println("Za odstranjevanje slabih juh je ostalo " + Clock.getBytecodesLeft() + " casa");
 		for (int i = 0; i < slabe_juhe.size; i++) {
 			MapLocation m = slabe_juhe.get(i);
 			if (Clock.getBytecodesLeft() < 1000) {
@@ -723,9 +693,11 @@ public class miner extends robot {
 				i--;
 			}
 		}
+
+		System.out.println("Za premikanje juh je ostalo " + Clock.getBytecodesLeft() + " casa");
 		for (int i = 0; i < slabe_juhe.size; i++) {
-			//To delamo le vsakih 10 potez 
-			if(i%10!=rc.getRoundNum()%10) {
+			// To delamo le vsakih 10 potez
+			if (i % 10 != rc.getRoundNum() % 10) {
 				continue;
 			}
 			MapLocation m = slabe_juhe.get(i);
@@ -747,6 +719,7 @@ public class miner extends robot {
 		 * 2. V tem obmocju ni nobene dosegljive juhe.
 		 * 
 		 */
+		System.out.println("Za barvanje juh je ostalo " + Clock.getBytecodesLeft() + " casa");
 		if (Clock.getBytecodesLeft() < 1000) {
 			System.out.println("tle pred barvanjem");
 			return;
