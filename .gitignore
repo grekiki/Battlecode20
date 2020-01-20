@@ -31,3 +31,6 @@ battlecode-scaffold.iws
 .settings/
 
 /client32/
+
+/src/generation*
+/python/bot_configurations/
