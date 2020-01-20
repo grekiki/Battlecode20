@@ -18,8 +18,9 @@ abstract class robot {
 					case LOC_SLABA_SUROVINA: bc_polje_slabo(pos); break;
 					case NADGRADNJA_SUROVINE: bc_polje_upgrade(pos); break;
 					case LOC_RAFINERIJA: bc_rafinerija(pos); break;
-					case LOC_TOVARNA_DRONOV: bc_tovarna_dronov(pos); break;
-					case LOC_HOME_HQ: bc_home_hq(pos); break;
+					case LOC_TOVARNA_DRONOV: bc_tovarna_dronov(pos);break;
+					case BUILD_TOVARNA_DRONOV: bc_build_tovarna_dronov(pos);break;
+					case LOC_HOME_HQ: bc_home_hq(pos);break;
 					case LOC_WATER: bc_water(pos); break;
 					case LOC_ENEMY_NETGUN: bc_enemy_netgun(pos); break;
 				}
@@ -34,7 +35,8 @@ abstract class robot {
 			@Override
 			public void handle_packet(int type,int[]message) {
 				switch(type) {
-					
+				case MINER_HELP_HQ: bc_miner_to_help(message);break;
+				case UNIT_ALIVE: bc_unit_alive(message);break;
 				}
 			}
 		};
@@ -61,11 +63,15 @@ abstract class robot {
 	public void bc_polje_upgrade(MapLocation pos) {}
 	public void bc_rafinerija(MapLocation pos) {}
 	public void bc_tovarna_dronov(MapLocation pos) {}
+	public void bc_build_tovarna_dronov(MapLocation pos) {}
 	public void bc_home_hq(MapLocation pos) {}
 
 	public void bc_drone(MapLocation from, MapLocation to) {}
 	public void bc_water(MapLocation pos) {}
 	public void bc_enemy_netgun(MapLocation pos) {}
+
+	public void bc_miner_to_help(int[] message) {}
+	public void bc_unit_alive(int[] message) {}
 }
 
 public strictfp class RobotPlayer {

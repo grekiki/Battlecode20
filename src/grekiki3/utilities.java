@@ -243,6 +243,10 @@ class blockchain {
 	final int LOC_WATER = 25;
 	final int LOC_ENEMY_NETGUN = 26;
 	/**
+	 * Tukaj zelimo imeti tovarno dronov
+	 */
+	final int BUILD_TOVARNA_DRONOV = 21;
+	/**
 	 * Lokacija domace baze
 	 */
 	final int LOC_HOME_HQ = 30;
@@ -250,6 +254,15 @@ class blockchain {
 	 * Enota zeli prevoz z dronom iz prve do druge lokacije
 	 */
 	final int LOC2_DRONE = 100;
+	/**
+	 * Miner z ID-jem int2 mora pomagati bazi in vsakih 10 potez obvestiti o tem da
+	 * je se ziv.
+	 */
+	final int MINER_HELP_HQ = 1000;
+	/**
+	 * Enota z ID int2 je ziva
+	 */
+	final int UNIT_ALIVE = 1100;
 
 	private final int LOC_MAX = 99;// do 99 je en mapLocation
 	private final int LOC2_MAX = 999;// od 100 do 999 sta 2
@@ -282,6 +295,10 @@ class blockchain {
 	public void send_location2(int type, MapLocation p1, MapLocation p2) throws GameActionException {
 		int[] msg = { PRIVATE_KEY, type, p1.x, p1.y, p2.x, p2.y, 0 };
 		sendMsg(new paket(msg, 1));
+	}
+
+	public void send_packet(int type, int[] packet) throws GameActionException {
+		sendMsg(new paket(packet, 1));
 	}
 
 	public boolean check_private_key(int[] msg) {

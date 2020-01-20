@@ -99,7 +99,7 @@ class minerPathFinder extends BasePathFinder {
 		MapLocation to = from.add(dir);
 		if (!rc.canSenseLocation(to) || rc.senseFlooding(to))
 			return false;
-		if (!rc.canSenseLocation(from)||Math.abs(rc.senseElevation(from) - rc.senseElevation(to)) > 3)
+		if (!rc.canSenseLocation(from) || Math.abs(rc.senseElevation(from) - rc.senseElevation(to)) > 3)
 			return false;
 		RobotInfo robot = rc.senseRobotAtLocation(to);
 		if (robot != null && robot.getID() != rc.getID() && (!ignore_units || robot.getType().isBuilding()))
@@ -121,6 +121,7 @@ class minerPathFinder extends BasePathFinder {
 class naloga {
 	// ID-ji nalog ki jih lahko delamo
 	final static int GRADNJA_REFINERIJE = 10;
+	final static int GRADNJA_TOVARNE_ZA_DRONE = 11;
 	final static int NABIRANJE = 20;
 	final static int PREMIK_DO_JUHE = 30;
 	final static int PREMIK_DO_POLJA = 31;
@@ -145,6 +146,9 @@ class naloga {
 		case GRADNJA_REFINERIJE:
 			gradnja_refinerije();
 			break;
+		case GRADNJA_TOVARNE_ZA_DRONE:
+			gradnja_tovarne_za_drone();
+			break;
 		case NABIRANJE:
 			nabiranje();
 			break;
@@ -166,9 +170,21 @@ class naloga {
 		}
 	}
 
+	private void gradnja_tovarne_za_drone() throws GameActionException {
+		if (m.rc.getLocation().distanceSquaredTo(mesto) <= 2) {
+			Direction d = m.rc.getLocation().directionTo(mesto);
+			if (m.rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, d)) {
+				m.rc.buildRobot(RobotType.FULFILLMENT_CENTER, d);
+				value = 0;
+				return;
+			}
+		} else {
+			m.path_finder.moveTowards(this.mesto);
+		}
+	}
+
 	private void raziskovanje_mape() throws GameActionException {
-		if (Math.random() < 0.05 || m.rc.getLocation().distanceSquaredTo(this.mesto) <= 2) {// Menjamo smer vsake toliko
-																							// casa
+		if (Math.random() < 0.05 || m.rc.getLocation().distanceSquaredTo(this.mesto) <= 2) {// Menjamo smer // casa
 			value = 0;
 			return;
 		}
@@ -224,8 +240,9 @@ class naloga {
 				value = 0;
 				return;
 			}
+		} else {
+			m.path_finder.moveTowards(this.mesto);
 		}
-		m.path_finder.moveTowards(this.mesto);
 	}
 }
 
@@ -239,7 +256,7 @@ class naloga {
 public class miner extends robot {
 	public static final int MINER_COST = RobotType.MINER.cost;
 	public static final int razmik_med_polji = 20;
-	public static final int optimize=10;
+	public static final int optimize = 10;
 
 	naloga task;
 	final static int GRADNJA_REFINERIJE = 1000;
@@ -259,6 +276,11 @@ public class miner extends robot {
 	int w, h;// dimenzije mape
 
 	MapLocation hq_location;
+	/**
+	 * 0- obicajno<br>
+	 * 10- pomagamo hq 20- hq je napaden 30- nasprotnik uporablja drone
+	 */
+	int stanje;
 
 	public miner(RobotController rc) {
 		super(rc);
@@ -280,6 +302,7 @@ public class miner extends robot {
 		slaba_polja = new vector_set_gl();
 		refinerije = new vector_set_gl();
 		refinerije.add(hq_location);
+		stanje = 0;
 		while (Clock.getBytecodesLeft() > 800 || rc.getCooldownTurns() > 1) {
 			if (!b.read_next_round()) {
 				return;
@@ -307,16 +330,12 @@ public class miner extends robot {
 	}
 
 	public void postcompute() throws GameActionException {
-//		System.out.println("Po potezi " + Clock.getBytecodesLeft());
-//		int t = Clock.getBytecodesLeft();
 		update_soup();
-//		System.out.println("vmes " + Clock.getBytecodesLeft());
 		while (Clock.getBytecodesLeft() > 500) {
 			if (!b.read_next_round()) {
 				break;
 			}
 		}
-//		System.out.println("Na koncu " + Clock.getBytecodesLeft());
 	}
 
 	private void update_soup() throws GameActionException {
@@ -326,13 +345,13 @@ public class miner extends robot {
 			return;
 		}
 		// Dodamo juhe ki jih vidimo
-		MapLocation[]q=rc.senseNearbySoup();
-		int i=q.length;
-		while(i --> 0) {
+		MapLocation[] q = rc.senseNearbySoup();
+		int i = q.length;
+		while (i-- > 0) {
 			if (i % optimize != rc.getRoundNum() % optimize) {
 				continue;
 			}
-			MapLocation m=q[i];
+			MapLocation m = q[i];
 			if (Clock.getBytecodesLeft() < 1000) {
 				System.out.println("tle dodajanje juh");
 				return;
@@ -406,8 +425,17 @@ public class miner extends robot {
 		 * pogledamo ce imamo polje, da velja<br>
 		 * 1. Vidimo vsaj razmik_med_polji stran od polje<br>
 		 * 2. V tem obmocju ni nobene dosegljive juhe.
-		 * 
 		 */
+		for (i = 0; i < polja.size; i++) {
+			MapLocation m = polja.get(i);
+			if (rc.getLocation().distanceSquaredTo(m) <= 2) {
+				// Kako pogledati ce je okoli polja juha? Simple: Scan
+				if (rc.senseNearbySoup(m, 20).length == 0) {
+					polja.remove(m);
+					i--;
+				}
+			}
+		}
 //		System.out.println("Za barvanje juh je ostalo " + Clock.getBytecodesLeft() + " casa");
 		if (Clock.getBytecodesLeft() < 1000) {
 			System.out.println("tle pred barvanjem");
@@ -560,7 +588,17 @@ public class miner extends robot {
 	}
 
 	@Override
-	public void bc_tovarna_dronov(MapLocation pos) {
-	    // TODO rabim tovarno!
+	public void bc_build_tovarna_dronov(MapLocation pos) {
+		if (stanje == 10) {
+			task = new naloga(this, pos, 10000, naloga.GRADNJA_TOVARNE_ZA_DRONE);
+		}
 	}
+
+	@Override
+	public void bc_miner_to_help(int[] message) {
+		if (rc.getID() == message[2]) {
+			stanje = 10;
+		}
+	}
+
 }

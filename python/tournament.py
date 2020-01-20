@@ -145,30 +145,14 @@ def basic_evolution(bots, generation=4):
         # 1st and 2nd bot make children in 2 ways (either take valeu from one or another or average)
         # 1st and 3rd bot make children in 2 ways 
 
-        for parent in tournament_results[:3]:
+        for parent in tournament_results[:1]:
             
             parent_bot = parent[1]
             next_generation.append(parent_bot) # Automatically advances as top3
         
         first_seed = load_constants(next_generation[0])
-        second_seed = load_constants(next_generation[0])
-        third_seed = load_constants(next_generation[0])
     
         child_constants = modify_constants(first_seed)
-        next_generation.append(create_child(child_constants, generation))
-        child_constants = modify_constants(second_seed)
-        next_generation.append(create_child(child_constants, generation))
-        child_constants = modify_constants(third_seed)
-        next_generation.append(create_child(child_constants, generation))
-
-        child_constants = either_from_mother_or_father(first_seed, second_seed)
-        next_generation.append(create_child(child_constants, generation))
-        child_constants = either_from_mother_or_father(first_seed, third_seed)
-        next_generation.append(create_child(child_constants, generation))
-
-        child_constants = combine_two_parents(first_seed, second_seed)
-        next_generation.append(create_child(child_constants, generation))
-        child_constants = combine_two_parents(first_seed, third_seed)
         next_generation.append(create_child(child_constants, generation))
 
         bots = next_generation
@@ -181,12 +165,12 @@ def basic_evolution(bots, generation=4):
 if __name__ == '__main__':
 
     initial_bots = [
-        'generation_7_id_1',
-        'generation_6_id_3',
+        'grekiki25_ai',
+        'grekiki26',
         # 'generation_6_id_4',
         # 'generation_4_id_2',
         ]
-    basic_evolution(initial_bots, generation=9)
+    basic_evolution(initial_bots, generation=1)
 
     # generation = 3
     # bots = []
