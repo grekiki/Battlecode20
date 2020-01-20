@@ -42,7 +42,7 @@ public class fulfillment_center extends robot{
 	}
 
 	@Override
-	public void bc_drone(MapLocation from, MapLocation to) {
+	public void bc_drone(MapLocation from, MapLocation to, int id) {
 		drone_requests++;
 	}
 
