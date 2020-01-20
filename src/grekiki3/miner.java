@@ -883,4 +883,8 @@ public class miner extends robot {
 		}
 	}
 
+	@Override
+	public void bc_tovarna_dronov(MapLocation pos) {
+	    // TODO rabim tovarno!
+	}
 }

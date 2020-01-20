@@ -47,6 +47,15 @@ public class HQ extends robot {
 		if (try_shoot()) {
 			return;
 		}
+
+		// testiranje dronov
+        if (rc.getRoundNum() < 20) {
+        	b.send_location(b.LOC_TOVARNA_DRONOV, loc.translate(2, -1));
+		}
+		if (rc.getRoundNum() % 30 == 0) {
+			b.send_location2(b.LOC2_DRONE, Util.randomPoint(h, w), Util.randomPoint(h, w));
+		}
+
 		if (strategy == 1000) {
 
 		}
