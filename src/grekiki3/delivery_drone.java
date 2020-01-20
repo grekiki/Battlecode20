@@ -2,9 +2,13 @@ package grekiki3;
 
 import battlecode.common.Clock;
 import battlecode.common.GameActionException;
+import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 
+import java.util.Set;
+
 public class delivery_drone extends robot{
+	Set<MapLocation> asdf;
 
 	public delivery_drone(RobotController rc){
 		super(rc);
@@ -36,4 +40,8 @@ public class delivery_drone extends robot{
 		}
 	}
 
+	@Override
+	public void bc_drone(MapLocation from, MapLocation to) {
+
+	}
 }
