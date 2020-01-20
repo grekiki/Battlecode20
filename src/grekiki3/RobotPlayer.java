@@ -62,6 +62,8 @@ abstract class robot {
 	public void bc_rafinerija(MapLocation pos) {}
 	public void bc_tovarna_dronov(MapLocation pos) {}
 	public void bc_build_tovarna_dronov(MapLocation pos) {}
+	public void bc_tovarna_landscaperjev(MapLocation pos){};
+	public void bc_build_tovarna_landscaperjev(MapLocation pos){};
 	public void bc_home_hq(MapLocation pos) {}
 
 	public void bc_drone(MapLocation from, MapLocation to) {}

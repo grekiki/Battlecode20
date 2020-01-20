@@ -7,12 +7,76 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import battlecode.common.*;
+class dronePathFinder extends BasePathFinder {
+	dronePathFinder(RobotController rc) {
+		super(rc);
+		LOOKAHEAD_STEPS = 3;
+		UNIT_MAX_WAIT = 1;
+	}
+
+	// Metoda se bo poklicala, ko naletimo na vodo.
+	void found_water(MapLocation pos) { }
+	void found_unit(RobotInfo robot) { }
+
+	@Override
+	protected boolean is_unit_obstruction(MapLocation at) {
+		return super.is_unit_obstruction(at);
+	}
+
+	@Override
+	boolean can_move(MapLocation from, Direction dir) throws GameActionException {
+		// Ta metoda ignorira cooldown ...
+
+		MapLocation to = from.add(dir);
+		if (!rc.canSenseLocation(to))
+			return false;
+		if (rc.senseFlooding(to))
+			found_water(to);
+		RobotInfo robot = rc.senseRobotAtLocation(to);
+		if (robot != null && robot.getID() != rc.getID()) {
+		    found_unit(robot);
+			if (!ignore_units || robot.getType().isBuilding())
+				return false;
+		}
+		return true;
+	}
+}
+class minerPathFinder extends BasePathFinder {
+	minerPathFinder(RobotController rc) {
+	    super(rc);
+	}
+
+	@Override
+	boolean can_move(MapLocation from, Direction dir) throws GameActionException {
+		// Ta metoda ignorira cooldown ...
+
+		MapLocation to = from.add(dir);
+		if (!rc.canSenseLocation(to) || rc.senseFlooding(to))
+			return false;
+		if (!rc.canSenseLocation(from) || Math.abs(rc.senseElevation(from) - rc.senseElevation(to)) > 3)
+			return false;
+		RobotInfo robot = rc.senseRobotAtLocation(to);
+		if (robot != null && robot.getID() != rc.getID() && (!ignore_units || robot.getType().isBuilding()))
+			return false;
+		return true;
+	}
+
+	public boolean moveTowards(MapLocation dest) throws GameActionException {
+		Direction dir = get_move_direction(dest);
+
+		if (dir != null && rc.canMove(dir)) {
+			rc.move(dir);
+			return true;
+		}
+		return false;
+	}
+}
 
 class miner extends robot{
 	RobotController rc;
 	int phase=0;
 	MapLocation hq;
-
+	minerPathFinder path;
 	ArrayList<MapLocation> polja;
 	HashSet<MapLocation> surovine;
 	ArrayList<MapLocation> refinery;
@@ -82,6 +146,7 @@ class miner extends robot{
 	}
 
 	@Override public void init() throws Exception{
+		path=new minerPathFinder(this.rc);
 		surovine=new HashSet<MapLocation>();
 		for(RobotInfo r:rc.senseNearbyRobots(2,rc.getTeam())){
 			if(r.type==RobotType.HQ){
@@ -154,7 +219,7 @@ class miner extends robot{
 										}
 									}
 								}else{
-									Direction d=Util.tryMove(rc,rc.getLocation().directionTo(ref));
+									Direction d=path.get_move_direction(ref);
 									if(d!=null&&rc.canMove(d)){
 										rc.move(d);
 										return;
@@ -269,7 +334,7 @@ class miner extends robot{
 						return true;
 					}
 				}else{
-					Direction d=Util.tryMove(rc,rc.getLocation().directionTo(f2));
+					Direction d=path.get_move_direction(f2);
 					if(d!=null){
 						rc.move(d);
 						return true;
@@ -290,7 +355,7 @@ class miner extends robot{
 						return true;
 					}
 				}else{
-					Direction d=Util.tryMove(rc,rc.getLocation().directionTo(f1));
+					Direction d=path.get_move_direction(f1);
 					if(d!=null){
 						rc.move(d);
 						return true;
@@ -385,7 +450,7 @@ class miner extends robot{
 		if(best==null){
 			return false;
 		}
-		Direction d=Util.tryMove(rc,rc.getLocation().directionTo(best));
+		Direction d=path.get_move_direction(best);
 		if(d!=null&&rc.canMove(d)){
 			rc.move(d);
 			return true;
@@ -641,12 +706,14 @@ class delivery_drone extends robot{
 	MapLocation s,drain;
 	int time=1;
 	int dist;
+	dronePathFinder path;
 //	boolean[][]flooding;
 	delivery_drone(RobotController rc){
 		this.rc=rc;
 	}
 
 	@Override public void init(){
+		path=new dronePathFinder(this.rc);
 		for(RobotInfo r:rc.senseNearbyRobots(10,rc.getTeam())){
 			if(r.type==RobotType.HQ){
 				hq=r.location;
@@ -720,6 +787,7 @@ class delivery_drone extends robot{
 			}
 		}
 		full=rc.isCurrentlyHoldingUnit();
+		System.out.println(s+" "+drain);
 		a:if(s!=null&&!full){
 			if(rc.getRoundNum()-time>konst.abort_time){
 				s=null;
@@ -741,7 +809,7 @@ class delivery_drone extends robot{
 					}
 				}
 			}
-			Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(s));
+			Direction d=path.get_move_direction(s);
 			if(d!=null){
 				rc.move(d);
 				return;
@@ -764,7 +832,7 @@ class delivery_drone extends robot{
 						}
 					}
 				}else{
-					Direction d=rc.getLocation().directionTo(drain);
+					Direction d=path.get_move_direction(drain);
 					if(rc.canDropUnit(d)){
 						rc.dropUnit(d);
 						drain=null;
@@ -772,7 +840,7 @@ class delivery_drone extends robot{
 					}
 				}
 			}
-			Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(drain));
+			Direction d=path.get_move_direction(drain);
 			if(d!=null&&rc.canMove(d)){
 				rc.move(d);
 				return;
@@ -801,7 +869,7 @@ class delivery_drone extends robot{
 						return;
 					}
 				}else{
-					Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(best));
+					Direction d=path.get_move_direction(best);
 					if(d!=null){
 						rc.move(d);
 					}
@@ -836,7 +904,7 @@ class delivery_drone extends robot{
 				}
 			}
 		}
-		if(full&&drain==null){
+		if(full&&(drain==null||s!=null)){
 			for(Direction d:Util.dir){
 				if(rc.canSenseLocation(rc.getLocation().add(d))&&rc.senseFlooding(rc.getLocation().add(d))){
 					if(rc.canDropUnit(d)){
@@ -853,7 +921,7 @@ class delivery_drone extends robot{
 				for(MapLocation m:pc.range[i]){
 					if(rc.canSenseLocation(m)){
 						if(rc.senseFlooding(m)){
-							Direction d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(m));
+							Direction d=path.get_move_direction(m);
 							if(d!=null){
 								if(safeMove(d)){
 									rc.move(d);
@@ -880,7 +948,7 @@ class delivery_drone extends robot{
 			MapLocation best=findClosest(aqua);
 			Direction d;
 			if(best!=null){
-				d=Util.tryMoveLiteDrone(rc,rc.getLocation().directionTo(best));
+				d=path.get_move_direction(best);
 			}else{
 				d=init;
 			}

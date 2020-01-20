@@ -457,12 +457,14 @@ class naloga {
 	MapLocation mesto;// ni nujno da naloga da mesto, je pa tako pogosto da pride prav
 	int value;
 	int type;
+	int zacetek;
 
 	naloga(miner mi, MapLocation mm, int c, int t) {
 		m = mi;
 		mesto = mm;// lahko je null!
 		value = c;
 		type = t;
+		zacetek=m.rc.getRoundNum();
 	}
 
 	public void run() throws GameActionException {
@@ -655,6 +657,11 @@ public class miner extends robot {
 	}
 
 	public void postcompute() throws GameActionException {
+		if(stanje==10) {
+			if(rc.getRoundNum()%10==0) {
+				b.send_packet(b.UNIT_ALIVE, new int[] {b.PRIVATE_KEY,b.UNIT_ALIVE,rc.getID(),0,0,0,0});
+			}
+		}
 		update_soup();
 		while (Clock.getBytecodesLeft() > 500) {
 			if (!b.read_next_round()) {
@@ -663,6 +670,8 @@ public class miner extends robot {
 		}
 	}
 
+
+	// Util
 	private void update_soup() throws GameActionException {
 //		System.out.println("Za "+juhe.size+" juh je ostalo " + Clock.getBytecodesLeft() + " casa");
 		if (Clock.getBytecodesLeft() < 1000) {
@@ -805,7 +814,6 @@ public class miner extends robot {
 		}
 	}
 
-	// Util
 	public void findBestTask() throws GameActionException {
 		int currentValue = (task == null ? 0 : task.value);
 		if (currentValue < PREMIKANJE_JUHE_V_BAZO) {
@@ -914,6 +922,13 @@ public class miner extends robot {
 
 	@Override
 	public void bc_build_tovarna_dronov(MapLocation pos) {
+		if (stanje == 10) {
+			task = new naloga(this, pos, 10000, naloga.GRADNJA_TOVARNE_ZA_DRONE);
+		}
+	}
+	
+	@Override
+	public void bc_build_tovarna_landscaperjev(MapLocation pos) {
 		if (stanje == 10) {
 			task = new naloga(this, pos, 10000, naloga.GRADNJA_TOVARNE_ZA_DRONE);
 		}

@@ -375,6 +375,7 @@ class design_school extends robot{
 	blockchain b;
 	int phase=0;
 	int p=0;
+	int delta=-1;
 	ArrayList<MapLocation> zid=new ArrayList<MapLocation>();
 	public design_school(RobotController r){
 		rc=r;
@@ -457,40 +458,51 @@ class design_school extends robot{
 				}
 			}
 		}
-//		if(phase==3){
-//			int count=0;
-//			int cw=0;
-//			for(RobotInfo r:rc.senseNearbyRobots(hq,2,rc.getTeam())){
-//				if(r.type==RobotType.NET_GUN){
-//					count++;
-//				}
-//				if(r.type==RobotType.MINER){
-//					cw++;
-//				}
-//			}
-//			if(count==4&&cw==0){
-//				if(rc.canBuildRobot(RobotType.LANDSCAPER,Direction.NORTH)){
-//					for(;p<zid.size();p++){
-////						System.out.println(p+" "+zid.size());
-//						MapLocation goal=new MapLocation(hq.x+zid.get(p).x,hq.y+zid.get(p).y);
-//						if(rc.canSenseLocation(goal)){
-//							if(rc.senseRobotAtLocation(goal)==null){
-//								int[] msg={konst.private_key,7,hq.x+1,hq.y,goal.x,goal.y,0};
-//								b.sendMsg(new paket(msg,1));
-//								break;
-//							}
-//						}
-//					}
-//					if(p<zid.size()){
-//						rc.buildRobot(RobotType.LANDSCAPER,Direction.NORTH);
-//						return;
-//					}else {
-//						p=0;//morda kak�en umre. 
-//						return;
-//					}
-//				}
-//			}
-//		}
+		System.out.println(phase);
+		if(phase==3){
+			int count=0;
+			int cw=0;
+			for(RobotInfo r:rc.senseNearbyRobots(hq,2,rc.getTeam())){
+				if(r.type==RobotType.NET_GUN){
+					count++;
+				}
+				if(r.type==RobotType.MINER){
+					cw++;
+				}
+			}
+			if(count==4&&cw==0){
+				if(delta==-1) {
+					delta=rc.getRoundNum();
+				}
+				if(rc.getRoundNum()-delta<=10) {
+					return;
+				}
+				if(rc.canBuildRobot(RobotType.LANDSCAPER,Direction.NORTH)){
+					for(;p<zid.size();p++){
+//						System.out.println(p+" "+zid.size());
+						MapLocation goal=new MapLocation(hq.x+zid.get(p).x,hq.y+zid.get(p).y);
+						if(goal.equals(new MapLocation(hq.x-1,hq.y+2))||goal.equals(new MapLocation(hq.x+2,hq.y-1))) {
+							continue;
+						}
+						if(rc.canSenseLocation(goal)){
+							if(rc.senseRobotAtLocation(goal)==null){
+								int[] msg={konst.private_key,7,hq.x+1,hq.y,goal.x,goal.y,0};
+								b.sendMsg(new paket(msg,1));
+								delta=rc.getRoundNum()+50;
+								break;
+							}
+						}
+					}
+					if(p<zid.size()){
+						rc.buildRobot(RobotType.LANDSCAPER,Direction.NORTH);
+						return;
+					}else {
+						p=0;//morda kak�en umre. 
+						return;
+					}
+				}
+			}
+		}
 //		else if(diggers<12&&phase==3) {
 //			if(rc.getTeamSoup()>=400+RobotType.LANDSCAPER.cost) {
 //				if(rc.canBuildRobot(RobotType.LANDSCAPER,Direction.WEST)) {
