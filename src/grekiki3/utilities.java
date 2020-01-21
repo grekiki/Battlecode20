@@ -14,7 +14,6 @@ import battlecode.common.*;
  *
  */
 class c {
-	public static int pkey = 1234;// Privatni kljuc za blockchain
 	public static int inf = Integer.MAX_VALUE / 2;
 }
 
@@ -25,9 +24,8 @@ class c {
  *
  */
 class Util {
-	public static Random r = new Random(c.pkey);
-	public static Direction[] dir = { Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST,
-			Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST };
+	public static Random r = new Random(1234);
+	public static Direction[] dir = { Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST };
 
 	/**
 	 * Returns the round elevation gets flooded.
@@ -146,8 +144,7 @@ class Util {
 		return ans;
 	}
 
-	public static MapLocation closest(Iterable<? extends MapLocation> somethings, MapLocation source)
-			throws GameActionException {
+	public static MapLocation closest(Iterable<? extends MapLocation> somethings, MapLocation source) throws GameActionException {
 		MapLocation ans = null;
 		int dist = c.inf;
 		for (MapLocation m : somethings) {
@@ -173,7 +170,7 @@ class Util {
 		MapLocation ans = null;
 		while (i-- > 0) {
 //			System.out.println(i+" "+q.size+" "+q.get(i)+" "+Arrays.toString(q.q));
-			if(q.get(i)==null) {
+			if (q.get(i) == null) {
 				continue;
 			}
 			int d2 = source.distanceSquaredTo(q.get(i));
@@ -186,6 +183,24 @@ class Util {
 //			System.out.println("Nabljizja lokacija iz prazne mnozice?");
 //		}
 		return ans;
+	}
+
+	public static Direction tryMove(RobotController rc, Direction dir) throws GameActionException {
+		if (rc.canMove(dir) && rc.canSenseLocation(rc.getLocation().add(dir)) && !rc.senseFlooding(rc.getLocation().add(dir))) {
+			return dir;
+		} else if (rc.canMove(dir.rotateLeft()) && rc.canSenseLocation(rc.getLocation().add(dir.rotateLeft())) && !rc.senseFlooding(rc.getLocation().add(dir.rotateLeft()))) {
+			return dir.rotateLeft();
+		} else if (rc.canMove(dir.rotateRight()) && rc.canSenseLocation(rc.getLocation().add(dir.rotateRight())) && !rc.senseFlooding(rc.getLocation().add(dir.rotateRight()))) {
+			return dir.rotateRight();
+		} else if (rc.canMove(dir.rotateLeft().rotateLeft()) && rc.canSenseLocation(rc.getLocation().add(dir.rotateLeft().rotateLeft()))
+				&& !rc.senseFlooding(rc.getLocation().add(dir.rotateLeft().rotateLeft()))) {
+			return dir.rotateLeft().rotateLeft();
+		} else if (rc.canMove(dir.rotateRight().rotateRight()) && rc.canSenseLocation(rc.getLocation().add(dir.rotateRight().rotateRight()))
+				&& !rc.senseFlooding(rc.getLocation().add(dir.rotateRight().rotateRight()))) {
+			return dir.rotateRight().rotateRight();
+		} else {
+			return null;
+		}
 	}
 
 }
@@ -253,7 +268,7 @@ class blockchain {
 	/**
 	 * Tukaj zelimo imeti tovarno landscaperjev
 	 */
-	final int BUILD_TOVARNA_LANDSCAPERJEV=22;
+	final int BUILD_TOVARNA_LANDSCAPERJEV = 22;
 	/**
 	 * Lokacija domace baze
 	 */
@@ -279,15 +294,14 @@ class blockchain {
 	/**
 	 * Baza ima stanje int1
 	 */
-	final int BASE_STRATEGY=1200;
+	final int BASE_STRATEGY = 1200;
 
-	
 	private final int LOC_MAX = 99;// do 99 je en mapLocation
 	private final int LOC2_MAX = 999;// od 100 do 999 sta 2
 
 	List<paket> messages; // TODO lahko bi uporabili Heap (prioritetna vrsta glede na ceno)
 	RobotController rc;
-	int lastRoundOfQueueCheck=-1;
+	int lastRoundOfQueueCheck = -1;
 	int rounds_read = 0; // Koliko rund smo ze prebrali?
 
 	blockchain(RobotController rc) {
@@ -378,9 +392,9 @@ class blockchain {
 
 	// TO-DO preveri ce se splaca optimizirati. Vrsta z math.min je prepogosta :)
 	public void checkQueue() throws GameActionException {
-		if(lastRoundOfQueueCheck!=rc.getRoundNum()) {
-			lastRoundOfQueueCheck=rc.getRoundNum();
-		}else {
+		if (lastRoundOfQueueCheck != rc.getRoundNum()) {
+			lastRoundOfQueueCheck = rc.getRoundNum();
+		} else {
 			return;
 		}
 		int minCost = c.inf;
@@ -417,7 +431,6 @@ class blockchain {
 		// System.out.println(messages.size() + " paketov caka");
 	}
 }
-
 
 abstract class BasePathFinder {
 	protected int LOOKAHEAD_STEPS = 5;
@@ -686,7 +699,8 @@ abstract class BasePathFinder {
 	}
 
 	protected boolean is_at_goal(MapLocation cur, MapLocation dest) throws GameActionException {
-		if (cur.equals(dest)) return true;
+		if (cur.equals(dest))
+			return true;
 		boolean adj = cur.isAdjacentTo(dest);
 		if (adj && can_move(cur, cur.directionTo(dest))) {
 			return false;

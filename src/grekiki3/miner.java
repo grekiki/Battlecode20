@@ -124,6 +124,112 @@ class minerPathFinder extends BasePathFinder {
 	}
 }
 
+class rush {
+	miner m;
+	RobotController rc;
+	MapLocation enemyHq = null;
+	boolean lrsymmetry = false;
+	boolean udsymmetry = false;
+	boolean madeDesignSchool = false;
+	boolean madeNetGun = false;
+
+	rush(miner m) {
+		this.m = m;
+		rc = m.rc;
+	}
+
+	boolean run() throws GameActionException {
+		if (enemyHq == null) {
+			// najprej lr
+			if (lrsymmetry) {
+				enemyHq = new MapLocation(rc.getMapWidth() - 1 - m.hq_location.x, m.hq_location.y);
+			} else if (udsymmetry) {
+				enemyHq = new MapLocation(m.hq_location.x, rc.getMapHeight() - 1 - m.hq_location.y);
+			} else {
+				enemyHq = new MapLocation(rc.getMapWidth() - 1 - m.hq_location.x, rc.getMapHeight() - 1 - m.hq_location.y);
+			}
+		}
+		disproveSimetries();
+		boolean seeHq = false;
+		for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
+			if (r.type == RobotType.HQ) {
+				seeHq = true;
+				enemyHq = r.location;
+				m.b.send_packet(m.b.LOC_ENEMY_HQ, new int[] { m.b.PRIVATE_KEY, m.b.LOC_ENEMY_HQ, r.location.x, r.location.y, 0, 0, 0 });
+			}
+		}
+		if (!seeHq) {
+			m.path_finder.moveTowards(enemyHq);
+			return true;
+		} else {
+			boolean seeEnemyDrone = false;
+			MapLocation closestDrone=null;
+			int dist=1000000;
+			for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
+				if (r.type == RobotType.DELIVERY_DRONE) {
+					seeEnemyDrone = true;
+					int d2=rc.getLocation().distanceSquaredTo(r.location);
+					if(d2<dist) {
+						dist=d2;
+						closestDrone=r.location;
+					}
+				}
+			}
+			if (seeEnemyDrone) {
+				if (!madeNetGun) {
+					Direction d = rc.getLocation().directionTo(enemyHq);
+					if (tryBuild(RobotType.NET_GUN, d)) {
+						madeNetGun=true;
+						return true;
+					}
+				}else {//ne se premikat :)
+					Util.tryMove(rc, rc.getLocation().directionTo(closestDrone).opposite());
+					return true;
+				}
+			}
+			
+			if (!madeDesignSchool) {
+				Direction d = rc.getLocation().directionTo(enemyHq);
+				if (tryBuild(RobotType.DESIGN_SCHOOL, d)) {
+					madeDesignSchool=true;
+					return true;
+				}
+			}
+			m.path_finder.moveTowards(enemyHq);
+			return true;
+		}
+	}
+
+	private boolean tryBuild(RobotType designSchool, Direction d) throws GameActionException {
+		if (rc.canBuildRobot(designSchool, d)) {
+			rc.buildRobot(designSchool, d);
+			return true;
+		}
+		if (rc.canBuildRobot(designSchool, d.rotateLeft())) {
+			rc.buildRobot(designSchool, d.rotateLeft());
+			return true;
+		}
+		if (rc.canBuildRobot(designSchool, d.rotateRight())) {
+			rc.buildRobot(designSchool, d.rotateRight());
+			return true;
+		}
+		if (rc.canBuildRobot(designSchool, d.rotateLeft().rotateLeft())) {
+			rc.buildRobot(designSchool, d.rotateLeft().rotateLeft());
+			return true;
+		}
+		if (rc.canBuildRobot(designSchool, d.rotateRight().rotateRight())) {
+			rc.buildRobot(designSchool, d.rotateRight().rotateRight());
+			return true;
+		}
+		return false;
+	}
+
+	private void disproveSimetries() {
+		// TODO Auto-generated method stub
+
+	}
+}
+
 class naloga {
 	// ID-ji nalog ki jih lahko delamo
 	final static int GRADNJA_REFINERIJE = 10;
@@ -135,7 +241,7 @@ class naloga {
 	final static int PREMIKANJE_JUHE_V_BAZO = 40;
 	final static int RAZISKOVANJE_JUHE = 50;
 	final static int RAZISKOVANJE_MAPE = 60;
-	final static int RUSH=100;
+	final static int RUSH = 100;
 	miner m;
 	MapLocation mesto;// ni nujno da naloga da mesto, je pa tako pogosto da pride prav
 	int value;
@@ -143,6 +249,7 @@ class naloga {
 	int zacetek;
 	RobotController rc;
 
+	rush r;
 	Direction raziskovanje = null;
 
 	naloga(miner mi, MapLocation mm, int c, int t) {
@@ -189,15 +296,19 @@ class naloga {
 			break;
 		}
 	}
-	
-	private void rush() throws GameActionException{
-		
+
+	private void rush() throws GameActionException {
+		if (r == null) {
+			r = new rush(m);
+		}
+		r.run();
 	}
+
 	private void raziskovanje_mape() throws GameActionException {
 		if (raziskovanje == null) {
 			raziskovanje = Util.getRandomDirection();
 		}
-		if (m.rc.canMove(raziskovanje)&&!m.rc.senseFlooding(rc.getLocation().add(raziskovanje))) {
+		if (m.rc.canMove(raziskovanje) && !m.rc.senseFlooding(rc.getLocation().add(raziskovanje))) {
 			m.rc.move(raziskovanje);
 		} else {
 			raziskovanje = null;
@@ -230,8 +341,8 @@ class naloga {
 			value = 0;
 			return;
 		}
-		if(rc.getLocation().distanceSquaredTo(this.mesto)<=2) {
-			value=0;
+		if (rc.getLocation().distanceSquaredTo(this.mesto) <= 2) {
+			value = 0;
 			return;
 		}
 		m.path_finder.moveTowards(this.mesto);
@@ -250,8 +361,7 @@ class naloga {
 	}
 
 	private void gradnja_refinerije() throws GameActionException {
-		if (rc.canSenseLocation(mesto) && rc.senseRobotAtLocation(mesto) != null
-				&& rc.senseRobotAtLocation(mesto).type == RobotType.REFINERY) {
+		if (rc.canSenseLocation(mesto) && rc.senseRobotAtLocation(mesto) != null && rc.senseRobotAtLocation(mesto).type == RobotType.REFINERY) {
 			value = 0;
 			return;
 		}
@@ -370,7 +480,6 @@ public class miner extends robot {
 
 	@Override
 	public void runTurn() throws GameActionException {
-//		System.out.println("Pred potezo " + Clock.getBytecodesLeft());
 		if (!rc.isReady()) {
 			return;
 		}
@@ -561,11 +670,15 @@ public class miner extends robot {
 	}
 
 	public void findBestTask() throws GameActionException {
+		if (stanje == 11) {
+			if (task == null || task.type != naloga.RUSH) {
+				task = new naloga(this, null, 1000000, naloga.RUSH);
+			}
+		}
 		int currentValue = (task == null ? 0 : task.value);
 		if (currentValue < PREMIKANJE_JUHE_V_BAZO) {
 			if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) {
-				task = new naloga(this, Util.closest(refinerije, rc.getLocation()), PREMIKANJE_JUHE_V_BAZO,
-						naloga.PREMIKANJE_JUHE_V_BAZO);
+				task = new naloga(this, Util.closest(refinerije, rc.getLocation()), PREMIKANJE_JUHE_V_BAZO, naloga.PREMIKANJE_JUHE_V_BAZO);
 				currentValue = PREMIKANJE_JUHE_V_BAZO;
 			}
 		}
@@ -601,7 +714,7 @@ public class miner extends robot {
 			task = new naloga(this, null, RAZISKOVANJE_MAPE, naloga.RAZISKOVANJE_MAPE);
 			currentValue = RAZISKOVANJE_MAPE;
 		}
-		if (stanje == 10&&task!=null&&task.value!=GRADNJA) {// gradnja?
+		if (stanje == 10 && task != null && task.value != GRADNJA) {// gradnja?
 //			System.out.println(toBuild.size());
 			naloga closest = null;
 			int dist = c.inf;
@@ -628,8 +741,8 @@ public class miner extends robot {
 	}
 
 	public int izracunaj_vrenost_refinerije(MapLocation closest) throws GameActionException {
-		if(strategija==1000) {
-			if(rc.getSoupCarrying()<500) {
+		if (strategija == 1000) {
+			if (rc.getSoupCarrying() < 500) {
 				return 0;
 			}
 		}
@@ -746,18 +859,20 @@ public class miner extends robot {
 			stanje = 10;
 		}
 	}
+
 	@Override
 	public void bc_miner_rush(int[] message) {
 		if (rc.getID() == message[2]) {
-			stanje = 20;
+			stanje = 11;
 		}
 	}
+
 	public void bc_base_strategy(int[] message) {
-		strategija=message[2];
+		strategija = message[2];
 	}
 
 	@Override
 	public void bc_enemy_hq(MapLocation pos) {
-		enemy_hq_location=pos;
+		enemy_hq_location = pos;
 	}
 }

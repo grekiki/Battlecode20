@@ -43,6 +43,7 @@ public class HQ extends robot {
 		polja = new vector_set_gl();
 		slaba_polja = new vector_set_gl();
 		strategy = choose_strategy();
+		System.out.println("Strategija "+strategy);
 		minerIds = new ArrayList<Integer>();
 		b.send_packet(b.BASE_STRATEGY, new int[] {b.PRIVATE_KEY,b.BASE_STRATEGY,strategy,0,0,0,0});
 	}
@@ -60,13 +61,12 @@ public class HQ extends robot {
 		if (strategy == 1000) {
 			if (!haveRusher && minerIds.size() > 0) {
 				haveRusher = true;
-				b.send_packet(b.MINER_RUSH, new int[] { b.PRIVATE_KEY, b.MINER_HELP_HQ, minerIds.get(0), 0, 0, 0, 0 });
+				b.send_packet(b.MINER_RUSH, new int[] { b.PRIVATE_KEY, b.MINER_RUSH, minerIds.get(0), 0, 0, 0, 0 });
 			}
 		} else if (strategy == 2000) {
 			if (!haveBaseBuilder && minerIds.size() > 0) {
 				haveBaseBuilder = true;
-				b.send_packet(b.MINER_HELP_HQ,
-						new int[] { b.PRIVATE_KEY, b.MINER_HELP_HQ, minerIds.get(0), 0, 0, 0, 0 });
+				b.send_packet(b.MINER_HELP_HQ,new int[] { b.PRIVATE_KEY, b.MINER_HELP_HQ, minerIds.get(0), 0, 0, 0, 0 });
 			}
 		}
 	}
@@ -79,25 +79,22 @@ public class HQ extends robot {
 		if (try_shoot()) {
 			return;
 		}
-
-		// testiranje dronov
-		if (rc.getRoundNum() == 20) {
-			b.send_location(b.BUILD_TOVARNA_DRONOV, loc.translate(2, -1));
-		}
-		if (rc.getRoundNum() == 50) {
-			b.send_location(b.BUILD_TOVARNA_LANDSCAPERJEV, loc.translate(2, 1));
-		}
-
+		
 		if (strategy == 1000) {
-
+			if (this.miners_spawned < 3)
+				if (try_spawn_miner(pick_miner_direction()))
+					return;
 		}
 		if (strategy == 2000) {
 			if (this.miners_spawned <= 4 * polja.load)
 				if (try_spawn_miner(pick_miner_direction()))
 					return;
-
-		}
-		if (strategy == 3000) {
+			if (rc.getRoundNum() == 20) {
+				b.send_location(b.BUILD_TOVARNA_DRONOV, loc.translate(2, -1));
+			}
+			if (rc.getRoundNum() == 50) {
+				b.send_location(b.BUILD_TOVARNA_LANDSCAPERJEV, loc.translate(2, 1));
+			}
 
 		}
 

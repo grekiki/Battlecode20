@@ -246,7 +246,8 @@ class DroneDeliveryRequest {
 public class delivery_drone extends robot{
 	private static final int COW_ENEMY_PRIORITY = 27;
 	private static final int COW_ENEMY_RADIUS = 5 * GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED;
-
+	int strategy=-1;
+	
 	MapLocation hq_location;
 
 	vector_set_gl water_locations = new vector_set_gl();
@@ -637,5 +638,9 @@ public class delivery_drone extends robot{
 			return new MoveDroneTask(this, Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()), 1);
 		}
 		return task;
+	}
+	
+	public void bc_base_strategy(int[] message) {
+		strategy=message[2];
 	}
 }

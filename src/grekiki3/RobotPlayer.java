@@ -71,7 +71,7 @@ abstract class robot {
 					bc_miner_to_help(message);
 					break;
 				case MINER_RUSH:
-					bc_miner_to_help(message);
+					bc_miner_rush(message);
 					break;
 				case UNIT_ALIVE:
 					bc_unit_alive(message);
