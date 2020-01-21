@@ -239,11 +239,12 @@ class naloga {
 	}
 
 	private void gradnja_refinerije() throws GameActionException {
-		if(rc.canSenseLocation(mesto)&&rc.senseRobotAtLocation(mesto)!=null&&rc.senseRobotAtLocation(mesto).type==RobotType.REFINERY) {
-			value=0;
+		if (rc.canSenseLocation(mesto) && rc.senseRobotAtLocation(mesto) != null
+				&& rc.senseRobotAtLocation(mesto).type == RobotType.REFINERY) {
+			value = 0;
 			return;
 		}
-		value=m.izracunaj_vrenost_refinerije(mesto);
+		value = m.izracunaj_vrenost_refinerije(mesto);
 		if (m.rc.getLocation().distanceSquaredTo(mesto) <= 2) {
 			Direction d = m.rc.getLocation().directionTo(mesto);
 			if (m.rc.canBuildRobot(RobotType.REFINERY, d)) {
@@ -285,7 +286,6 @@ class naloga {
 		}
 	}
 }
-
 
 public class miner extends robot {
 	public static final int MINER_COST = RobotType.MINER.cost;
@@ -341,12 +341,12 @@ public class miner extends robot {
 		refinerije = new vector_set_gl();
 		refinerije.add(hq_location);
 		stanje = 0;
+		toBuild = new ArrayList<naloga>();
 		while (Clock.getBytecodesLeft() > 800 || rc.getCooldownTurns() > 1) {
 			if (!b.read_next_round()) {
 				return;
 			}
 		}
-		toBuild=new ArrayList<naloga>();
 	}
 
 	@Override
@@ -587,13 +587,25 @@ public class miner extends robot {
 			task = new naloga(this, null, RAZISKOVANJE_MAPE, naloga.RAZISKOVANJE_MAPE);
 			currentValue = RAZISKOVANJE_MAPE;
 		}
-		int vrednost_refinerije = izracunaj_vrenost_refinerije(Util.closest(polja, rc.getLocation()));
+		if (stanje == 10) {// gradnja?
+			if (toBuild.size() > 0) {
+				if (task.value != 10000000) {
+					System.out.println("gradnja? ");
+					task = toBuild.get(0);
+					task.value = 10000000;
+					toBuild.remove(toBuild.get(0));
+				}
+			}
+		} else {// ce ne gradimo baze lahko gradimo refinerije
+			int vrednost_refinerije = izracunaj_vrenost_refinerije(Util.closest(polja, rc.getLocation()));
 //		System.out.println(vrednost_refinerije);
-		if (vrednost_refinerije > currentValue) {
-			MapLocation ans = Util.closest(polja, rc.getLocation());
-			task = new naloga(this, ans, vrednost_refinerije, naloga.GRADNJA_REFINERIJE);
-			currentValue = vrednost_refinerije;
+			if (vrednost_refinerije > currentValue) {
+				MapLocation ans = Util.closest(polja, rc.getLocation());
+				task = new naloga(this, ans, vrednost_refinerije, naloga.GRADNJA_REFINERIJE);
+				currentValue = vrednost_refinerije;
+			}
 		}
+
 	}
 
 	public int izracunaj_vrenost_refinerije(MapLocation closest) throws GameActionException {
