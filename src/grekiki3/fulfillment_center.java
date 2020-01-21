@@ -3,10 +3,10 @@ package grekiki3;
 import battlecode.common.*;
 
 public class fulfillment_center extends robot{
-
 	int drones_built = 0;
 	int drone_requests = 0;
 
+	int strategy=-1;
 	public fulfillment_center(RobotController rc){
 		super(rc);
 	}
@@ -46,6 +46,11 @@ public class fulfillment_center extends robot{
 	}
 
 	private boolean should_build() {
+		if(strategy==1000) {
+			if(rc.getTeamSoup()<1000) {//Ko imamo 1000 juhe lahko gradimo
+				return false;
+			}
+		}
 	    boolean enough_soup = rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost;
 		return enough_soup &&
 				(drones_built < 2 || drone_requests > 4 * drones_built);
@@ -60,5 +65,9 @@ public class fulfillment_center extends robot{
 			}
 		}
 		return false;
+	}
+	
+	public void bc_base_strategy(int[] message) {
+		strategy=message[2];
 	}
 }

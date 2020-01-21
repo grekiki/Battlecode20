@@ -24,6 +24,8 @@ public class HQ extends robot {
 	ArrayList<Integer> minerIds;
 	boolean haveBaseBuilder = false;
 	int builder = -1;
+	boolean haveRusher = false;
+	int rusher = -1;
 
 	public HQ(RobotController rc) {
 		super(rc);
@@ -31,17 +33,19 @@ public class HQ extends robot {
 
 	/**
 	 * HQ se v prvi potezi najprej odloci kaj bi naredil, glede na stanje mape.
+	 * @throws GameActionException 
 	 */
 	@Override
-	public void init() {
+	public void init() throws GameActionException {
 		w = rc.getMapWidth();
 		h = rc.getMapHeight();
 		loc = rc.getLocation();
 		polja = new vector_set_gl();
 		slaba_polja = new vector_set_gl();
 		strategy = choose_strategy();
+		System.out.println("Strategija "+strategy);
 		minerIds = new ArrayList<Integer>();
-
+		b.send_packet(b.BASE_STRATEGY, new int[] {b.PRIVATE_KEY,b.BASE_STRATEGY,strategy,0,0,0,0});
 	}
 
 	@Override
@@ -53,9 +57,17 @@ public class HQ extends robot {
 				}
 			}
 		}
-		if (!haveBaseBuilder && minerIds.size() > 0) {
-			haveBaseBuilder = true;
-			b.send_packet(b.MINER_HELP_HQ, new int[] { b.PRIVATE_KEY, b.MINER_HELP_HQ, minerIds.get(0), 0, 0, 0, 0 });
+		
+		if (strategy == 1000) {
+			if (!haveRusher && minerIds.size() > 0) {
+				haveRusher = true;
+				b.send_packet(b.MINER_RUSH, new int[] { b.PRIVATE_KEY, b.MINER_RUSH, minerIds.get(0), 0, 0, 0, 0 });
+			}
+		} else if (strategy == 2000) {
+			if (!haveBaseBuilder && minerIds.size() > 0) {
+				haveBaseBuilder = true;
+				b.send_packet(b.MINER_HELP_HQ,new int[] { b.PRIVATE_KEY, b.MINER_HELP_HQ, minerIds.get(0), 0, 0, 0, 0 });
+			}
 		}
 	}
 
@@ -67,25 +79,22 @@ public class HQ extends robot {
 		if (try_shoot()) {
 			return;
 		}
-
-		// testiranje dronov
-		if (rc.getRoundNum() == 20) {
-			b.send_location(b.BUILD_TOVARNA_DRONOV, loc.translate(2, -1));
-		}
-		if (rc.getRoundNum() == 50) {
-			b.send_location(b.BUILD_TOVARNA_LANDSCAPERJEV, loc.translate(2, 1));
-		}
-
+		
 		if (strategy == 1000) {
-
+			if (this.miners_spawned < 3)
+				if (try_spawn_miner(pick_miner_direction()))
+					return;
 		}
 		if (strategy == 2000) {
 			if (this.miners_spawned <= 4 * polja.load)
 				if (try_spawn_miner(pick_miner_direction()))
 					return;
-
-		}
-		if (strategy == 3000) {
+			if (rc.getRoundNum() == 20) {
+				b.send_location(b.BUILD_TOVARNA_DRONOV, loc.translate(2, -1));
+			}
+			if (rc.getRoundNum() == 50) {
+				b.send_location(b.BUILD_TOVARNA_LANDSCAPERJEV, loc.translate(2, 1));
+			}
 
 		}
 
@@ -103,7 +112,7 @@ public class HQ extends robot {
 	public int choose_strategy() {
 		wallRadius = 2;
 		if (rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 0) {
-			return 1000;
+			return 1000;//rush
 		} else {
 			return 2000;
 		}
