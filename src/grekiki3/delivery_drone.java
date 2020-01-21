@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Set;
 
 abstract class dronePathFinder extends BasePathFinder {
+	boolean ignore_danger = false;
+
 	dronePathFinder(RobotController rc) {
 		super(rc);
 		LOOKAHEAD_STEPS = 3;
@@ -35,7 +37,7 @@ abstract class dronePathFinder extends BasePathFinder {
 		if (rc.senseFlooding(to))
 			found_water(to);
 		// TODO kaj ce je ujet
-		if (is_dangerous(to)) {
+		if (!ignore_danger && is_dangerous(to)) {
 			return false;
 		}
 		RobotInfo robot = rc.senseRobotAtLocation(to);
@@ -242,10 +244,14 @@ class DroneDeliveryRequest {
 }
 
 public class delivery_drone extends robot{
+	private static final int COW_ENEMY_PRIORITY = 27;
+	private static final int COW_ENEMY_RADIUS = 5 * GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED;
+
 	MapLocation hq_location;
 
 	Set<MapLocation> water_locations = new HashSet<>();
 	Set<MapLocation> enemy_netguns = new HashSet<>();
+	Set<MapLocation> enemy_refineries = new HashSet<>();
 	Map<Integer, DroneDeliveryRequest> delivery_locations = new HashMap<>();
 
 	DroneTask task;
@@ -286,16 +292,13 @@ public class delivery_drone extends robot{
 	}
 
 	@Override public void runTurn() throws GameActionException {
-		if (!rc.isReady()) {
-			return;
-		}
 		int b1 = Clock.getBytecodeNum();
 		task = find_best_task();
-		System.out.println("TASK FIND: " + b1);
+		System.out.println("TASK FIND: " + (Clock.getBytecodeNum() - b1));
 		if (task != null) {
 			b1 = Clock.getBytecodeNum();
-		    task.run();
-			System.out.println("TASK RUN: " + b1);
+			task.run();
+			System.out.println("TASK RUN: " + (Clock.getBytecodeNum() - b1));
 		    if (task != null)
 				task.debug();
 		}
@@ -337,7 +340,7 @@ public class delivery_drone extends robot{
 		if (rc.canPickUpUnit(unit.getID())) {
 			rc.pickUpUnit(unit.getID());
 			held_unit = unit;
-			if (unit.getTeam() != rc.getTeam()) {
+			if (unit.getTeam() == rc.getTeam().opponent()) {
 				enemy_pickup_location = unit.getLocation();
 			}
 			return true;
@@ -376,8 +379,17 @@ public class delivery_drone extends robot{
 		return false;
 	}
 
+	private boolean drop_unit_unsafe() throws GameActionException {
+		for (Direction d : Util.dir) {
+			if (drop_unit(d))
+				return true;
+		}
+		return false;
+	}
+
 	private void on_find_water(MapLocation pos) throws GameActionException {
-		if (held_unit != null && held_unit.getTeam() != rc.getTeam()) {
+		if (held_unit != null && (held_unit.getTeam() == rc.getTeam().opponent()
+				|| held_unit.getType() == RobotType.COW && task != null && task.priority < COW_ENEMY_PRIORITY)) {
 			drop_unit_water();
 			if (task != null) {
 				task.on_complete(true);
@@ -409,8 +421,21 @@ public class delivery_drone extends robot{
 		}
 	}
 
+	MapLocation find_closest_netgun(MapLocation pos) throws GameActionException {
+		MapLocation closest = Util.closest(enemy_netguns, pos);
+		for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
+			on_find_unit(r);
+			if (r.getType().canShoot()) {
+			    if (r.getLocation().distanceSquaredTo(pos) < closest.distanceSquaredTo(pos)) {
+			    	closest = r.getLocation();
+				}
+			}
+		}
+		return closest;
+	}
+
 	boolean is_location_dangerous(MapLocation pos) throws GameActionException {
-	    final int safety_factor = 12;
+	    final int safety_factor = 18;
 		for (MapLocation m : enemy_netguns) {
 			if (pos.isWithinDistanceSquared(m, GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED + safety_factor)) {
 				return true;
@@ -431,18 +456,25 @@ public class delivery_drone extends robot{
 	int get_unit_priority(RobotType type) {
 		switch (type) {
 			case LANDSCAPER: return 5;
-			case MINER: return 3;
-			case COW: return 1;
+			case COW: return 3;
+			case MINER: return 2;
 			default: return 0;
 		}
 	}
 
-	RobotInfo find_closest_enemy_unit(MapLocation pos) {
+	RobotInfo find_closest_enemy_unit(MapLocation pos) throws GameActionException {
 		int closest = c.inf;
 		RobotInfo robot = null;
-		for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
+		for (RobotInfo r : rc.senseNearbyRobots()) {
+		    if (r.getTeam() == rc.getTeam()) continue;
 		   	int priority = get_unit_priority(r.getType());
 		    if (priority > 0) {
+		        if (r.getType() == RobotType.COW) {
+		        	MapLocation loc = closest_enemy_building();
+		        	if (loc != null && loc.isWithinDistanceSquared(r.getLocation(), COW_ENEMY_RADIUS))
+		        		continue;
+				}
+
 				int d = r.getLocation().distanceSquaredTo(pos);
 				if (robot == null || d < closest || priority > get_unit_priority(robot.getType())) {
 					closest = d;
@@ -481,9 +513,66 @@ public class delivery_drone extends robot{
 		return new MoveDroneTask(this, Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()), 20);
 	}
 
+	private MapLocation closest_enemy_building() throws GameActionException {
+		MapLocation cur = rc.getLocation();
+		MapLocation dest = Util.closest(enemy_refineries, cur);
+		if (dest == null) {
+			dest = Util.closest(enemy_netguns, cur);
+		}
+		return dest;
+	}
+
+	private DroneTask enemy_cow_building_task() throws GameActionException {
+	    MapLocation dest = closest_enemy_building();
+	    if (dest != null) {
+	    	return new MoveDroneTask(this, dest, COW_ENEMY_PRIORITY) {
+				@Override
+				public void on_complete(boolean success) throws GameActionException {
+					super.on_complete(success);
+					drop_unit_unsafe();
+				}
+
+				@Override
+				public boolean run() throws GameActionException {
+					boolean ret = super.run();
+				    if (rc.getLocation().isWithinDistanceSquared(destination, COW_ENEMY_RADIUS)) {
+				    	on_complete(true);
+					}
+					return ret;
+				}
+			};
+		}
+	    return new MoveDroneTask(this, Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()), 20);
+	}
+
 	private DroneTask find_best_task() throws GameActionException {
 		if (task != null && task.is_complete())	{
 			task = null;
+		}
+
+		if (task != null && task.priority >= 100) return task;
+
+		// UMIK
+		MapLocation cur = rc.getLocation();
+		if (task != null && task.priority < 100 && is_location_dangerous(cur)) {
+			MapLocation netgun = find_closest_netgun(cur);
+			if (netgun != null) {
+			    Direction dir = cur.directionTo(netgun).opposite();
+				MapLocation dest = cur.add(dir).add(dir).add(dir);
+				return new MoveDroneTask(this, dest, 100) {
+					@Override
+					public void on_start() {
+						super.on_start();
+						path_finder.ignore_danger = true;
+					}
+
+					@Override
+					public void on_complete(boolean success) throws GameActionException {
+						super.on_complete(success);
+						path_finder.ignore_danger = false;
+					}
+				};
+			}
 		}
 
 		if (rc.isCurrentlyHoldingUnit()) {
@@ -495,6 +584,9 @@ public class delivery_drone extends robot{
 		    	drop_unit_safe();
 		    	return task;
 			} else {
+		        if (held_unit != null && held_unit.getType() == RobotType.COW) {
+		            return enemy_cow_building_task();
+				}
 		    	return drop_water_task();
 			}
 		}
