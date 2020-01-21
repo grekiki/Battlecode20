@@ -251,6 +251,7 @@ public class delivery_drone extends robot{
 	DroneTask task;
 	dronePathFinder path_finder;
 	RobotInfo held_unit;
+	MapLocation enemy_pickup_location;
 
 	public delivery_drone(RobotController rc){
 		super(rc);
@@ -336,6 +337,9 @@ public class delivery_drone extends robot{
 		if (rc.canPickUpUnit(unit.getID())) {
 			rc.pickUpUnit(unit.getID());
 			held_unit = unit;
+			if (unit.getTeam() != rc.getTeam()) {
+				enemy_pickup_location = unit.getLocation();
+			}
 			return true;
 		}
 		return false;
@@ -421,7 +425,6 @@ public class delivery_drone extends robot{
 				}
 			}
 		}
-
 		return false;
 	}
 
@@ -525,7 +528,20 @@ public class delivery_drone extends robot{
 			};
 		}
 
-		if (task == null || task.is_complete() || task.time_running > 80) {
+		// Vrnemo se kamor smo pobrali nasprotnika ...
+		if (enemy_pickup_location != null && task != null && task.priority < 7) {
+			return new MoveDroneTask(this, enemy_pickup_location, 7) {
+				@Override
+				public void on_complete(boolean success) throws GameActionException {
+					super.on_complete(success);
+					if (enemy_pickup_location.isAdjacentTo(destination)) {
+						enemy_pickup_location = null;
+					}
+				}
+			};
+		}
+
+		if (task == null || task.time_running > 80) {
 			return new MoveDroneTask(this, Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()), 1);
 		}
 		return task;
