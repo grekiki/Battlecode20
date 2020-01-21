@@ -1,5 +1,6 @@
 package grekiki3;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import battlecode.common.Clock;
 import battlecode.common.Direction;
@@ -33,6 +34,7 @@ class vector_set_gl {
 			if (size == cappacity) {// Redek pojav
 
 				// Ce je load factor precej velik potem kloniramo. Drugace cistimo
+				// Problem: Duplikati bodo ostali v klonu...
 				double limit = 0.7;
 				if (load / (double) cappacity > limit) {
 					q = Arrays.copyOf(q, 2 * cappacity);
@@ -54,7 +56,11 @@ class vector_set_gl {
 	}
 
 	MapLocation get(int a) {
-		return q[a];
+		if (grid[q[a].x][q[a].y]) {
+			return q[a];
+		} else {
+			return null;
+		}
 	}
 
 	void remove(MapLocation ml) {
@@ -89,7 +95,7 @@ class MapCell {
 
 class minerPathFinder extends BasePathFinder {
 	minerPathFinder(RobotController rc) {
-	    super(rc);
+		super(rc);
 	}
 
 	@Override
@@ -122,6 +128,7 @@ class naloga {
 	// ID-ji nalog ki jih lahko delamo
 	final static int GRADNJA_REFINERIJE = 10;
 	final static int GRADNJA_TOVARNE_ZA_DRONE = 11;
+	final static int GRADNJA_TOVARNE_ZA_LANDSCAPERJE = 12;
 	final static int NABIRANJE = 20;
 	final static int PREMIK_DO_JUHE = 30;
 	final static int PREMIK_DO_POLJA = 31;
@@ -133,13 +140,17 @@ class naloga {
 	int value;
 	int type;
 	int zacetek;
+	RobotController rc;
+
+	Direction raziskovanje = null;
 
 	naloga(miner mi, MapLocation mm, int c, int t) {
 		m = mi;
+		rc = m.rc;
 		mesto = mm;// lahko je null!
 		value = c;
 		type = t;
-		zacetek=m.rc.getRoundNum();
+		zacetek = m.rc.getRoundNum();
 	}
 
 	public void run() throws GameActionException {
@@ -150,6 +161,9 @@ class naloga {
 			break;
 		case GRADNJA_TOVARNE_ZA_DRONE:
 			gradnja_tovarne_za_drone();
+			break;
+		case GRADNJA_TOVARNE_ZA_LANDSCAPERJE:
+			gradnja_tovarne_za_landscaperje();
 			break;
 		case NABIRANJE:
 			nabiranje();
@@ -172,25 +186,15 @@ class naloga {
 		}
 	}
 
-	private void gradnja_tovarne_za_drone() throws GameActionException {
-		if (m.rc.getLocation().distanceSquaredTo(mesto) <= 2) {
-			Direction d = m.rc.getLocation().directionTo(mesto);
-			if (m.rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, d)) {
-				m.rc.buildRobot(RobotType.FULFILLMENT_CENTER, d);
-				value = 0;
-				return;
-			}
-		} else {
-			m.path_finder.moveTowards(this.mesto);
-		}
-	}
-
 	private void raziskovanje_mape() throws GameActionException {
-		if (Math.random() < 0.05 || m.rc.getLocation().distanceSquaredTo(this.mesto) <= 2) {// Menjamo smer // casa
-			value = 0;
-			return;
+		if (raziskovanje == null) {
+			raziskovanje = Util.getRandomDirection();
 		}
-		m.path_finder.moveTowards(this.mesto);
+		if (m.rc.canMove(raziskovanje)) {
+			m.rc.move(raziskovanje);
+		} else {
+			raziskovanje = null;
+		}
 	}
 
 	private void raziskovanje_juhe() throws GameActionException {
@@ -202,7 +206,7 @@ class naloga {
 			value = 0;
 			return;
 		}
-		m.path_finder.moveTowards(m.hq_location);
+		m.path_finder.moveTowards(mesto);
 
 	}
 
@@ -235,10 +239,44 @@ class naloga {
 	}
 
 	private void gradnja_refinerije() throws GameActionException {
+		if(rc.canSenseLocation(mesto)&&rc.senseRobotAtLocation(mesto)!=null&&rc.senseRobotAtLocation(mesto).type==RobotType.REFINERY) {
+			value=0;
+			return;
+		}
+		value=m.izracunaj_vrenost_refinerije(mesto);
 		if (m.rc.getLocation().distanceSquaredTo(mesto) <= 2) {
 			Direction d = m.rc.getLocation().directionTo(mesto);
 			if (m.rc.canBuildRobot(RobotType.REFINERY, d)) {
 				m.rc.buildRobot(RobotType.REFINERY, d);
+				m.b.send_location(m.b.LOC_REFINERIJA, mesto);
+				value = 0;
+				return;
+			}
+		} else {
+			m.path_finder.moveTowards(this.mesto);
+		}
+	}
+
+	private void gradnja_tovarne_za_drone() throws GameActionException {
+		if (m.rc.getLocation().distanceSquaredTo(mesto) <= 2) {
+			Direction d = m.rc.getLocation().directionTo(mesto);
+			if (m.rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, d)) {
+				m.rc.buildRobot(RobotType.FULFILLMENT_CENTER, d);
+				// TODO broadcast?
+				value = 0;
+				return;
+			}
+		} else {
+			m.path_finder.moveTowards(this.mesto);
+		}
+	}
+
+	private void gradnja_tovarne_za_landscaperje() throws GameActionException {
+		if (m.rc.getLocation().distanceSquaredTo(mesto) <= 2) {
+			Direction d = m.rc.getLocation().directionTo(mesto);
+			if (m.rc.canBuildRobot(RobotType.DESIGN_SCHOOL, d)) {
+				m.rc.buildRobot(RobotType.DESIGN_SCHOOL, d);
+				// TODO broadcast?
 				value = 0;
 				return;
 			}
@@ -248,24 +286,19 @@ class naloga {
 	}
 }
 
-/**
- * TO-DO ce se do neke surovine sprehajamo vec kot recimo 50 potez, potem recemo
- * da je tezka
- * 
- * @author Gregor
- *
- */
+
 public class miner extends robot {
 	public static final int MINER_COST = RobotType.MINER.cost;
 	public static final int razmik_med_polji = 20;
 	public static final int optimize = 10;
 
 	naloga task;
-	final static int GRADNJA_REFINERIJE = 1000;
+	ArrayList<naloga> toBuild;
+	final static int GRADNJA = 1000;
 	final static int PREMIKANJE_JUHE_V_BAZO = 300;
 	final static int NABIRANJE = 250;// Vidimo juho do katere lahko dokazano pridemo
 	final static int PREMIK_DO_JUHE = 200;// Baje da se do juhe da priti. Pathfinding
-	final static int PREMIK_DO_POLJA = 150;// Baje da se do juhe da priti. Pathfinding
+	final static int PREMIK_DO_POLJA = 150;// Baje da se do polja da priti. Pathfinding
 	final static int RAZISKOVANJE_JUHE = 100;// Poiscemo pot do slabe juhe
 	final static int RAZISKOVANJE_MAPE = 50;
 
@@ -275,12 +308,15 @@ public class miner extends robot {
 	vector_set_gl polja;
 	vector_set_gl slaba_polja;// ne vemo a se da priti do njih
 	vector_set_gl refinerije;
+	vector_set_gl net_guns;
 	int w, h;// dimenzije mape
 
 	MapLocation hq_location;
 	/**
 	 * 0- obicajno<br>
-	 * 10- pomagamo hq 20- hq je napaden 30- nasprotnik uporablja drone
+	 * 10- pomagamo hq<br>
+	 * 20- hq je napaden<br>
+	 * 30- nasprotnik uporablja drone
 	 */
 	int stanje;
 
@@ -310,12 +346,12 @@ public class miner extends robot {
 				return;
 			}
 		}
+		toBuild=new ArrayList<naloga>();
 	}
 
 	@Override
 	public void precompute() throws GameActionException {
 //		System.out.println("\n" + rc.getRoundNum());
-		b.checkQueue();
 	}
 
 	@Override
@@ -332,15 +368,15 @@ public class miner extends robot {
 
 	public void postcompute() throws GameActionException {
 		// drone test
-        /*
-		if (rc.getRoundNum() % 100 == 0) {
-			b.send_location2(b.LOC2_DRONE, rc.getLocation(), Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()), rc.getID());
-		}
-		*/
+		/*
+		 * if (rc.getRoundNum() % 100 == 0) { b.send_location2(b.LOC2_DRONE,
+		 * rc.getLocation(), Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()),
+		 * rc.getID()); }
+		 */
 
-		if(stanje==10) {
-			if(rc.getRoundNum()%10==0) {
-				b.send_packet(b.UNIT_ALIVE, new int[] {b.PRIVATE_KEY,b.UNIT_ALIVE,rc.getID(),0,0,0,0});
+		if (stanje == 10) {
+			if (rc.getRoundNum() % 10 == 0) {
+				b.send_packet(b.UNIT_ALIVE, new int[] { b.PRIVATE_KEY, b.UNIT_ALIVE, rc.getID(), 0, 0, 0, 0 });
 			}
 		}
 		update_soup();
@@ -350,7 +386,6 @@ public class miner extends robot {
 			}
 		}
 	}
-
 
 	// Util
 	private void update_soup() throws GameActionException {
@@ -392,7 +427,9 @@ public class miner extends robot {
 				return;
 			}
 			MapLocation m = juhe.get(i);
-
+			if (m == null) {
+				continue;
+			}
 //			rc.setIndicatorDot(m, 0, 255, 0);
 			if (rc.canSenseLocation(m) && rc.senseSoup(m) == 0) {
 				juhe.remove(m);
@@ -402,7 +439,11 @@ public class miner extends robot {
 
 //		System.out.println("Za odstranjevanje slabih juh je ostalo " + Clock.getBytecodesLeft() + " casa");
 		for (i = 0; i < slabe_juhe.size; i++) {
+
 			MapLocation m = slabe_juhe.get(i);
+			if (m == null) {
+				continue;
+			}
 			if (Clock.getBytecodesLeft() < 1000) {
 				System.out.println("tle odstanjevanje slabih praznih juh");
 				return;
@@ -419,11 +460,11 @@ public class miner extends robot {
 			if (i % optimize != rc.getRoundNum() % optimize) {
 				continue;
 			}
-			// To delamo le vsakih 10 potez
-			if (i % optimize != rc.getRoundNum() % optimize) {
+
+			MapLocation m = slabe_juhe.get(i);
+			if (m == null) {
 				continue;
 			}
-			MapLocation m = slabe_juhe.get(i);
 			if (Clock.getBytecodesLeft() < 1000) {
 				System.out.println("tle premikanje slabih v dobre juhe");
 				return;
@@ -443,10 +484,14 @@ public class miner extends robot {
 		 */
 		for (i = 0; i < polja.size; i++) {
 			MapLocation m = polja.get(i);
+			if (m == null) {
+				continue;
+			}
 			if (rc.getLocation().distanceSquaredTo(m) <= 2) {
 				// Kako pogledati ce je okoli polja juha? Simple: Scan
 				if (rc.senseNearbySoup(m, 20).length == 0) {
 					polja.remove(m);
+					b.send_location(b.LOC_SUROVINA_PRAZNO, m);
 					i--;
 				}
 			}
@@ -458,6 +503,9 @@ public class miner extends robot {
 		}
 		for (i = 0; i < polja.size; i++) {
 			MapLocation m = polja.get(i);
+			if (m == null) {
+				continue;
+			}
 			rc.setIndicatorDot(m, 0, 255, 0);
 		}
 		if (Clock.getBytecodesLeft() < 1000) {
@@ -466,14 +514,17 @@ public class miner extends robot {
 		}
 		for (i = 0; i < slaba_polja.size; i++) {
 			MapLocation m = slaba_polja.get(i);
+			if (m == null) {
+				continue;
+			}
 			rc.setIndicatorDot(m, 255, 0, 0);
 		}
 
 	}
 
 	private void check_for_field(MapLocation m) throws GameActionException {
-		System.out.println("Preverjamo ce je " + m + "polje ");
-		System.out.println(juhe.size + " " + slabe_juhe.size);
+//		System.out.println("Preverjamo ce je " + m + "polje ");
+//		System.out.println(juhe.size + " " + slabe_juhe.size);
 		MapLocation closest = Util.closest(polja, m);
 		if (closest != null && closest.distanceSquaredTo(m) < razmik_med_polji) {
 			return;
@@ -499,7 +550,8 @@ public class miner extends robot {
 		int currentValue = (task == null ? 0 : task.value);
 		if (currentValue < PREMIKANJE_JUHE_V_BAZO) {
 			if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) {
-				task = new naloga(this, hq_location, PREMIKANJE_JUHE_V_BAZO, naloga.PREMIKANJE_JUHE_V_BAZO);
+				task = new naloga(this, Util.closest(refinerije, rc.getLocation()), PREMIKANJE_JUHE_V_BAZO,
+						naloga.PREMIKANJE_JUHE_V_BAZO);
 				currentValue = PREMIKANJE_JUHE_V_BAZO;
 			}
 		}
@@ -518,7 +570,7 @@ public class miner extends robot {
 			}
 		}
 		if (currentValue < PREMIK_DO_POLJA && rc.getSoupCarrying() < RobotType.MINER.soupLimit) {
-			MapLocation ans = Util.closest(juhe, rc.getLocation());
+			MapLocation ans = Util.closest(polja, rc.getLocation());
 			if (ans != null) {
 				task = new naloga(this, ans, PREMIK_DO_POLJA, naloga.PREMIK_DO_POLJA);
 				currentValue = PREMIK_DO_POLJA;
@@ -532,12 +584,39 @@ public class miner extends robot {
 			}
 		}
 		if (currentValue < RAZISKOVANJE_MAPE) {
-			MapLocation ans = Util.randomPoint(h, w);
-			if (ans != null) {
-				task = new naloga(this, ans, RAZISKOVANJE_MAPE, naloga.RAZISKOVANJE_MAPE);
-				currentValue = RAZISKOVANJE_MAPE;
-			}
+			task = new naloga(this, null, RAZISKOVANJE_MAPE, naloga.RAZISKOVANJE_MAPE);
+			currentValue = RAZISKOVANJE_MAPE;
 		}
+		int vrednost_refinerije = izracunaj_vrenost_refinerije(Util.closest(polja, rc.getLocation()));
+//		System.out.println(vrednost_refinerije);
+		if (vrednost_refinerije > currentValue) {
+			MapLocation ans = Util.closest(polja, rc.getLocation());
+			task = new naloga(this, ans, vrednost_refinerije, naloga.GRADNJA_REFINERIJE);
+			currentValue = vrednost_refinerije;
+		}
+	}
+
+	public int izracunaj_vrenost_refinerije(MapLocation closest) throws GameActionException {
+		if (closest == null) {
+			return 0;
+		}
+		if (rc.getTeamSoup() < RobotType.REFINERY.cost) {
+			return 0;
+		}
+		int currentRefineryDist = Util.d_inf(Util.closest(refinerije, rc.getLocation()), closest);
+		if (currentRefineryDist < 5) {
+			return 0;
+		}
+		int sumSoup = 0;
+		for (MapLocation m : rc.senseNearbySoup(closest, 15)) {
+			sumSoup += rc.senseSoup(m);
+		}
+		if (sumSoup < 300) {
+			return 0;
+		}
+		int weightedSum = (int) Math.round(0.5 * rc.getTeamSoup() + 30 * currentRefineryDist + 0.2 * sumSoup);// Same //
+																												// :)
+		return weightedSum;
 	}
 
 	public boolean tryDepositSoup() throws GameActionException {
@@ -559,6 +638,8 @@ public class miner extends robot {
 		}
 		return false;
 	}
+
+	// BLOCKCHAIN
 
 	@Override
 	public void bc_polje_found(MapLocation pos) {
@@ -596,22 +677,30 @@ public class miner extends robot {
 
 	@Override
 	public void bc_rafinerija(MapLocation pos) {
-		if (polja.contains(pos)) {
-			polja.remove(pos);
+		System.out.println("Nova refinerija");
+		if (!refinerije.contains(pos)) {
+			refinerije.add(pos);
+		}
+	}
+
+	@Override
+	public void bc_ally_netgun(MapLocation pos) {
+		if (!net_guns.contains(pos)) {
+			net_guns.add(pos);
 		}
 	}
 
 	@Override
 	public void bc_build_tovarna_dronov(MapLocation pos) {
 		if (stanje == 10) {
-			task = new naloga(this, pos, 10000, naloga.GRADNJA_TOVARNE_ZA_DRONE);
+			toBuild.add(new naloga(this, pos, 10000, naloga.GRADNJA_TOVARNE_ZA_DRONE));
 		}
 	}
 
 	@Override
 	public void bc_build_tovarna_landscaperjev(MapLocation pos) {
 		if (stanje == 10) {
-			task = new naloga(this, pos, 10000, naloga.GRADNJA_TOVARNE_ZA_DRONE);
+			toBuild.add(new naloga(this, pos, 10000, naloga.GRADNJA_TOVARNE_ZA_LANDSCAPERJE));
 		}
 	}
 

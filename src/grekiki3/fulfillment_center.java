@@ -20,7 +20,6 @@ public class fulfillment_center extends robot{
 	}
 
 	@Override public void precompute() throws GameActionException {
-		b.checkQueue();
 	}
 
 	@Override public void runTurn() throws GameActionException {

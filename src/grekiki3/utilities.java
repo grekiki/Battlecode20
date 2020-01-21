@@ -35,7 +35,7 @@ class Util {
 	 * @param elevation
 	 * @return
 	 */
-	int roundFlooded(int elevation) {
+	public static int roundFlooded(int elevation) {
 		switch (elevation) {
 		case 0:
 			return 0;
@@ -102,7 +102,7 @@ class Util {
 		}
 	}
 
-	public Direction getRandomDirection() {
+	public static Direction getRandomDirection() {
 		return dir[(int) Math.floor(dir.length * Math.random())];
 	}
 
@@ -173,6 +173,9 @@ class Util {
 		MapLocation ans = null;
 		while (i-- > 0) {
 //			System.out.println(i+" "+q.size+" "+q.get(i)+" "+Arrays.toString(q.q));
+			if(q.get(i)==null) {
+				continue;
+			}
 			int d2 = source.distanceSquaredTo(q.get(i));
 			if (d2 < closest) {
 				closest = d2;
@@ -235,17 +238,22 @@ class blockchain {
 	/**
 	 * Tukaj je refinerija
 	 */
-	final int LOC_RAFINERIJA = 10;
+	final int LOC_REFINERIJA = 10;
 	/**
 	 * Tukaj je tovarna dronov
 	 */
 	final int LOC_TOVARNA_DRONOV = 20;
 	final int LOC_WATER = 25;
 	final int LOC_ENEMY_NETGUN = 26;
+	final int LOC_ALLY_NETGUN = 27;
 	/**
 	 * Tukaj zelimo imeti tovarno dronov
 	 */
 	final int BUILD_TOVARNA_DRONOV = 21;
+	/**
+	 * Tukaj zelimo imeti tovarno landscaperjev
+	 */
+	final int BUILD_TOVARNA_LANDSCAPERJEV=22;
 	/**
 	 * Lokacija domace baze
 	 */
@@ -263,13 +271,17 @@ class blockchain {
 	 * Enota z ID int2 je ziva
 	 */
 	final int UNIT_ALIVE = 1100;
-
+	/**
+	 * Baza ima stanje int1
+	 */
+	final int BASE_STATUS=1200;
+	
 	private final int LOC_MAX = 99;// do 99 je en mapLocation
 	private final int LOC2_MAX = 999;// od 100 do 999 sta 2
 
 	List<paket> messages; // TODO lahko bi uporabili Heap (prioritetna vrsta glede na ceno)
 	RobotController rc;
-
+	int lastRoundOfQueueCheck=-1;
 	int rounds_read = 0; // Koliko rund smo ze prebrali?
 
 	blockchain(RobotController rc) {
@@ -286,7 +298,6 @@ class blockchain {
 	public void handle_packet(int type, int[] message) {
 	}
 
-	// VSAKIC KO POSLJEMO SPOROCILO, JE POTREBNO KLICATI checkQueue
 	public void send_location(int type, MapLocation pos) throws GameActionException {
 		int[] msg = { PRIVATE_KEY, type, pos.x, pos.y, 0, 0, 0 };
 		sendMsg(new paket(msg, 1));
@@ -361,6 +372,11 @@ class blockchain {
 
 	// TO-DO preveri ce se splaca optimizirati. Vrsta z math.min je prepogosta :)
 	public void checkQueue() throws GameActionException {
+		if(lastRoundOfQueueCheck!=rc.getRoundNum()) {
+			lastRoundOfQueueCheck=rc.getRoundNum();
+		}else {
+			return;
+		}
 		int minCost = c.inf;
 		Transaction[] t = rc.getBlock(rc.getRoundNum() - 1);
 		if (t.length != 7) {

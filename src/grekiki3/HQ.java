@@ -38,6 +38,7 @@ public class HQ extends robot {
 		loc = rc.getLocation();
 		strategy = choose_strategy();
 		minerIds = new ArrayList<Integer>();
+		
 	}
 
 	@Override
@@ -50,7 +51,7 @@ public class HQ extends robot {
 			}
 		}
 		if (!haveBaseBuilder && minerIds.size() > 0) {
-			haveBaseBuilder=true;
+			haveBaseBuilder = true;
 			b.send_packet(b.MINER_HELP_HQ, new int[] { b.PRIVATE_KEY, b.MINER_HELP_HQ, minerIds.get(0), 0, 0, 0, 0 });
 		}
 	}
@@ -68,13 +69,16 @@ public class HQ extends robot {
 		if (rc.getRoundNum() == 20) {
 			b.send_location(b.BUILD_TOVARNA_DRONOV, loc.translate(2, -1));
 		}
+		if (rc.getRoundNum() == 50) {
+			b.send_location(b.BUILD_TOVARNA_LANDSCAPERJEV, loc.translate(2, 1));
+		}
 
 		if (strategy == 1000) {
 
 		}
 		if (strategy == 2000) {
 			// Na zacetku potrebujemo vsaj dva minerja. Vedno.
-			if (this.miners_spawned <= 5)
+			if (this.miners_spawned <= 20)
 				if (try_spawn_miner(pick_miner_direction()))
 					return;
 
@@ -92,12 +96,17 @@ public class HQ extends robot {
 
 	public int choose_strategy() {
 		wallRadius = 2;
-		return 2000;
+		if (rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 0) {
+			return 1000;
+		} else {
+			return 2000;
+		}
 	}
 
 	// Pomozne metode
 	Direction pick_miner_direction() {
-		return Direction.SOUTH;
+		return Util.getRandomDirection();
+//		return Direction.SOUTH;
 	}
 
 	boolean try_spawn_miner(Direction dir) {
