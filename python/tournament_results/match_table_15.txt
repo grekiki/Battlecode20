@@ -1,0 +1,22 @@
+250  generation_12_id_927776678 : 0   25  27  26  32  29  26  28  32  25  
+237  generation_7_id_1         : 23  26  0   28  26  27  23  27  28  29  
+233  generation_14_id_213977634 : 24  26  22  0   30  26  27  28  24  26  
+232  generation_10_id_306332883 : 21  0   24  24  26  30  26  27  27  27  
+227  generation_14_id_340570018 : 18  23  22  26  29  29  26  25  0   29  
+218  generation_14_id_295526084 : 22  23  23  22  26  25  27  0   25  25  
+216  generation_14_id_484244113 : 25  23  21  24  24  23  30  25  21  0   
+213  generation_14_id_843597232 : 24  24  27  23  22  26  0   23  24  20  
+213  generation_14_id_448368520 : 18  24  24  20  0   28  28  24  21  26  
+207  generation_14_id_396185526 : 21  20  23  24  22  0   24  25  21  27  
+
+
+generation_12_id_927776678
+generation_10_id_306332883
+generation_7_id_1
+generation_14_id_213977634
+generation_14_id_448368520
+generation_14_id_396185526
+generation_14_id_843597232
+generation_14_id_295526084
+generation_14_id_340570018
+generation_14_id_484244113

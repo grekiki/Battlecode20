@@ -1,0 +1,22 @@
+251  generation_19_id_945733350 : 24  30  30  0   29  30  28  28  26  26  
+249  generation_19_id_336772049 : 23  32  27  24  27  29  24  32  31  0   
+237  generation_17_id_337684597 : 0   24  27  26  24  26  29  26  28  27  
+230  generation_19_id_155442267 : 24  33  28  20  27  0   23  30  24  21  
+228  generation_19_id_432257241 : 21  30  25  22  22  27  0   26  29  26  
+219  generation_19_id_602136238 : 26  25  25  21  0   23  28  24  24  23  
+216  generation_17_id_877931233 : 23  23  0   20  25  22  25  26  29  23  
+215  generation_19_id_557383448 : 22  26  21  24  26  26  21  30  0   19  
+202  generation_19_id_290093077 : 24  24  24  22  26  20  24  0   20  18  
+197  generation_18_id_904872067 : 20  0   27  20  25  17  20  26  24  18  
+
+
+generation_17_id_337684597
+generation_18_id_904872067
+generation_17_id_877931233
+generation_19_id_945733350
+generation_19_id_602136238
+generation_19_id_155442267
+generation_19_id_432257241
+generation_19_id_290093077
+generation_19_id_557383448
+generation_19_id_336772049

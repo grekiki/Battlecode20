@@ -1,0 +1,22 @@
+252  generation_17_id_337684597 : 28  32  24  26  31  24  29  0   27  31  
+233  generation_17_id_877931233 : 23  28  28  26  26  27  23  23  0   29  
+232  generation_17_id_162751632 : 25  28  27  29  0   28  24  19  24  28  
+231  generation_17_id_542179071 : 25  27  24  25  26  27  0   21  27  29  
+226  generation_17_id_141507825 : 25  29  24  26  22  0   23  26  23  28  
+226  generation_16_id_785838019 : 25  25  0   25  23  26  26  26  22  28  
+226  generation_12_id_927776678 : 0   25  25  26  25  25  25  22  27  26  
+224  generation_17_id_919173063 : 24  27  25  0   21  24  25  24  24  30  
+198  generation_17_id_974112346 : 24  27  22  20  22  22  21  19  21  0   
+198  generation_14_id_213977634 : 21  0   25  23  22  21  23  18  22  23  
+
+
+generation_12_id_927776678
+generation_14_id_213977634
+generation_16_id_785838019
+generation_17_id_919173063
+generation_17_id_162751632
+generation_17_id_141507825
+generation_17_id_542179071
+generation_17_id_337684597
+generation_17_id_877931233
+generation_17_id_974112346
