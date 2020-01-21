@@ -603,7 +603,7 @@ public class miner extends robot {
 		if (rc.getTeamSoup() < RobotType.REFINERY.cost) {
 			return 0;
 		}
-		int currentRefineryDist = Util.d_inf(Util.closest(refinerije, rc.getLocation()), closest);
+		int currentRefineryDist = Util.d_inf(Util.closest(refinerije, closest), closest);
 		if (currentRefineryDist < 5) {
 			return 0;
 		}
