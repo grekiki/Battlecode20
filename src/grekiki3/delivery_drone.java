@@ -278,7 +278,6 @@ public class delivery_drone extends robot{
 	}
 
 	@Override public void precompute() throws GameActionException {
-		b.checkQueue();
 	}
 
 	@Override public void runTurn() throws GameActionException {

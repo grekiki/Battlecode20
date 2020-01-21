@@ -15,7 +15,7 @@ class vector_set_gl {
 	MapLocation[] q;
 	public int size = 0;
 	private int cappacity = 20;
-	private int load = 0;
+	public int load = 0;
 
 	vector_set_gl() {
 		q = new MapLocation[20];
@@ -221,6 +221,10 @@ class naloga {
 	private void premik_do_polja() throws GameActionException {
 		if (!m.polja.contains(this.mesto)) {
 			value = 0;
+			return;
+		}
+		if(rc.getLocation().distanceSquaredTo(this.mesto)<=2) {
+			value=0;
 			return;
 		}
 		m.path_finder.moveTowards(this.mesto);
