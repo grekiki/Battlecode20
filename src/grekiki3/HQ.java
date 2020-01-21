@@ -17,7 +17,8 @@ public class HQ extends robot {
 	int strategy = -1;
 
 	int miners_spawned = 0;
-	int miners_alive = 0;
+	vector_set_gl polja;
+	vector_set_gl slaba_polja;
 
 	int wallRadius;
 	ArrayList<Integer> minerIds;
@@ -36,9 +37,11 @@ public class HQ extends robot {
 		w = rc.getMapWidth();
 		h = rc.getMapHeight();
 		loc = rc.getLocation();
+		polja = new vector_set_gl();
+		slaba_polja = new vector_set_gl();
 		strategy = choose_strategy();
 		minerIds = new ArrayList<Integer>();
-		
+
 	}
 
 	@Override
@@ -77,8 +80,7 @@ public class HQ extends robot {
 
 		}
 		if (strategy == 2000) {
-			// Na zacetku potrebujemo vsaj dva minerja. Vedno.
-			if (this.miners_spawned <= 20)
+			if (this.miners_spawned <= 4 * polja.load)
 				if (try_spawn_miner(pick_miner_direction()))
 					return;
 
@@ -90,8 +92,12 @@ public class HQ extends robot {
 	}
 
 	@Override
-	public void postcompute() {
-
+	public void postcompute() throws GameActionException {
+		while (Clock.getBytecodesLeft() > 500) {
+			if (!b.read_next_round()) {
+				break;
+			}
+		}
 	}
 
 	public int choose_strategy() {
@@ -114,7 +120,6 @@ public class HQ extends robot {
 			try {
 				rc.buildRobot(RobotType.MINER, dir);
 				miners_spawned++;
-				miners_alive++;
 				return true;
 			} catch (GameActionException e) {
 				// e.printStackTrace();
@@ -141,4 +146,39 @@ public class HQ extends robot {
 		}
 		return false;
 	}
+
+	@Override
+	public void bc_polje_found(MapLocation pos) {
+		if (!polja.contains(pos)) {
+			polja.add(pos);
+		}
+	}
+
+	@Override
+	public void bc_polje_empty(MapLocation pos) {
+		if (polja.contains(pos)) {
+			polja.remove(pos);
+		}
+		if (slaba_polja.contains(pos)) {
+			slaba_polja.remove(pos);
+		}
+	}
+
+	@Override
+	public void bc_polje_slabo(MapLocation pos) {
+		if (!slaba_polja.contains(pos)) {
+			slaba_polja.add(pos);
+		}
+	}
+
+	@Override
+	public void bc_polje_upgrade(MapLocation pos) {
+		if (slaba_polja.contains(pos)) {
+			slaba_polja.remove(pos);
+		}
+		if (!polja.contains(pos)) {
+			polja.add(pos);
+		}
+	}
+
 }

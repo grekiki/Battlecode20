@@ -15,7 +15,7 @@ class vector_set_gl {
 	MapLocation[] q;
 	public int size = 0;
 	private int cappacity = 20;
-	private int load = 0;
+	public int load = 0;
 
 	vector_set_gl() {
 		q = new MapLocation[20];
@@ -154,7 +154,7 @@ class naloga {
 	}
 
 	public void run() throws GameActionException {
-		System.out.println("Naloga " + type);
+//		System.out.println("Naloga " + type);
 		switch (type) {
 		case GRADNJA_REFINERIJE:
 			gradnja_refinerije();
@@ -190,7 +190,7 @@ class naloga {
 		if (raziskovanje == null) {
 			raziskovanje = Util.getRandomDirection();
 		}
-		if (m.rc.canMove(raziskovanje)) {
+		if (m.rc.canMove(raziskovanje)&&!m.rc.senseFlooding(rc.getLocation().add(raziskovanje))) {
 			m.rc.move(raziskovanje);
 		} else {
 			raziskovanje = null;
@@ -221,6 +221,10 @@ class naloga {
 	private void premik_do_polja() throws GameActionException {
 		if (!m.polja.contains(this.mesto)) {
 			value = 0;
+			return;
+		}
+		if(rc.getLocation().distanceSquaredTo(this.mesto)<=2) {
+			value=0;
 			return;
 		}
 		m.path_finder.moveTowards(this.mesto);
@@ -587,14 +591,19 @@ public class miner extends robot {
 			task = new naloga(this, null, RAZISKOVANJE_MAPE, naloga.RAZISKOVANJE_MAPE);
 			currentValue = RAZISKOVANJE_MAPE;
 		}
-		if (stanje == 10) {// gradnja?
-			if (toBuild.size() > 0) {
-				if (task.value != 10000000) {
-					System.out.println("gradnja? ");
-					task = toBuild.get(0);
-					task.value = 10000000;
-					toBuild.remove(toBuild.get(0));
+		if (stanje == 10&&task!=null&&task.value!=GRADNJA) {// gradnja?
+//			System.out.println(toBuild.size());
+			naloga closest = null;
+			int dist = c.inf;
+			for (naloga d : toBuild) {
+				if (Util.d_inf(rc.getLocation(), d.mesto) < dist) {
+					dist = Util.d_inf(rc.getLocation(), d.mesto);
+					closest = d;
 				}
+			}
+			if (closest != null) {
+				task = closest;
+				toBuild.remove(closest);
 			}
 		} else {// ce ne gradimo baze lahko gradimo refinerije
 			int vrednost_refinerije = izracunaj_vrenost_refinerije(Util.closest(polja, rc.getLocation()));
@@ -705,14 +714,14 @@ public class miner extends robot {
 	@Override
 	public void bc_build_tovarna_dronov(MapLocation pos) {
 		if (stanje == 10) {
-			toBuild.add(new naloga(this, pos, 10000, naloga.GRADNJA_TOVARNE_ZA_DRONE));
+			toBuild.add(new naloga(this, pos, GRADNJA, naloga.GRADNJA_TOVARNE_ZA_DRONE));
 		}
 	}
 
 	@Override
 	public void bc_build_tovarna_landscaperjev(MapLocation pos) {
 		if (stanje == 10) {
-			toBuild.add(new naloga(this, pos, 10000, naloga.GRADNJA_TOVARNE_ZA_LANDSCAPERJE));
+			toBuild.add(new naloga(this, pos, GRADNJA, naloga.GRADNJA_TOVARNE_ZA_LANDSCAPERJE));
 		}
 	}
 
