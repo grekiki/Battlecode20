@@ -378,7 +378,9 @@ public class delivery_drone extends robot{
 			MapLocation closest_water = Util.closest(water_locations, pos);
 			if (closest_water == null || closest_water.distanceSquaredTo(pos) > 200)
 				b.send_location(b.LOC_WATER, pos);
-			water_locations.add(pos);
+			if (closest_water == null || closest_water.distanceSquaredTo(pos) >= 64) {
+				water_locations.add(pos);
+			}
 		}
 		rc.setIndicatorDot(pos,255,255,255);
 	}
@@ -415,14 +417,26 @@ public class delivery_drone extends robot{
 		return false;
 	}
 
+	int get_unit_priority(RobotType type) {
+		switch (type) {
+			case LANDSCAPER: return 5;
+			case MINER: return 3;
+			case COW: return 1;
+			default: return 0;
+		}
+	}
+
 	RobotInfo find_closest_enemy_unit(MapLocation pos) {
 		int closest = c.inf;
 		RobotInfo robot = null;
 		for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
-			int d = r.getLocation().distanceSquaredTo(pos);
-			if (d < closest) {
-				closest = d;
-				robot = r;
+		    RobotType t = r.getType();
+		    if (t == RobotType.LANDSCAPER || t == RobotType.MINER || t == RobotType.COW) {
+				int d = r.getLocation().distanceSquaredTo(pos);
+				if (robot == null || d < closest || get_unit_priority(t) > get_unit_priority(robot.getType())) {
+					closest = d;
+					robot = r;
+				}
 			}
 		}
 		return robot;
@@ -474,7 +488,7 @@ public class delivery_drone extends robot{
 			}
 		}
 
-		if (task != null && task.is_running() && task.priority > 25) return task;
+		if (task != null && task.is_running() && task.priority > 40) return task;
 
 		DroneDeliveryRequest delivery = find_closest_delivery_location(rc.getLocation());
 		if (delivery != null) {
@@ -492,7 +506,7 @@ public class delivery_drone extends robot{
 		// Najdemo nasprotnikovo enoto ...
 		RobotInfo enemy_unit = find_closest_enemy_unit(rc.getLocation());
 		if (enemy_unit != null) {
-			return new ChaseDroneTask(this, enemy_unit.getID(), 40) {
+			return new ChaseDroneTask(this, enemy_unit.getID(), 40 + get_unit_priority(enemy_unit.getType())) {
 				@Override
 				public void on_complete(boolean success) throws GameActionException {
 					super.on_complete(success);
