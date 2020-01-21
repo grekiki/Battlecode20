@@ -54,6 +54,7 @@ abstract class DroneTask {
 	boolean is_running = false;
 	boolean is_complete = false;
 	int priority = 0;
+	int time_running = 0;
 
 	String reason = "BREZ DELA";  // Za debug
 
@@ -103,6 +104,7 @@ class MoveDroneTask extends DroneTask {
 	    if (!is_running) {
 			on_start();
 		}
+	    time_running++;
 		boolean move = drone.path_finder.moveTowards(destination);
 	    if (drone.path_finder.is_at_goal(drone.rc.getLocation(), destination)) {
 	        on_complete(true);
@@ -133,6 +135,7 @@ class DeliverDroneTask extends DroneTask {
 			on_start();
 		}
 
+		time_running++;
 		boolean move = false;
 		if (!current_task.is_complete()) {
 			move = current_task.run();
@@ -204,6 +207,7 @@ class ChaseDroneTask extends DroneTask {
 			on_start();
 		}
 
+		time_running++;
 		if (drone.rc.canSenseRobot(target_unit)) {
 			RobotInfo unit = drone.rc.senseRobot(target_unit);
 			destination = unit.getLocation();
@@ -285,9 +289,13 @@ public class delivery_drone extends robot{
 		if (!rc.isReady()) {
 			return;
 		}
+		int b1 = Clock.getBytecodeNum();
 		task = find_best_task();
+		System.out.println("TASK FIND: " + b1);
 		if (task != null) {
+			b1 = Clock.getBytecodeNum();
 		    task.run();
+			System.out.println("TASK RUN: " + b1);
 		    if (task != null)
 				task.debug();
 		}
@@ -399,8 +407,9 @@ public class delivery_drone extends robot{
 	}
 
 	boolean is_location_dangerous(MapLocation pos) throws GameActionException {
+	    final int safety_factor = 12;
 		for (MapLocation m : enemy_netguns) {
-			if (pos.isWithinDistanceSquared(m, GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED)) {
+			if (pos.isWithinDistanceSquared(m, GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED + safety_factor)) {
 				return true;
 			}
 		}
@@ -408,7 +417,7 @@ public class delivery_drone extends robot{
 		for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
 			on_find_unit(r);
 			if (r.getType().canShoot()) {
-				if (pos.isWithinDistanceSquared(r.getLocation(), GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED)) {
+				if (pos.isWithinDistanceSquared(r.getLocation(), GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED + safety_factor)) {
 					return true;
 				}
 			}
@@ -430,10 +439,10 @@ public class delivery_drone extends robot{
 		int closest = c.inf;
 		RobotInfo robot = null;
 		for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
-		    RobotType t = r.getType();
-		    if (t == RobotType.LANDSCAPER || t == RobotType.MINER || t == RobotType.COW) {
+		   	int priority = get_unit_priority(r.getType());
+		    if (priority > 0) {
 				int d = r.getLocation().distanceSquaredTo(pos);
-				if (robot == null || d < closest || get_unit_priority(t) > get_unit_priority(robot.getType())) {
+				if (robot == null || d < closest || priority > get_unit_priority(robot.getType())) {
 					closest = d;
 					robot = r;
 				}
@@ -517,7 +526,7 @@ public class delivery_drone extends robot{
 			};
 		}
 
-		if (task == null || !task.is_running()) {
+		if (task == null || task.is_complete() || task.time_running > 80) {
 			return new MoveDroneTask(this, Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()), 1);
 		}
 		return task;

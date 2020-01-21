@@ -430,6 +430,7 @@ abstract class BasePathFinder {
 	protected MapLocation tangent_shortcut; // Pomozna bliznjica.
 	protected boolean ignore_units = true;
 	protected int unit_wait_time = 0;
+	protected int shortcut_steps_taken = 0;
 
 	BasePathFinder(RobotController rc) {
 		this.rc = rc;
@@ -632,12 +633,17 @@ abstract class BasePathFinder {
 		MapLocation cur = rc.getLocation();
 		if (cur.equals(tangent_shortcut)) {
 			tangent_shortcut = null;
+			shortcut_steps_taken = 0;
 		}
 		if (tangent_shortcut != null) {
 			// Naj bi obstajala fuzzy pot do tam ...?
-			Direction dir = fuzzy_step(cur, tangent_shortcut);
-			if (dir != null && can_move(cur, dir))
-				return dir;
+			if (shortcut_steps_taken <= LOOKAHEAD_STEPS) {
+				Direction dir = fuzzy_step(cur, tangent_shortcut);
+				if (dir != null && can_move(cur, dir)) {
+					shortcut_steps_taken++;
+					return dir;
+				}
+			}
 			// Zgubili smo se ali pa je ovira ...
 			reset_tangent();
 		}
@@ -683,7 +689,7 @@ abstract class BasePathFinder {
 	}
 
 	protected Object[] save_state() {
-		return new Object[] { closest, bug_wall, bug_wall_tangent, tangent_shortcut };
+		return new Object[] { closest, bug_wall, bug_wall_tangent, tangent_shortcut, shortcut_steps_taken };
 	}
 
 	protected void set_state(Object[] state) {
@@ -691,6 +697,7 @@ abstract class BasePathFinder {
 		bug_wall = (MapLocation) state[1];
 		bug_wall_tangent = (int) state[2];
 		tangent_shortcut = (MapLocation) state[3];
+		shortcut_steps_taken = (int) state[4];
 	}
 
 	protected void reset_tangent() {
@@ -698,6 +705,7 @@ abstract class BasePathFinder {
 		bug_wall_tangent = NO_WALL;
 		bug_wall = null;
 		closest = rc.getLocation();
+		shortcut_steps_taken = 0;
 	}
 
 	public void reset() {
