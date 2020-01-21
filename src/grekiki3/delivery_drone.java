@@ -124,6 +124,7 @@ class DeliverDroneTask extends DroneTask {
 
 		this.reason = "DeliverDroneTask";
 		this.delivery = delivery;
+		this.priority = priority;
 	}
 
 	@Override
@@ -168,14 +169,27 @@ class DeliverDroneTask extends DroneTask {
 
 	void on_pick_up() throws GameActionException {
 	    if (drone.rc.canSenseRobot(delivery.id)) {
-			drone.pick_up_unit(drone.rc.senseRobot(delivery.id));
-			current_task = new MoveDroneTask(drone, delivery.to, this.priority) {
-				@Override
-				public void on_complete(boolean success) throws GameActionException {
-					super.on_complete(success);
-					DeliverDroneTask.this.on_complete(success);
+	    	RobotInfo unit = drone.rc.senseRobot(delivery.id);
+	    	if (drone.rc.canSenseLocation(unit.getLocation())) {
+				RobotInfo carry_drone = drone.rc.senseRobotAtLocation(unit.getLocation());
+				if (carry_drone.getHeldUnitID() == delivery.id) {
+					on_complete(false);
+					return;
 				}
-			};
+			} else {
+	    		on_complete(false);
+	    		return;
+			}
+
+			if (drone.pick_up_unit(unit)) {
+				current_task = new MoveDroneTask(drone, delivery.to, this.priority) {
+					@Override
+					public void on_complete(boolean success) throws GameActionException {
+						super.on_complete(success);
+						DeliverDroneTask.this.on_complete(success);
+					}
+				};
+			}
 		} else {
 	        on_complete(false);
 		}
@@ -184,6 +198,15 @@ class DeliverDroneTask extends DroneTask {
 	@Override
 	public String toString() {
 		return String.format("%s: --> %s", reason, delivery);
+	}
+
+	@Override
+	public void debug() {
+		super.debug();
+		if (current_task != null)
+			current_task.debug();
+		drone.rc.setIndicatorDot(delivery.from, 0,0,255);
+		drone.rc.setIndicatorDot(delivery.to, 0,255,0);
 	}
 }
 
@@ -278,6 +301,8 @@ public class delivery_drone extends robot{
 	}
 
 	@Override public void runTurn() throws GameActionException {
+		if (!rc.isReady())return;
+
 		int b1 = Clock.getBytecodeNum();
 		task = find_best_task();
 		System.out.println("TASK FIND: " + (Clock.getBytecodeNum() - b1));
@@ -596,6 +621,7 @@ public class delivery_drone extends robot{
 					if (success) {
 						drop_unit_safe();
 					}
+					delivery_locations.remove(delivery.id);
 				}
 			};
 		}

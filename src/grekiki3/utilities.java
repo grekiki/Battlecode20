@@ -262,6 +262,7 @@ class blockchain {
 	 * Enota zeli prevoz z dronom iz prve do druge lokacije
 	 */
 	final int LOC2_DRONE = 100;
+	final int LOC2_DRONE_COMPLETE = 101;
 	/**
 	 * Miner z ID-jem int2 mora pomagati bazi in vsakih 10 potez obvestiti o tem da
 	 * je se ziv.
