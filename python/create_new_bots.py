@@ -89,29 +89,27 @@ def either_from_mother_or_father(parent1_constants, parent2_constants):
 
 
 
-def create_new_bot(configuration, generation, number):
+def create_new_bot(configuration, bot_name):
     """
     Creates a new bot out of the bot `parent`.
     Generation parameter specifies to which generation will this bot belong and 
     the number parameter is used to distuingish between bots within the same generation.
 
     - Modifies bot constants
-    - saves them into file bot_configurations/generation_{generation}_id_{number}
+    - saves them into file bot_configurations/{bot_name} 
     - copies contents of ../src/grekiki25 bot into a new folder named 
         ..\srs\generation_{generation}_id_{number}
     - modifies `konst.java` file and updates constants with updated ones
     """
 
-    child_name = f'generation_{generation}_id_{number}'
-
-    with open(f'bot_configurations/{child_name}.json', 'w') as outfile:
+    with open(f'bot_configurations/{bot_name}.json', 'w') as outfile:
         json.dump(configuration, outfile, indent=2)
 
-    command = subprocess.run(f'xcopy /s ..\src\grekiki25_ai ..\src\generation_{generation}_id_{number}\\ /Y', shell=True)
+    command = subprocess.run(f'xcopy /s ..\src\grekiki25_ai ..\src\{bot_name}\\ /Y', shell=True)
 
-    with open(f'..\\src\\generation_{generation}_id_{number}\\konst.java', 'w') as outfile:
+    with open(f'..\\src\\{bot_name}\\konst.java', 'w') as outfile:
         # print(template.render(child_bot_configurations), file=outfile)
-        print(f'package {child_name};', file=outfile)
+        print(f'package {bot_name};', file=outfile)
         print('public class konst {', file=outfile)
         for key, value in configuration.items():
             if key in DOUBLES:
@@ -122,14 +120,14 @@ def create_new_bot(configuration, generation, number):
     
     # Change the package names in files
     for filename in ['buildings.java', 'pc.java', 'RobotPlayer.java', 'units.java']:
-        with open(f'..\src\{child_name}\{filename}', 'r') as infile:
+        with open(f'..\src\{bot_name}\{filename}', 'r') as infile:
             lines = infile.readlines()
-            lines[0] = f'package {child_name};'
-        with open(f'..\src\{child_name}\{filename}', 'w') as outfile:
+            lines[0] = f'package {bot_name};'
+        with open(f'..\src\{bot_name}\{filename}', 'w') as outfile:
             for line in lines:
                 print(line.rstrip('\n'), file=outfile)
         
 
 if __name__ == '__main__':
-    some_constants = load_constants('generation_7_id_1')
-    create_new_bot(some_constants, 1, 12345567)
+    some_constants = load_constants('generation_19_id_945733350')
+    create_new_bot(some_constants, 'evolution_winner')

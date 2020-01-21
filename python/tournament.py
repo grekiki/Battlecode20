@@ -90,10 +90,12 @@ def play_tournament(generation, bot_names, referees=4):
 
     print('TOURNAMENT IS OVER')
     
-    with open(f'tournament_results/generation_{generation}.json', 'w') as outfile:
+    key = random.randint(1000, 2000)
+
+    with open(f'tournament_results/generation_{generation}_{key}.json', 'w') as outfile:
         json.dump(results, outfile, indent=2)
     
-    with open(f'tournament_results/match_table_{generation}.txt', 'w') as outfile:
+    with open(f'tournament_results/match_table_{generation}_{key}.txt', 'w') as outfile:
         standings = []
 
         for name in bot_names:
@@ -129,7 +131,7 @@ def play_tournament(generation, bot_names, referees=4):
 def create_child(constants, generation):
     random_id = random.randint(10**8, 10**9)
     bot_name = f'generation_{generation}_id_{random_id}'
-    create_new_bot(constants, generation, random_id)
+    create_new_bot(constants, bot_name)
     return bot_name
 
 def basic_evolution(bots, generation=4):
@@ -171,42 +173,4 @@ if __name__ == '__main__':
         # 'generation_4_id_2',
         ]
     basic_evolution(initial_bots, generation=1)
-
-    # generation = 3
-    # bots = []
-    # for i in range(5):
-    #     bot_name = f'generation_{generation}_id_{i}'
-    #     create_new_bot('grekiki25_gen1', generation, i)
-    #     bots.append(bot_name)
-    
-    # bots.append('generation_0_id_0') # Previous winner
-    # bots.append('grekiki25_gen1')
-    
-    # play_tournament(generation, bots, referees=10)
-    
-
-    # bot_1 = (0, 0)
-    # # bot_2 = (0, 1)
-
-    # # bot_1_name = f'generation_{bot_1[0]}_id_{bot_1[1]}'
-    # # bot_2_name = f'generation_{bot_2[0]}_id_{bot_2[1]}'
-    # bot_1_name = f'generation_{bot_1[0]}_id_{bot_1[1]}'
-    # bot_2_name = 'grekiki25'
-    
-    # # create_new_bot('grekiki25', bot_1[0], bot_1[1])
-    # # create_new_bot('grekiki25', bot_2[0], bot_2[1])
-
-    # first_player_score = 0
-    # second_player_score = 0
-
-    # for play_map in MAPS:
-    #     game = play_game(bot_1_name, bot_2_name, play_map)
-    #     if game == 'PLAYER 1 WINS':
-    #         first_player_score += 1
-    #     elif game == 'PLAYER 2 WINS':
-    #         second_player_score += 1
-    #     else:
-    #         print('ERROR!!')
-    
-    #     print(play_map, first_player_score, second_player_score)
 
