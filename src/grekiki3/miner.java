@@ -316,9 +316,11 @@ public class miner extends robot {
 	int w, h;// dimenzije mape
 
 	MapLocation hq_location;
+	MapLocation enemy_hq_location;
 	/**
 	 * 0- obicajno<br>
 	 * 10- pomagamo hq<br>
+	 * 11- rush<br>
 	 * 20- hq je napaden<br>
 	 * 30- nasprotnik uporablja drone
 	 */
@@ -731,5 +733,14 @@ public class miner extends robot {
 			stanje = 10;
 		}
 	}
-
+	@Override
+	public void bc_miner_rush(int[] message) {
+		if (rc.getID() == message[2]) {
+			stanje = 20;
+		}
+	}
+	@Override
+	public void bc_enemy_hq(MapLocation pos) {
+		enemy_hq_location=pos;
+	}
 }

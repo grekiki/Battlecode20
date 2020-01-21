@@ -24,6 +24,8 @@ public class HQ extends robot {
 	ArrayList<Integer> minerIds;
 	boolean haveBaseBuilder = false;
 	int builder = -1;
+	boolean haveRusher = false;
+	int rusher = -1;
 
 	public HQ(RobotController rc) {
 		super(rc);
@@ -53,9 +55,18 @@ public class HQ extends robot {
 				}
 			}
 		}
-		if (!haveBaseBuilder && minerIds.size() > 0) {
-			haveBaseBuilder = true;
-			b.send_packet(b.MINER_HELP_HQ, new int[] { b.PRIVATE_KEY, b.MINER_HELP_HQ, minerIds.get(0), 0, 0, 0, 0 });
+		
+		if (strategy == 1000) {
+			if (!haveRusher && minerIds.size() > 0) {
+				haveRusher = true;
+				b.send_packet(b.MINER_RUSH, new int[] { b.PRIVATE_KEY, b.MINER_HELP_HQ, minerIds.get(0), 0, 0, 0, 0 });
+			}
+		} else if (strategy == 2000) {
+			if (!haveBaseBuilder && minerIds.size() > 0) {
+				haveBaseBuilder = true;
+				b.send_packet(b.MINER_HELP_HQ,
+						new int[] { b.PRIVATE_KEY, b.MINER_HELP_HQ, minerIds.get(0), 0, 0, 0, 0 });
+			}
 		}
 	}
 

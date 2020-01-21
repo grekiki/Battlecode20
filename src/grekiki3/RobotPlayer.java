@@ -40,6 +40,9 @@ abstract class robot {
 				case LOC_HOME_HQ:
 					bc_home_hq(pos);
 					break;
+				case LOC_ENEMY_HQ:
+					bc_enemy_hq(pos);
+					break;
 				case LOC_WATER:
 					bc_water(pos);
 					break;
@@ -65,6 +68,9 @@ abstract class robot {
 			public void handle_packet(int type, int[] message) {
 				switch (type) {
 				case MINER_HELP_HQ:
+					bc_miner_to_help(message);
+					break;
+				case MINER_RUSH:
 					bc_miner_to_help(message);
 					break;
 				case UNIT_ALIVE:
@@ -121,6 +127,9 @@ abstract class robot {
 	public void bc_home_hq(MapLocation pos) {
 	}
 
+	public void bc_enemy_hq(MapLocation pos) {
+	}
+
 	public void bc_drone(MapLocation from, MapLocation to, int id) {
 	}
 
@@ -137,6 +146,11 @@ abstract class robot {
 	}
 
 	public void bc_unit_alive(int[] message) {
+	}
+
+	
+	
+	public void bc_miner_rush(int[] message) {
 	}
 }
 

@@ -258,6 +258,7 @@ class blockchain {
 	 * Lokacija domace baze
 	 */
 	final int LOC_HOME_HQ = 30;
+	final int LOC_ENEMY_HQ = 31;
 	/**
 	 * Enota zeli prevoz z dronom iz prve do druge lokacije
 	 */
@@ -267,6 +268,7 @@ class blockchain {
 	 * je se ziv.
 	 */
 	final int MINER_HELP_HQ = 1000;
+	final int MINER_RUSH = 1001;
 	/**
 	 * Enota z ID int2 je ziva
 	 */
