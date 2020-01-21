@@ -1,5 +1,7 @@
 package grekiki3;
 
+import java.util.ArrayList;
+
 import battlecode.common.*;
 
 public class HQ extends robot {
@@ -18,6 +20,9 @@ public class HQ extends robot {
 	int miners_alive = 0;
 
 	int wallRadius;
+	ArrayList<Integer> minerIds;
+	boolean haveBaseBuilder = false;
+	int builder = -1;
 
 	public HQ(RobotController rc) {
 		super(rc);
@@ -32,11 +37,22 @@ public class HQ extends robot {
 		h = rc.getMapHeight();
 		loc = rc.getLocation();
 		strategy = choose_strategy();
+		minerIds = new ArrayList<Integer>();
 	}
 
 	@Override
-	public void precompute() {
-
+	public void precompute() throws GameActionException {
+		for (RobotInfo r : rc.senseNearbyRobots(2)) {
+			if (r.team == rc.getTeam() && r.type == RobotType.MINER) {
+				if (!minerIds.contains(r.ID)) {
+					minerIds.add(r.ID);
+				}
+			}
+		}
+		if (!haveBaseBuilder && minerIds.size() > 0) {
+			haveBaseBuilder=true;
+			b.send_packet(b.MINER_HELP_HQ, new int[] { b.PRIVATE_KEY, b.MINER_HELP_HQ, minerIds.get(0), 0, 0, 0, 0 });
+		}
 	}
 
 	@Override
@@ -47,12 +63,18 @@ public class HQ extends robot {
 		if (try_shoot()) {
 			return;
 		}
+
+		// testiranje dronov
+		if (rc.getRoundNum() == 20) {
+			b.send_location(b.BUILD_TOVARNA_DRONOV, loc.translate(2, -1));
+		}
+
 		if (strategy == 1000) {
 
 		}
 		if (strategy == 2000) {
 			// Na zacetku potrebujemo vsaj dva minerja. Vedno.
-			if (this.miners_spawned <= 5||Math.random()<2)
+			if (this.miners_spawned <= 5)
 				if (try_spawn_miner(pick_miner_direction()))
 					return;
 
