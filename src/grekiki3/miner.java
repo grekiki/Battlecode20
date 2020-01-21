@@ -190,7 +190,7 @@ class naloga {
 		if (raziskovanje == null) {
 			raziskovanje = Util.getRandomDirection();
 		}
-		if (m.rc.canMove(raziskovanje)) {
+		if (m.rc.canMove(raziskovanje)&&!m.rc.senseFlooding(rc.getLocation().add(raziskovanje))) {
 			m.rc.move(raziskovanje);
 		} else {
 			raziskovanje = null;
