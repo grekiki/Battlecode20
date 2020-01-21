@@ -135,6 +135,7 @@ class naloga {
 	final static int PREMIKANJE_JUHE_V_BAZO = 40;
 	final static int RAZISKOVANJE_JUHE = 50;
 	final static int RAZISKOVANJE_MAPE = 60;
+	final static int RUSH=100;
 	miner m;
 	MapLocation mesto;// ni nujno da naloga da mesto, je pa tako pogosto da pride prav
 	int value;
@@ -183,9 +184,15 @@ class naloga {
 		case RAZISKOVANJE_MAPE:
 			raziskovanje_mape();
 			break;
+		case RUSH:
+			rush();
+			break;
 		}
 	}
-
+	
+	private void rush() throws GameActionException{
+		
+	}
 	private void raziskovanje_mape() throws GameActionException {
 		if (raziskovanje == null) {
 			raziskovanje = Util.getRandomDirection();
@@ -325,6 +332,7 @@ public class miner extends robot {
 	 * 30- nasprotnik uporablja drone
 	 */
 	int stanje;
+	int strategija;
 
 	public miner(RobotController rc) {
 		super(rc);
@@ -620,6 +628,11 @@ public class miner extends robot {
 	}
 
 	public int izracunaj_vrenost_refinerije(MapLocation closest) throws GameActionException {
+		if(strategija==1000) {
+			if(rc.getSoupCarrying()<500) {
+				return 0;
+			}
+		}
 		if (closest == null) {
 			return 0;
 		}
@@ -739,6 +752,10 @@ public class miner extends robot {
 			stanje = 20;
 		}
 	}
+	public void bc_base_strategy(int[] message) {
+		strategija=message[2];
+	}
+
 	@Override
 	public void bc_enemy_hq(MapLocation pos) {
 		enemy_hq_location=pos;

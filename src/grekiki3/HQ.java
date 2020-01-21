@@ -33,9 +33,10 @@ public class HQ extends robot {
 
 	/**
 	 * HQ se v prvi potezi najprej odloci kaj bi naredil, glede na stanje mape.
+	 * @throws GameActionException 
 	 */
 	@Override
-	public void init() {
+	public void init() throws GameActionException {
 		w = rc.getMapWidth();
 		h = rc.getMapHeight();
 		loc = rc.getLocation();
@@ -43,7 +44,7 @@ public class HQ extends robot {
 		slaba_polja = new vector_set_gl();
 		strategy = choose_strategy();
 		minerIds = new ArrayList<Integer>();
-
+		b.send_packet(b.BASE_STRATEGY, new int[] {b.PRIVATE_KEY,b.BASE_STRATEGY,strategy,0,0,0,0});
 	}
 
 	@Override
@@ -114,7 +115,7 @@ public class HQ extends robot {
 	public int choose_strategy() {
 		wallRadius = 2;
 		if (rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 0) {
-			return 1000;
+			return 1000;//rush
 		} else {
 			return 2000;
 		}

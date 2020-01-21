@@ -268,6 +268,9 @@ class blockchain {
 	 * je se ziv.
 	 */
 	final int MINER_HELP_HQ = 1000;
+	/**
+	 * Miner z ID-jem int2 ima nalogo zrušiti enemyHQ
+	 */
 	final int MINER_RUSH = 1001;
 	/**
 	 * Enota z ID int2 je ziva
@@ -276,7 +279,8 @@ class blockchain {
 	/**
 	 * Baza ima stanje int1
 	 */
-	final int BASE_STATUS=1200;
+	final int BASE_STRATEGY=1200;
+
 	
 	private final int LOC_MAX = 99;// do 99 je en mapLocation
 	private final int LOC2_MAX = 999;// od 100 do 999 sta 2
