@@ -162,15 +162,40 @@ def basic_evolution(bots, generation=4):
         print('WE ARE ADVANCING TO NEXT GENERATION')
         generation += 1
 
+def duel_evolution(bots):
 
+    generation = 0
+
+    while True:
+
+        tournament_results = play_tournament(generation, bots, referees=4)
+        generation += 1
+
+        score1, winner = tournament_results[0][:2]
+        score2, loser = tournament_results[1][:2]
+
+        winner_constants = load_constants(winner)
+        loser_constants = load_constants(loser)
+
+        bots = [winner]
+
+        if score1 > 30:
+            child = modify_constants(winner_constants)
+            bots.append(create_child(child, generation))
+        else:
+            child = combine_two_parents(winner_constants, loser_constants)
+            bots.append(create_child(child, generation))
+        
 
 if __name__ == '__main__':
 
-    initial_bots = [
-        'grekiki26',
-        'grekiki26',
-        # 'generation_6_id_4',
-        # 'generation_4_id_2',
-        ]
-    basic_evolution(initial_bots, generation=1)
+    # initial_bots = [
+    #     'grekiki26',
+    #     'grekiki26',
+    #     # 'generation_6_id_4',
+    #     # 'generation_4_id_2',
+    #     ]
+    # basic_evolution(initial_bots, generation=1)
+
+    duel_evolution(['evolution_winner', 'generation_7_id_1'])
 
