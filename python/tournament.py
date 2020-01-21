@@ -165,7 +165,7 @@ def basic_evolution(bots, generation=4):
 if __name__ == '__main__':
 
     initial_bots = [
-        'grekiki25_ai',
+        'grekiki26',
         'grekiki26',
         # 'generation_6_id_4',
         # 'generation_4_id_2',

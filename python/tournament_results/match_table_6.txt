@@ -1,12 +1,6 @@
-103  generation_4_id_4    : 23  24  0   29  27  
-102  grekiki25_gen1       : 0   23  27  24  28  
-102  generation_4_id_2    : 27  0   26  24  25  
-97   generation_2_id_0    : 26  26  21  0   24  
-96   generation_4_id_5    : 22  25  23  26  0   
+29   generation_4_id_655583086 : 0   29  
+19   generation_5_id_415194692 : 19  0   
 
 
-grekiki25_gen1
-generation_4_id_2
-generation_4_id_4
-generation_2_id_0
-generation_4_id_5
+generation_4_id_655583086
+generation_5_id_415194692
