@@ -17,8 +17,6 @@ abstract class dronePathFinder extends BasePathFinder {
 	}
 
 	// Metoda se bo poklicala, ko naletimo na vodo.
-	void found_water(MapLocation pos) throws GameActionException { }
-	void found_unit(RobotInfo robot) throws GameActionException { }
 	abstract boolean is_dangerous(MapLocation pos) throws GameActionException;
 
 	@Override
@@ -34,15 +32,12 @@ abstract class dronePathFinder extends BasePathFinder {
 		MapLocation to = from.add(dir);
 		if (!rc.canSenseLocation(to))
 			return false;
-		if (rc.senseFlooding(to))
-			found_water(to);
 		// TODO kaj ce je ujet
 		if (!ignore_danger && is_dangerous(to)) {
 			return false;
 		}
 		RobotInfo robot = rc.senseRobotAtLocation(to);
 		if (robot != null && robot.getID() != rc.getID()) {
-		    found_unit(robot);
 			if (!ignore_units || robot.getType().isBuilding())
 				return false;
 		}
@@ -266,16 +261,6 @@ public class delivery_drone extends robot{
 	@Override public void init() throws GameActionException {
 		path_finder = new dronePathFinder(rc) {
 			@Override
-			void found_water(MapLocation pos) throws GameActionException {
-				on_find_water(pos);
-			}
-
-			@Override
-			void found_unit(RobotInfo robot) throws GameActionException {
-			    on_find_unit(robot);
-			}
-
-			@Override
 			boolean is_dangerous(MapLocation pos) throws GameActionException {
 			    return is_location_dangerous(pos);
 			}
@@ -289,6 +274,7 @@ public class delivery_drone extends robot{
 	}
 
 	@Override public void precompute() throws GameActionException {
+		water_scan(rc.getLocation());
 	}
 
 	@Override public void runTurn() throws GameActionException {
@@ -334,6 +320,14 @@ public class delivery_drone extends robot{
 
 	private boolean is_water(MapLocation pos) throws GameActionException {
 		return rc.canSenseLocation(pos) && rc.senseFlooding(pos);
+	}
+
+	private void water_scan(MapLocation pos) throws GameActionException {
+		for (Direction d : Util.dir) {
+			if (is_water(pos.add(d))) {
+				on_find_water(pos.add(d));
+			}
+		}
 	}
 
 	boolean pick_up_unit(RobotInfo unit) throws GameActionException {
