@@ -249,7 +249,7 @@ public class delivery_drone extends robot{
 
 	MapLocation hq_location;
 
-	Set<MapLocation> water_locations = new HashSet<>();
+	vector_set_gl water_locations = new vector_set_gl();
 	Set<MapLocation> enemy_netguns = new HashSet<>();
 	Set<MapLocation> enemy_refineries = new HashSet<>();
 	Map<Integer, DroneDeliveryRequest> delivery_locations = new HashMap<>();
