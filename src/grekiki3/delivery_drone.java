@@ -298,7 +298,7 @@ public class delivery_drone extends robot{
 	}
 
 	@Override public void precompute() throws GameActionException {
-		water_scan(rc.getLocation());
+		
 	}
 
 	@Override public void runTurn() throws GameActionException {
@@ -317,6 +317,7 @@ public class delivery_drone extends robot{
 	}
 
 	@Override public void postcompute() throws GameActionException {
+		water_scan(rc.getLocation());
 		while (Clock.getBytecodesLeft() > 500) {
 			if (!b.read_next_round()) {
 				break;

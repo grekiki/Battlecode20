@@ -1,5 +1,7 @@
 package grekiki3;
 
+import java.util.ArrayList;
+
 import battlecode.common.Clock;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
@@ -15,9 +17,10 @@ public class landscaper extends robot {
 	final static int visina = 8;
 	final static int omejitev_visine = 200;
 	Direction explore = null;
-
+	ArrayList<MapLocation> wall1;
 	int px;
 	int py;
+	MapLocation goal = null;
 
 	public landscaper(RobotController rc) {
 		super(rc);
@@ -25,28 +28,54 @@ public class landscaper extends robot {
 
 	@Override
 	public void init() throws GameActionException {
-		while (Clock.getBytecodesLeft() > 800 || rc.getCooldownTurns() > 1) {
+		while (Clock.getBytecodesLeft() > 2000 || rc.getCooldownTurns() > 1) {
 			if (!b.read_next_round()) {
-				return;
+				break;
 			}
 		}
 		if (hq == null && strategy == 1000) {
 			attacking = true;
 		}
+		wall1 = new ArrayList<MapLocation>();
+		for (Direction d : Util.dir) {
+			if (rc.onTheMap(hq.add(d))) {
+				wall1.add(hq.add(d));
+			}
+		}
 	}
 
 	@Override
-	public void precompute() {
-
+	public void precompute() throws GameActionException {
+		px = hq.x % 2;
+		py = hq.y % 2;
+		System.out.println("Ravnanje");
+		if (rc.getRoundNum() == 300) {
+			System.out.println(wall1);
+			int t = (int) Math.floor(Math.random() * wall1.size());
+			goal = wall1.get(t);
+			System.out.println(goal);
+			b.send_location2(b.LOC2_DRONE, rc.getLocation(), wall1.get(t), rc.getID());
+			System.out.println("Gremo na zid.");
+		}
+		if (rc.getRoundNum() > 300 && rc.getRoundNum() % 50 == 0 && (!rc.getLocation().equals(goal)&&!rc.getLocation().isAdjacentTo(goal))) {
+			b.send_location2(b.LOC2_DRONE, rc.getLocation(), goal, rc.getID());
+		}
+		System.out.println("blockchain.... " + b.messages.size());
 	}
 
 	@Override
 	public void runTurn() throws GameActionException {
-		if (attacking) {
+		if (goal != null && rc.getLocation().equals(goal)||rc.getLocation().isAdjacentTo(goal)) {
+			makeAWall();
+		} else if (attacking) {
 			doAttacking();
 		} else {
 			doLandscaping();
 		}
+	}
+
+	private void makeAWall() {
+		return;
 	}
 
 	@Override
@@ -102,15 +131,9 @@ public class landscaper extends robot {
 	}
 
 	private void doLandscaping() throws GameActionException {
-		px = hq.x % 2;
-		py = hq.y % 2;
-		System.out.println("Ravnanje");
 		if (rc.getDirtCarrying() == 0) {
 			for (Direction d : Util.dir) {
-				if (rc.canSenseLocation(rc.getLocation().add(d)) && rc.senseElevation(rc.getLocation().add(d)) > visina && rc.senseElevation(rc.getLocation().add(d)) < omejitev_visine) {// poskusimo s
-																																															// kopanjem
-																																															// zmanjsati
-																																															// hrib
+				if (rc.canSenseLocation(rc.getLocation().add(d)) && rc.senseElevation(rc.getLocation().add(d)) > visina && rc.senseElevation(rc.getLocation().add(d)) < omejitev_visine) {
 					if (rc.canDigDirt(d)) {
 						rc.digDirt(d);
 						return;
