@@ -21,6 +21,7 @@ public class landscaper extends robot {
 	int px;
 	int py;
 	MapLocation goal = null;
+	int previousRound = -1;
 
 	public landscaper(RobotController rc) {
 		super(rc);
@@ -46,6 +47,10 @@ public class landscaper extends robot {
 
 	@Override
 	public void precompute() throws GameActionException {
+		if (rc.getRoundNum() != previousRound+1) {
+			analyze_drone_delivery_failure();
+		}
+		previousRound=rc.getRoundNum();
 		px = hq.x % 2;
 		py = hq.y % 2;
 		System.out.println("Ravnanje");
@@ -57,15 +62,66 @@ public class landscaper extends robot {
 			b.send_location2(b.LOC2_DRONE, rc.getLocation(), wall1.get(t), rc.getID());
 			System.out.println("Gremo na zid.");
 		}
-		if (rc.getRoundNum() > 300 && rc.getRoundNum() % 50 == 0 && (!rc.getLocation().equals(goal)&&!rc.getLocation().isAdjacentTo(goal))) {
+		if (rc.getRoundNum() > 300 && Math.random() < 1.0 / 30 && !rc.getLocation().equals(goal)) {
 			b.send_location2(b.LOC2_DRONE, rc.getLocation(), goal, rc.getID());
 		}
 		System.out.println("blockchain.... " + b.messages.size());
 	}
 
+	private void analyze_drone_delivery_failure() throws GameActionException {
+		System.out.println("Analiza");
+		if (goal != null && rc.getLocation().equals(goal)) {
+			System.out.println("V redu je");
+			return;
+		}
+		if (goal != null && rc.canSenseLocation(goal)) {
+			RobotInfo r = rc.senseRobotAtLocation(goal);
+			if (r != null && r.type == RobotType.LANDSCAPER && r.team == rc.getTeam()) {
+				goal = null;
+				for (int i = 0; i < 10; i++) {
+					int t = (int) Math.floor(Math.random() * wall1.size());
+					goal = wall1.get(t);
+					if (rc.canSenseLocation(goal)) {
+						r = rc.senseRobotAtLocation(goal);
+						if (r != null && r.type == RobotType.LANDSCAPER && r.team == rc.getTeam()) {
+							goal = null;
+						}
+					}
+					if (goal != null) {
+						System.out.println("Nov cilj " + goal);
+						return;
+					}
+				}
+				if (goal == null) {
+					for (int t = 0; t < wall1.size(); t++) {
+						goal = wall1.get(t);
+						if (rc.canSenseLocation(goal)) {
+							r = rc.senseRobotAtLocation(goal);
+							if (r != null && r.type == RobotType.LANDSCAPER && r.team == rc.getTeam()) {
+								goal = null;
+							}
+						}
+						if (goal != null) {
+							System.out.println("Nov cilj " + goal);
+							return;
+						}
+					}
+					if (goal == null) {
+						System.out.println("ZID JE POLN!!!!!!!!");
+						System.out.println("ZID JE POLN!!!!!!!!");
+						System.out.println("ZID JE POLN!!!!!!!!");
+						System.out.println("ZID JE POLN!!!!!!!!");
+						System.out.println("ZID JE POLN!!!!!!!!");
+						System.out.println("ZID JE POLN!!!!!!!!");
+					}
+				}
+			}
+		}
+	}
+
 	@Override
 	public void runTurn() throws GameActionException {
-		if (goal != null && rc.getLocation().equals(goal)||rc.getLocation().isAdjacentTo(goal)) {
+		if (goal != null && rc.getLocation().equals(goal)) {
 			makeAWall();
 		} else if (attacking) {
 			doAttacking();
@@ -131,8 +187,10 @@ public class landscaper extends robot {
 	}
 
 	private void doLandscaping() throws GameActionException {
+		System.out.println("Landscaping");
 		if (rc.getDirtCarrying() == 0) {
 			for (Direction d : Util.dir) {
+				// izkopljemo hrib ce ni previsok
 				if (rc.canSenseLocation(rc.getLocation().add(d)) && rc.senseElevation(rc.getLocation().add(d)) > visina && rc.senseElevation(rc.getLocation().add(d)) < omejitev_visine) {
 					if (rc.canDigDirt(d)) {
 						rc.digDirt(d);

@@ -103,8 +103,8 @@ class MoveDroneTask extends DroneTask {
 		}
 	    time_running++;
 		boolean move = drone.path_finder.moveTowards(destination);
-	    if (drone.path_finder.is_at_goal(drone.rc.getLocation(), destination)) {
-	        on_complete(true);
+		if(drone.rc.getLocation().isAdjacentTo(destination)) {
+			 on_complete(true);
 		}
 	    return move;
 	}
@@ -453,6 +453,17 @@ public class delivery_drone extends robot{
 		return false;
 	}
 
+	private boolean drop_unit_safe(MapLocation goal) throws GameActionException {
+		while(rc.getCooldownTurns()>1) {
+			Clock.yield();
+		}
+		MapLocation p = rc.getLocation();
+		Direction d=p.directionTo(goal);
+		if(rc.canDropUnit(d)) {
+			rc.dropUnit(d);
+		}
+		return false;
+	}
 	private boolean drop_unit_safe() throws GameActionException {
 		MapLocation p = rc.getLocation();
 		for (Direction d : Util.dir) {
@@ -700,7 +711,7 @@ public class delivery_drone extends robot{
 				public void on_complete(boolean success) throws GameActionException {
 					super.on_complete(success);
 					if (success) {
-						drop_unit_safe();
+						drop_unit_safe(delivery.to);
 					}
 					delivery_locations.remove(delivery.id);
 					priority = -1;
