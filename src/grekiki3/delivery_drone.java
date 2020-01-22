@@ -61,7 +61,7 @@ abstract class DroneTask {
 
 	public abstract boolean run() throws GameActionException;
 
-	public void on_start() {
+	public void on_start() throws GameActionException {
 		is_running = true;
 		is_complete = false;
 	}
@@ -142,51 +142,58 @@ class DeliverDroneTask extends DroneTask {
 	}
 
 	@Override
-	public void on_start() {
+	public void on_start() throws GameActionException {
 		super.on_start();
-		current_task = new MoveDroneTask(drone, delivery.from, this.priority) {
-			@Override
-			public void on_complete(boolean success) throws GameActionException {
-				super.on_complete(success);
-				on_arrive_source(delivery);
-			}
-
-			@Override
-			public boolean run() throws GameActionException {
-				int sense = handle_sense_target();
-				if (sense > 0) {
+		int sense = handle_sense_target();
+		if (sense > 0) {
+			on_arrive_source(delivery);
+		} else {
+			current_task = new MoveDroneTask(drone, delivery.from, this.priority) {
+				@Override
+				public void on_complete(boolean success) throws GameActionException {
+					super.on_complete(success);
 					on_arrive_source(delivery);
-				} else if (sense == 0) {
-					return false;
 				}
-				return super.run();
-			}
-		};
+
+				@Override
+				public boolean run() throws GameActionException {
+					int sense = handle_sense_target();
+					if (sense > 0) {
+						on_arrive_source(delivery);
+					} else if (sense == 0) {
+						return false;
+					}
+					return super.run();
+				}
+			};
+		}
 	}
 
-	public void on_arrive_source(DroneDeliveryRequest delivery) {
-		current_task = new ChaseDroneTask(drone, delivery.id, this.priority) {
-			@Override
-			public void on_complete(boolean success) throws GameActionException {
-				super.on_complete(success);
-				if (success) {
-				    if (!on_pick_up()) {
-				    	on_arrive_source(delivery);
+	public void on_arrive_source(DroneDeliveryRequest delivery) throws GameActionException {
+		if (!on_pick_up()) {
+			current_task = new ChaseDroneTask(drone, delivery.id, this.priority) {
+				@Override
+				public void on_complete(boolean success) throws GameActionException {
+					super.on_complete(success);
+					if (success) {
+						if (!on_pick_up()) {
+							on_arrive_source(delivery);
+						}
+					} else {
+						DeliverDroneTask.this.on_complete(false);
 					}
-				} else {
-					DeliverDroneTask.this.on_complete(false);
 				}
-			}
 
-			@Override
-			public boolean run() throws GameActionException {
-				int sense = handle_sense_target();
-				if (sense == 0) {
-					return false;
+				@Override
+				public boolean run() throws GameActionException {
+					int sense = handle_sense_target();
+					if (sense == 0) {
+						return false;
+					}
+					return super.run();
 				}
-				return super.run();
-			}
-		};
+			};
+		}
 	}
 
 	int handle_sense_target() throws GameActionException {
@@ -208,8 +215,8 @@ class DeliverDroneTask extends DroneTask {
 		int sense = handle_sense_target();
 		if (sense > 0) {
 			if (drone.pick_up_unit(drone.rc.senseRobot(delivery.id))) {
+			    priority = 71;
 				drone.b.send_location2(drone.b.LOC2_DRONE_COMPLETE, delivery.from, delivery.to, delivery.id);
-
 				current_task = new MoveDroneTask(drone, delivery.to, this.priority) {
 					@Override
 					public void on_complete(boolean success) throws GameActionException {
@@ -290,6 +297,11 @@ class DroneDeliveryRequest {
 		this.from = from;
 		this.to = to;
 		this.id = id;
+	}
+
+	@Override
+	public String toString() {
+	    return String.format("%s --> %s [%d]", from, to, id);
 	}
 }
 
@@ -374,9 +386,11 @@ public class delivery_drone extends robot{
 	@Override
 	public void bc_drone_complete(MapLocation from, MapLocation to, int id) {
 	    delivery_locations.remove(id);
-	    if (task != null && task instanceof DeliverDroneTask && ((DeliverDroneTask) task).delivery.id == id) {
+	    /*
+	    if (task != null && (task instanceof DeliverDroneTask) && ((DeliverDroneTask) task).delivery.id == id) {
 	    	task = null;
 		}
+	     */
 	}
 
 	@Override
@@ -645,7 +659,7 @@ public class delivery_drone extends robot{
 				MapLocation dest = cur.add(dir).add(dir).add(dir);
 				return new MoveDroneTask(this, dest, 100) {
 					@Override
-					public void on_start() {
+					public void on_start() throws GameActionException {
 						super.on_start();
 						path_finder.ignore_danger = true;
 					}
@@ -676,11 +690,11 @@ public class delivery_drone extends robot{
 			}
 		}
 
-		if (task != null && task.is_running() && task.priority > 40) return task;
+		if (task != null && task.is_running() && task.priority > 70) return task;
 
 		DroneDeliveryRequest delivery = find_closest_delivery_location(rc.getLocation());
 		if (delivery != null) {
-			return new DeliverDroneTask(this, delivery, 70) {
+			return new DeliverDroneTask(this, delivery, 50) {
 				@Override
 				public void on_complete(boolean success) throws GameActionException {
 					super.on_complete(success);
