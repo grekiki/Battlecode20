@@ -442,7 +442,7 @@ public class miner extends robot {
 	 * 30- nasprotnik uporablja drone
 	 */
 	int stanje;
-	int strategija;
+	int strategija=-1;
 
 	public miner(RobotController rc) {
 		super(rc);
@@ -491,13 +491,13 @@ public class miner extends robot {
 
 	public void postcompute() throws GameActionException {
 		// drone test
-		if (rc.getRoundNum() % 200 == 0) {
-			b.send_location2(b.LOC2_DRONE, rc.getLocation(), Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()), rc.getID());
-		}
+//		if (rc.getRoundNum() % 100 == 0) {
+//			b.send_location2(b.LOC2_DRONE, rc.getLocation(), Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()), rc.getID());
+//		}
 
 		if (stanje == 10) {
 			if (rc.getRoundNum() % 10 == 0) {
-				b.send_packet(b.UNIT_ALIVE, new int[] { b.PRIVATE_KEY, b.UNIT_ALIVE, rc.getID(), 0, 0, 0, 0 });
+//				b.send_packet(b.UNIT_ALIVE, new int[] { b.PRIVATE_KEY, b.UNIT_ALIVE, rc.getID(), 0, 0, 0, 0 });
 			}
 		}
 		update_soup();
@@ -824,7 +824,7 @@ public class miner extends robot {
 
 	@Override
 	public void bc_rafinerija(MapLocation pos) {
-		System.out.println("Nova refinerija");
+//		System.out.println("Nova refinerija");
 		if (!refinerije.contains(pos)) {
 			refinerije.add(pos);
 		}
@@ -847,6 +847,7 @@ public class miner extends robot {
 	@Override
 	public void bc_build_tovarna_landscaperjev(MapLocation pos) {
 		if (stanje == 10) {
+			System.out.println("Naloga dodana");
 			toBuild.add(new naloga(this, pos, GRADNJA, naloga.GRADNJA_TOVARNE_ZA_LANDSCAPERJE));
 		}
 	}

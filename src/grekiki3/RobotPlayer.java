@@ -11,7 +11,7 @@ abstract class robot {
 		this.b = new blockchain(rc) {
 			@Override
 			public void handle_location(int type, MapLocation pos) {
-				System.out.println("" + type + " " + pos);
+//				System.out.println("" + type + " " + pos);
 				switch (type) {
 				case LOC_SUROVINA:
 					bc_polje_found(pos);
