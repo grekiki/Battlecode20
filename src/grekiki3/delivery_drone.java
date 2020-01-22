@@ -306,8 +306,10 @@ class DroneDeliveryRequest {
 }
 
 public class delivery_drone extends robot{
+	private static final int ENEMY_DANGER_RADIUS = GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED + 18;
 	private static final int COW_ENEMY_PRIORITY = 27;
-	private static final int COW_ENEMY_RADIUS = 5 * GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED;
+	private static final int COW_ENEMY_RADIUS = ENEMY_DANGER_RADIUS * 3;
+	private static final int TASK_TIME_LIMIT = 100;
 	int strategy=-1;
 	
 	MapLocation hq_location;
@@ -449,7 +451,7 @@ public class delivery_drone extends robot{
 					return true;
 			}
 		}
-		return false;
+		return !rc.isCurrentlyHoldingUnit();
 	}
 
 	private boolean drop_unit_safe() throws GameActionException {
@@ -460,7 +462,7 @@ public class delivery_drone extends robot{
 					return true;
 			}
 		}
-		return false;
+		return !rc.isCurrentlyHoldingUnit();
 	}
 
 	private boolean drop_unit_unsafe() throws GameActionException {
@@ -468,7 +470,7 @@ public class delivery_drone extends robot{
 			if (drop_unit(d))
 				return true;
 		}
-		return false;
+		return !rc.isCurrentlyHoldingUnit();
 	}
 
 	private void on_find_water(MapLocation pos) throws GameActionException {
@@ -519,9 +521,8 @@ public class delivery_drone extends robot{
 	}
 
 	boolean is_location_dangerous(MapLocation pos) throws GameActionException {
-	    final int safety_factor = 18;
 		for (MapLocation m : enemy_netguns) {
-			if (pos.isWithinDistanceSquared(m, GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED + safety_factor)) {
+			if (pos.isWithinDistanceSquared(m, ENEMY_DANGER_RADIUS)) {
 				return true;
 			}
 		}
@@ -529,7 +530,7 @@ public class delivery_drone extends robot{
 		for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
 			on_find_unit(r);
 			if (r.getType().canShoot()) {
-				if (pos.isWithinDistanceSquared(r.getLocation(), GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED + safety_factor)) {
+				if (pos.isWithinDistanceSquared(r.getLocation(), ENEMY_DANGER_RADIUS)) {
 					return true;
 				}
 			}
@@ -624,27 +625,41 @@ public class delivery_drone extends robot{
 	    MapLocation dest = closest_enemy_building();
 	    if (dest != null) {
 	    	return new MoveDroneTask(this, dest, COW_ENEMY_PRIORITY) {
+	    		boolean dropped = false;
+
+				@Override
+				public boolean is_running() {
+				    return !is_complete();
+				}
+
+				@Override
+				public boolean is_complete() {
+					return dropped && super.is_complete();
+				}
+
 				@Override
 				public void on_complete(boolean success) throws GameActionException {
 					super.on_complete(success);
-					drop_unit_unsafe();
+					if (drop_unit_unsafe()) {
+						dropped = true;
+					}
 				}
 
 				@Override
 				public boolean run() throws GameActionException {
-					boolean ret = super.run();
-				    if (rc.getLocation().isWithinDistanceSquared(destination, COW_ENEMY_RADIUS)) {
+				    if (drone.rc.getLocation().isWithinDistanceSquared(destination, COW_ENEMY_RADIUS)) {
 				    	on_complete(true);
+				    	return false;
 					}
-					return ret;
+					return super.run();
 				}
 			};
 		}
-	    return new MoveDroneTask(this, Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()), 20);
+	    return drop_water_task();
 	}
 
 	private DroneTask find_best_task() throws GameActionException {
-		if (task != null && task.is_complete())	{
+		if (task != null && (task.is_complete() || task.time_running > TASK_TIME_LIMIT)) {
 			task = null;
 		}
 
