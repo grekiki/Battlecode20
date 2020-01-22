@@ -22,6 +22,7 @@ public class landscaper extends robot {
 	int py;
 	MapLocation goal = null;
 	int previousRound = -1;
+	MapLocation[] holes;
 
 	public landscaper(RobotController rc) {
 		super(rc);
@@ -38,40 +39,54 @@ public class landscaper extends robot {
 			attacking = true;
 		}
 		wall1 = new ArrayList<MapLocation>();
+		for (int x = -2; x <= 2; x++) {
+			for (int y = -2; y <= 2; y++) {
+				if (x != 0 || y != 0) {
+					int ax = Math.abs(x);
+					int ay = Math.abs(y);
+					if ((ax == 2 && ay == 0) || (ax == 0 && ay == 2)) {
+
+					} else {
+						wall1.add(new MapLocation(hq.x + x, hq.y + y));
+					}
+				}
+			}
+		}
 		for (Direction d : Util.dir) {
 			if (rc.onTheMap(hq.add(d))) {
 				wall1.add(hq.add(d));
 			}
 		}
+		if (!attacking) {
+			int x=hq.x;
+			int y=hq.y;
+			holes=new MapLocation[] {new MapLocation(x+2,y),new MapLocation(x-2,y),new MapLocation(x,y+2),new MapLocation(x,y-2)};
+		}
 	}
 
 	@Override
 	public void precompute() throws GameActionException {
-		if (rc.getRoundNum() != previousRound+1) {
+		if (rc.getRoundNum() != previousRound + 1) {
 			analyze_drone_delivery_failure();
 		}
-		previousRound=rc.getRoundNum();
+		previousRound = rc.getRoundNum();
 		px = hq.x % 2;
 		py = hq.y % 2;
-		System.out.println("Ravnanje");
-		if (rc.getRoundNum() == 300) {
-			System.out.println(wall1);
-			int t = (int) Math.floor(Math.random() * wall1.size());
-			goal = wall1.get(t);
-			System.out.println(goal);
-			b.send_location2(b.LOC2_DRONE, rc.getLocation(), wall1.get(t), rc.getID());
-			System.out.println("Gremo na zid.");
+		if (!attacking) {
+			if (rc.getRoundNum() == 600) {
+				int t = (int) Math.floor(Math.random() * wall1.size());
+				goal = wall1.get(t);
+				System.out.println(goal);
+				b.send_location2(b.LOC2_DRONE, rc.getLocation(), wall1.get(t), rc.getID());
+			}
+			if (rc.getRoundNum() > 300 && Math.random() < 1.0 / 30 && !rc.getLocation().equals(goal)) {
+				b.send_location2(b.LOC2_DRONE, rc.getLocation(), goal, rc.getID());
+			}
 		}
-		if (rc.getRoundNum() > 300 && Math.random() < 1.0 / 30 && !rc.getLocation().equals(goal)) {
-			b.send_location2(b.LOC2_DRONE, rc.getLocation(), goal, rc.getID());
-		}
-		System.out.println("blockchain.... " + b.messages.size());
 	}
 
 	private void analyze_drone_delivery_failure() throws GameActionException {
-		System.out.println("Analiza");
 		if (goal != null && rc.getLocation().equals(goal)) {
-			System.out.println("V redu je");
 			return;
 		}
 		if (goal != null && rc.canSenseLocation(goal)) {
@@ -89,6 +104,7 @@ public class landscaper extends robot {
 					}
 					if (goal != null) {
 						System.out.println("Nov cilj " + goal);
+						b.send_location2(b.LOC2_DRONE, rc.getLocation(), goal, rc.getID());
 						return;
 					}
 				}
@@ -103,16 +119,17 @@ public class landscaper extends robot {
 						}
 						if (goal != null) {
 							System.out.println("Nov cilj " + goal);
+							b.send_location2(b.LOC2_DRONE, rc.getLocation(), goal, rc.getID());
 							return;
 						}
 					}
 					if (goal == null) {
-						System.out.println("ZID JE POLN!!!!!!!!");
-						System.out.println("ZID JE POLN!!!!!!!!");
-						System.out.println("ZID JE POLN!!!!!!!!");
-						System.out.println("ZID JE POLN!!!!!!!!");
-						System.out.println("ZID JE POLN!!!!!!!!");
-						System.out.println("ZID JE POLN!!!!!!!!");
+//						System.out.println("ZID JE POLN!!!!!!!!");
+//						System.out.println("ZID JE POLN!!!!!!!!");
+//						System.out.println("ZID JE POLN!!!!!!!!");
+//						System.out.println("ZID JE POLN!!!!!!!!");
+//						System.out.println("ZID JE POLN!!!!!!!!");
+//						System.out.println("ZID JE POLN!!!!!!!!");
 					}
 				}
 			}
@@ -130,8 +147,61 @@ public class landscaper extends robot {
 		}
 	}
 
-	private void makeAWall() {
-		return;
+	private void makeAWall() throws GameActionException {
+		int dist = Util.d_inf(rc.getLocation(), hq);
+		if (dist == 1) {
+			if(rc.getDirtCarrying()>0) {
+				int minHeight=c.inf;
+				Direction best=null;
+				for(Direction d:Util.dir) {
+					MapLocation goal=rc.getLocation().add(d);
+					if(Util.d_inf(hq, goal)==1) {
+						int h=rc.senseElevation(goal);
+						if(h<minHeight) {
+							minHeight=h;
+							best=d;
+						}
+					}
+				}
+				rc.depositDirt(best);
+				return;
+			}else {
+				for(Direction d:Util.dir) {
+					MapLocation goal=rc.getLocation().add(d);
+					for(MapLocation m:holes) {
+						if(m.equals(goal)) {
+							rc.digDirt(d);
+							return;
+						}
+					}
+				}
+			}
+		}else {
+			if(rc.getDirtCarrying()>0) {
+				if(Math.random()<0.3) {
+					rc.depositDirt(Direction.CENTER);
+				}else {
+					int minHeight=c.inf;
+					Direction best=null;
+					for(Direction d:Util.dir) {
+						MapLocation goal=rc.getLocation().add(d);
+						if(Util.d_inf(hq, goal)==1) {
+							int h=rc.senseElevation(goal);
+							if(h<minHeight) {
+								minHeight=h;
+								best=d;
+							}
+						}
+					}
+					rc.depositDirt(best);
+					return;
+				}
+				return;
+			}else {
+				rc.digDirt(rc.getLocation().directionTo(hq).opposite());
+			}
+		}
+
 	}
 
 	@Override
@@ -188,10 +258,11 @@ public class landscaper extends robot {
 
 	private void doLandscaping() throws GameActionException {
 		System.out.println("Landscaping");
-		if (rc.getDirtCarrying() == 0) {
+		int goal = Util.d_inf(rc.getLocation(), hq) < 5 ? 5 : visina;
+		if (rc.getDirtCarrying() <RobotType.LANDSCAPER.dirtLimit) {
 			for (Direction d : Util.dir) {
 				// izkopljemo hrib ce ni previsok
-				if (rc.canSenseLocation(rc.getLocation().add(d)) && rc.senseElevation(rc.getLocation().add(d)) > visina && rc.senseElevation(rc.getLocation().add(d)) < omejitev_visine) {
+				if (rc.canSenseLocation(rc.getLocation().add(d)) && rc.senseElevation(rc.getLocation().add(d)) > goal && rc.senseElevation(rc.getLocation().add(d)) < omejitev_visine) {
 					if (rc.canDigDirt(d)) {
 						rc.digDirt(d);
 						return;
@@ -199,7 +270,7 @@ public class landscaper extends robot {
 				}
 			}
 			for (Direction d : Util.dir) {
-				if (rc.canSenseLocation(rc.getLocation().add(d)) && rc.senseElevation(rc.getLocation().add(d)) > visina) {// poskusimo s kopanjem zmanjsati hrib
+				if (rc.canSenseLocation(rc.getLocation().add(d)) && rc.senseElevation(rc.getLocation().add(d)) > goal) {// poskusimo s kopanjem zmanjsati hrib
 					if (rc.canDigDirt(d)) {
 						rc.digDirt(d);
 						return;
@@ -219,10 +290,7 @@ public class landscaper extends robot {
 		} else {
 			for (Direction d : Util.dir) {
 				if (!primerna_luknja(d, px, py)) {
-					if (rc.canSenseLocation(rc.getLocation().add(d)) && rc.senseElevation(rc.getLocation().add(d)) < visina && rc.senseElevation(rc.getLocation().add(d)) > -omejitev_visine) {// poskusimo
-																																																// s
-																																																// nalaganjem
-																																																// landscapati
+					if (rc.canSenseLocation(rc.getLocation().add(d)) && rc.senseElevation(rc.getLocation().add(d)) < goal && rc.senseElevation(rc.getLocation().add(d)) > -omejitev_visine) { // landscapati
 						if (rc.canDepositDirt(d) && noAllyBuilding(d)) {
 							rc.depositDirt(d);
 							return;

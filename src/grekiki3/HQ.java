@@ -98,11 +98,10 @@ public class HQ extends robot {
 	public void postcompute() throws GameActionException {
 		if (strategy == 2000) {
 			if (rc.getRoundNum() == 20) {
-				b.send_location(b.BUILD_TOVARNA_DRONOV, loc.translate(2, 2));
+				b.send_location(b.BUILD_TOVARNA_DRONOV, loc.translate(3, 1));
 			}
 			if (rc.getRoundNum() == 50) {
-				System.out.println("Poslano?!");
-				b.send_location(b.BUILD_TOVARNA_LANDSCAPERJEV, loc.translate(2, -2));
+				b.send_location(b.BUILD_TOVARNA_LANDSCAPERJEV, loc.translate(3, -1));
 			}
 		}
 		while (Clock.getBytecodesLeft() > 500) {
