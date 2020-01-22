@@ -74,6 +74,9 @@ public class landscaper extends robot {
 		py = hq.y % 2;
 		if (!attacking) {
 			if (rc.getRoundNum() >= 300 && goal == null) {
+				if(wall1.size()==0) {
+					return;
+				}
 				int t = (int) Math.floor(Math.random() * wall1.size());
 				goal = wall1.get(t);
 				System.out.println(goal);

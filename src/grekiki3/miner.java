@@ -475,13 +475,16 @@ public class miner extends robot {
 
 	@Override
 	public void precompute() throws GameActionException {
-//		System.out.println("\n" + rc.getRoundNum());
+
 	}
 
 	@Override
 	public void runTurn() throws GameActionException {
 		if (!rc.isReady()) {
 			return;
+		}
+		if(rc.senseElevation(rc.getLocation())>20&&Util.d_inf(rc.getLocation(), hq_location)<3) {
+			rc.disintegrate();
 		}
 		findBestTask();
 		if (task != null) {
