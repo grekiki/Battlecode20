@@ -279,6 +279,8 @@ class blockchain {
 	 */
 	final int LOC2_DRONE = 100;
 	final int LOC2_DRONE_COMPLETE = 101;
+	final int LOCP_DRONE_ASSIST = 102;
+	final int LOCP_DRONE_ASSIST_CLEAR = 103;
 	/**
 	 * Miner z ID-jem int2 mora pomagati bazi in vsakih 10 potez obvestiti o tem da
 	 * je se ziv.
@@ -331,6 +333,10 @@ class blockchain {
 
 	public void send_packet(int type, int[] packet) throws GameActionException {
 		sendMsg(new paket(packet, 1));
+	}
+
+	public void send_location_priority(int type, MapLocation pos, int priority) throws GameActionException {
+		send_location2(type, pos, new MapLocation(0,0), priority);
 	}
 
 	public boolean check_private_key(int[] msg) {

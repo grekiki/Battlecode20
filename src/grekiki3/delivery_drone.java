@@ -2,10 +2,7 @@ package grekiki3;
 
 import battlecode.common.*;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 abstract class dronePathFinder extends BasePathFinder {
 	boolean ignore_danger = false;
@@ -305,19 +302,46 @@ class DroneDeliveryRequest {
 	}
 }
 
+class LocationPriority {
+	MapLocation loc;
+	int priority;
+
+	LocationPriority(MapLocation loc, int priority) {
+		this.loc = loc;
+		this.priority = priority;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		LocationPriority that = (LocationPriority) o;
+		return Objects.equals(loc, that.loc);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(loc);
+	}
+}
+
 public class delivery_drone extends robot{
 	private static final int ENEMY_DANGER_RADIUS = GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED + 18;
 	private static final int COW_ENEMY_PRIORITY = 27;
 	private static final int COW_ENEMY_RADIUS = ENEMY_DANGER_RADIUS * 3;
 	private static final int TASK_TIME_LIMIT = 100;
+	private static final int ASSIST_RADIUS = 25;
+	private static int MAX_TASK_RADIUS;
+
 	int strategy=-1;
-	
+
 	MapLocation hq_location;
 	MapLocation home_location;
 
 	vector_set_gl water_locations = new vector_set_gl();
 	Set<MapLocation> enemy_netguns = new HashSet<>();
 	Set<MapLocation> enemy_refineries = new HashSet<>();
+	Set<LocationPriority> assist_locations = new HashSet<>();
 	Map<Integer, DroneDeliveryRequest> delivery_locations = new HashMap<>();
 
 	DroneTask task;
@@ -336,6 +360,9 @@ public class delivery_drone extends robot{
 			    return is_location_dangerous(pos);
 			}
 		};
+
+		MAX_TASK_RADIUS = Math.max(rc.getMapWidth(), rc.getMapHeight()) / 2;
+		MAX_TASK_RADIUS = MAX_TASK_RADIUS * MAX_TASK_RADIUS;
 
 		for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam())) {
 			if (r.type == RobotType.HQ) {
@@ -389,11 +416,16 @@ public class delivery_drone extends robot{
 	@Override
 	public void bc_drone_complete(MapLocation from, MapLocation to, int id) {
 	    delivery_locations.remove(id);
-	    /*
-	    if (task != null && (task instanceof DeliverDroneTask) && ((DeliverDroneTask) task).delivery.id == id) {
-	    	task = null;
-		}
-	     */
+	}
+
+	@Override
+	public void bc_drone_assist(MapLocation pos, int priority) {
+	    assist_locations.add(new LocationPriority(pos, priority));
+	}
+
+	@Override
+	public void bc_drone_assist_clear(MapLocation pos, int priority) {
+	    assist_locations.remove(new LocationPriority(pos, priority));
 	}
 
 	@Override
@@ -550,6 +582,16 @@ public class delivery_drone extends robot{
 		return false;
 	}
 
+	void handle_enemy_cluster(MapLocation pos, int enemies) throws GameActionException {
+		if (enemies >= 3 && pos != null) {
+		    LocationPriority assist_location = find_closest_assist_location(pos);
+		    if (assist_location == null || assist_location.loc.distanceSquaredTo(pos) > ASSIST_RADIUS) {
+		    	assist_locations.add(assist_location);
+		    	b.send_location_priority(b.LOCP_DRONE_ASSIST, pos, 7 + enemies);
+			}
+		}
+	}
+
 	int get_unit_priority(RobotType type) {
 		switch (type) {
 			case LANDSCAPER: return 5;
@@ -560,10 +602,15 @@ public class delivery_drone extends robot{
 	}
 
 	RobotInfo find_closest_enemy_unit(MapLocation pos) throws GameActionException {
+		// Hkrati se prestejemo ...
+		int enemies = 0;
 		int closest = c.inf;
 		RobotInfo robot = null;
 		for (RobotInfo r : rc.senseNearbyRobots()) {
 		    if (r.getTeam() == rc.getTeam()) continue;
+		    if (r.getType() != RobotType.COW && r.getType() != RobotType.DELIVERY_DRONE) {
+		    	enemies++;
+			}
 		   	int priority = get_unit_priority(r.getType());
 		    if (priority > 0) {
 		        if (r.getType() == RobotType.COW) {
@@ -579,6 +626,8 @@ public class delivery_drone extends robot{
 				}
 			}
 		}
+		if (robot != null)
+			handle_enemy_cluster(robot.getLocation(), enemies);
 		return robot;
 	}
 
@@ -670,6 +719,75 @@ public class delivery_drone extends robot{
 	    return drop_water_task();
 	}
 
+	private DroneTask escape_task(MapLocation cur) throws GameActionException {
+		MapLocation netgun = find_closest_netgun(cur);
+		if (netgun != null) {
+			Direction dir = cur.directionTo(netgun).opposite();
+			MapLocation dest = cur.add(dir).add(dir).add(dir);
+			return new MoveDroneTask(this, dest, 100) {
+				@Override
+				public void on_start() throws GameActionException {
+					super.on_start();
+					path_finder.ignore_danger = true;
+				}
+
+				@Override
+				public void on_complete(boolean success) throws GameActionException {
+					super.on_complete(success);
+					path_finder.ignore_danger = false;
+				}
+			};
+		}
+		return null;
+	}
+
+	private LocationPriority find_closest_assist_location(MapLocation cur) {
+		int min_dist = c.inf;
+		LocationPriority best = null;
+		for (LocationPriority loc : assist_locations) {
+			if (loc == null) continue;
+			int d = cur.distanceSquaredTo(loc.loc);
+			if (d < min_dist) {
+				min_dist = d;
+				best = loc;
+			}
+		}
+		return best;
+	}
+
+	private LocationPriority find_best_assist_location(MapLocation cur) {
+		int max_priority = -1;
+		int min_dist = c.inf;
+		LocationPriority best = null;
+		for (LocationPriority loc : assist_locations) {
+			if (loc == null) continue;
+			int d = cur.distanceSquaredTo(loc.loc);
+			if (loc.priority > max_priority) {
+				min_dist = d;
+				max_priority = loc.priority;
+				best = loc;
+			} else if (loc.priority >= max_priority && d < min_dist) {
+				min_dist = d;
+				max_priority = loc.priority;
+				best = loc;
+			}
+		}
+		return best;
+	}
+
+	private DroneTask assistance_move_task(LocationPriority loc) {
+		return new MoveDroneTask(this, loc.loc, loc.priority) {
+			@Override
+			public void on_complete(boolean success) throws GameActionException {
+				super.on_complete(success);
+				if (success) {
+					assist_locations.remove(loc);
+					b.send_location_priority(b.LOCP_DRONE_ASSIST_CLEAR, loc.loc, loc.priority);
+				}
+			}
+		};
+	}
+
 	private DroneTask find_best_task() throws GameActionException {
 		if (task != null && (task.is_complete() || task.time_running > TASK_TIME_LIMIT)) {
 			task = null;
@@ -680,24 +798,8 @@ public class delivery_drone extends robot{
 		// UMIK
 		MapLocation cur = rc.getLocation();
 		if (task != null && task.priority < 100 && is_location_dangerous(cur)) {
-			MapLocation netgun = find_closest_netgun(cur);
-			if (netgun != null) {
-			    Direction dir = cur.directionTo(netgun).opposite();
-				MapLocation dest = cur.add(dir).add(dir).add(dir);
-				return new MoveDroneTask(this, dest, 100) {
-					@Override
-					public void on_start() throws GameActionException {
-						super.on_start();
-						path_finder.ignore_danger = true;
-					}
-
-					@Override
-					public void on_complete(boolean success) throws GameActionException {
-						super.on_complete(success);
-						path_finder.ignore_danger = false;
-					}
-				};
-			}
+		    DroneTask t = escape_task(cur);
+		    if (t != null) return t;
 		}
 
 		if (rc.isCurrentlyHoldingUnit()) {
@@ -720,7 +822,7 @@ public class delivery_drone extends robot{
 		if (task != null && task.is_running() && task.priority > 70) return task;
 
 		DroneDeliveryRequest delivery = find_closest_delivery_location(rc.getLocation());
-		if (delivery != null) {
+		if (delivery != null && delivery.from.isWithinDistanceSquared(cur, MAX_TASK_RADIUS)) {
 			return new DeliverDroneTask(this, delivery, 50) {
 				@Override
 				public void on_complete(boolean success) throws GameActionException {
@@ -735,7 +837,7 @@ public class delivery_drone extends robot{
 		}
 
 		// Najdemo nasprotnikovo enoto ...
-		RobotInfo enemy_unit = find_closest_enemy_unit(rc.getLocation());
+		RobotInfo enemy_unit = find_closest_enemy_unit(cur);
 		if (enemy_unit != null) {
 			return new ChaseDroneTask(this, enemy_unit.getID(), 33 + get_unit_priority(enemy_unit.getType())) {
 				@Override
@@ -746,6 +848,11 @@ public class delivery_drone extends robot{
 					}
 				}
 			};
+		}
+
+		LocationPriority assist_location = find_best_assist_location(cur);
+		if (assist_location != null) {
+			return assistance_move_task(assist_location);
 		}
 
 		// Vrnemo se kamor smo pobrali nasprotnika ...

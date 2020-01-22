@@ -49,6 +49,11 @@ public class fulfillment_center extends robot {
 		drone_requests++;
 	}
 
+	@Override
+	public void bc_drone_complete(MapLocation from, MapLocation to, int id) {
+	    drone_requests--;
+	}
+
 	private boolean should_build() {
 		if (strategy == 1000) {
 			if (rc.getTeamSoup() < 1000) {// Ko imamo 1000 juhe lahko gradimo
