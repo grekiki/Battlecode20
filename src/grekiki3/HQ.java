@@ -58,7 +58,7 @@ public class HQ extends robot {
 			}
 		}
 
-		if (strategy == 1000 && Math.random() > 1) {
+		if (strategy == 1000) {
 			if (!haveRusher && minerIds.size() > 0) {
 				haveRusher = true;
 				b.send_packet(b.MINER_RUSH, new int[] { b.PRIVATE_KEY, b.MINER_RUSH, minerIds.get(0), 0, 0, 0, 0 });
