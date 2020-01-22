@@ -73,7 +73,7 @@ public class landscaper extends robot {
 		px = hq.x % 2;
 		py = hq.y % 2;
 		if (!attacking) {
-			if (rc.getRoundNum() == 600) {
+			if (rc.getRoundNum() >= 300&&goal==null) {
 				int t = (int) Math.floor(Math.random() * wall1.size());
 				goal = wall1.get(t);
 				System.out.println(goal);
@@ -153,7 +153,7 @@ public class landscaper extends robot {
 			if(rc.getDirtCarrying()>0) {
 				int minHeight=c.inf;
 				Direction best=null;
-				for(Direction d:Util.dir) {
+				for(Direction d:Direction.allDirections()) {
 					MapLocation goal=rc.getLocation().add(d);
 					if(Util.d_inf(hq, goal)==1) {
 						int h=rc.senseElevation(goal);
