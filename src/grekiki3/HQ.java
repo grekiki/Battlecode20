@@ -32,7 +32,7 @@ public class HQ extends robot {
 
 	/**
 	 * HQ se v prvi potezi najprej odloci kaj bi naredil, glede na stanje mape.
-	 * 
+	 *
 	 * @throws GameActionException
 	 */
 	@Override

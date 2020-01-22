@@ -150,6 +150,17 @@ class DeliverDroneTask extends DroneTask {
 				super.on_complete(success);
 				on_arrive_source(delivery);
 			}
+
+			@Override
+			public boolean run() throws GameActionException {
+				int sense = handle_sense_target();
+				if (sense > 0) {
+					on_arrive_source(delivery);
+				} else if (sense == 0) {
+					return false;
+				}
+				return super.run();
+			}
 		};
 	}
 
@@ -159,29 +170,46 @@ class DeliverDroneTask extends DroneTask {
 			public void on_complete(boolean success) throws GameActionException {
 				super.on_complete(success);
 				if (success) {
-				    on_pick_up();
+				    if (!on_pick_up()) {
+				    	on_arrive_source(delivery);
+					}
 				} else {
 					DeliverDroneTask.this.on_complete(false);
 				}
 			}
+
+			@Override
+			public boolean run() throws GameActionException {
+				int sense = handle_sense_target();
+				if (sense == 0) {
+					return false;
+				}
+				return super.run();
+			}
 		};
 	}
 
-	void on_pick_up() throws GameActionException {
-	    if (drone.rc.canSenseRobot(delivery.id)) {
-	    	RobotInfo unit = drone.rc.senseRobot(delivery.id);
-	    	if (drone.rc.canSenseLocation(unit.getLocation())) {
+	int handle_sense_target() throws GameActionException {
+		if (drone.rc.canSenseRobot(delivery.id)) {
+			RobotInfo unit = drone.rc.senseRobot(delivery.id);
+			if (drone.rc.canSenseLocation(unit.getLocation())) {
 				RobotInfo carry_drone = drone.rc.senseRobotAtLocation(unit.getLocation());
 				if (carry_drone.getHeldUnitID() == delivery.id) {
 					on_complete(false);
-					return;
+					return 0;
 				}
-			} else {
-	    		on_complete(false);
-	    		return;
 			}
+			return 1;
+		}
+		return -1;
+	}
 
-			if (drone.pick_up_unit(unit)) {
+	boolean on_pick_up() throws GameActionException {
+		int sense = handle_sense_target();
+		if (sense > 0) {
+			if (drone.pick_up_unit(drone.rc.senseRobot(delivery.id))) {
+				drone.b.send_location2(drone.b.LOC2_DRONE_COMPLETE, delivery.from, delivery.to, delivery.id);
+
 				current_task = new MoveDroneTask(drone, delivery.to, this.priority) {
 					@Override
 					public void on_complete(boolean success) throws GameActionException {
@@ -189,9 +217,12 @@ class DeliverDroneTask extends DroneTask {
 						DeliverDroneTask.this.on_complete(success);
 					}
 				};
+				return true;
 			}
+			return false;
 		} else {
 	        on_complete(false);
+	        return true;
 		}
 	}
 
@@ -203,6 +234,7 @@ class DeliverDroneTask extends DroneTask {
 	@Override
 	public void debug() {
 		super.debug();
+		System.out.println(this);
 		if (current_task != null)
 			current_task.debug();
 		drone.rc.setIndicatorDot(delivery.from, 0,0,255);
@@ -267,6 +299,7 @@ public class delivery_drone extends robot{
 	int strategy=-1;
 	
 	MapLocation hq_location;
+	MapLocation home_location;
 
 	vector_set_gl water_locations = new vector_set_gl();
 	Set<MapLocation> enemy_netguns = new HashSet<>();
@@ -290,6 +323,14 @@ public class delivery_drone extends robot{
 			}
 		};
 
+		for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam())) {
+			if (r.type == RobotType.HQ) {
+				hq_location = r.location;
+			} else if (r.type == RobotType.FULFILLMENT_CENTER) {
+				home_location = r.location;
+			}
+		}
+
 		while (Clock.getBytecodesLeft() > 800 || rc.getCooldownTurns() > 1) {
 			if (!b.read_next_round()) {
 				return;
@@ -304,13 +345,9 @@ public class delivery_drone extends robot{
 	@Override public void runTurn() throws GameActionException {
 		if (!rc.isReady())return;
 
-		int b1 = Clock.getBytecodeNum();
 		task = find_best_task();
-		System.out.println("TASK FIND: " + (Clock.getBytecodeNum() - b1));
 		if (task != null) {
-			b1 = Clock.getBytecodeNum();
 			task.run();
-			System.out.println("TASK RUN: " + (Clock.getBytecodeNum() - b1));
 		    if (task != null)
 				task.debug();
 		}
@@ -325,8 +362,21 @@ public class delivery_drone extends robot{
 	}
 
 	@Override
+	public void bc_enemy_hq(MapLocation pos) {
+	    enemy_netguns.add(pos);
+	}
+
+	@Override
 	public void bc_drone(MapLocation from, MapLocation to, int id) {
 	    delivery_locations.put(id, new DroneDeliveryRequest(from, to, id));
+	}
+
+	@Override
+	public void bc_drone_complete(MapLocation from, MapLocation to, int id) {
+	    delivery_locations.remove(id);
+	    if (task != null && task instanceof DeliverDroneTask && ((DeliverDroneTask) task).delivery.id == id) {
+	    	task = null;
+		}
 	}
 
 	@Override
@@ -530,7 +580,7 @@ public class delivery_drone extends robot{
 				}
 			};
 		}
-		return new MoveDroneTask(this, Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()), 20);
+		return explore_task(20);
 	}
 
 	private MapLocation closest_enemy_building() throws GameActionException {
@@ -540,6 +590,20 @@ public class delivery_drone extends robot{
 			dest = Util.closest(enemy_netguns, cur);
 		}
 		return dest;
+	}
+
+	private DroneTask explore_task(int priority) {
+		return new MoveDroneTask(this, Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()), priority);
+	}
+
+	private DroneTask go_home_task(int priority) {
+		if (hq_location != null) {
+			return new MoveDroneTask(this, hq_location, priority);
+		}
+		if (home_location != null) {
+			return new MoveDroneTask(this, home_location, priority);
+		}
+		return explore_task(priority / 2);
 	}
 
 	private DroneTask enemy_cow_building_task() throws GameActionException {
@@ -599,9 +663,10 @@ public class delivery_drone extends robot{
 		    if (task != null && task.is_running())
 		    	return task;
 
-		    // Zakaj smo tukaj?
 		    if (held_unit.getTeam() == rc.getTeam()) {
-		    	drop_unit_safe();
+		    	if (!drop_unit_safe()) {
+		    		return go_home_task(task == null ? 30 : task.priority);
+				}
 		    	return task;
 			} else {
 		        if (held_unit != null && held_unit.getType() == RobotType.COW) {
@@ -623,6 +688,7 @@ public class delivery_drone extends robot{
 						drop_unit_safe();
 					}
 					delivery_locations.remove(delivery.id);
+					priority = -1;
 				}
 			};
 		}
@@ -630,7 +696,7 @@ public class delivery_drone extends robot{
 		// Najdemo nasprotnikovo enoto ...
 		RobotInfo enemy_unit = find_closest_enemy_unit(rc.getLocation());
 		if (enemy_unit != null) {
-			return new ChaseDroneTask(this, enemy_unit.getID(), 40 + get_unit_priority(enemy_unit.getType())) {
+			return new ChaseDroneTask(this, enemy_unit.getID(), 33 + get_unit_priority(enemy_unit.getType())) {
 				@Override
 				public void on_complete(boolean success) throws GameActionException {
 					super.on_complete(success);
@@ -655,7 +721,7 @@ public class delivery_drone extends robot{
 		}
 
 		if (task == null || task.time_running > 80) {
-			return new MoveDroneTask(this, Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()), 1);
+		    return explore_task(1);
 		}
 		return task;
 	}
