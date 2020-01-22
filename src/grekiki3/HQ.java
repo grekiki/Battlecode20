@@ -46,6 +46,7 @@ public class HQ extends robot {
 		System.out.println("Strategija "+strategy);
 		minerIds = new ArrayList<Integer>();
 		b.send_packet(b.BASE_STRATEGY, new int[] {b.PRIVATE_KEY,b.BASE_STRATEGY,strategy,0,0,0,0});
+		b.send_location(b.LOC_HOME_HQ, loc);
 	}
 
 	@Override
