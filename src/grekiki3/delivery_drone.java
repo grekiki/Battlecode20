@@ -220,6 +220,30 @@ class DeliverDroneTask extends DroneTask {
 						super.on_complete(success);
 						DeliverDroneTask.this.on_complete(success);
 					}
+
+					@Override
+					public boolean run() throws GameActionException {
+						if (!is_running) {
+							on_start();
+						}
+						time_running++;
+						// Nikoli naj ne stopi na cilj, ce je na cilju pa se naj premakne
+						MapLocation loc = drone.rc.getLocation();
+						if (loc.isAdjacentTo(destination)) {
+						    if (loc.equals(destination)) {
+						    	for (Direction d : Util.dir) {
+						    		if (drone.rc.canMove(d)) {
+						    			drone.rc.move(d);
+						    			return true;
+									}
+								}
+							} else {
+								on_complete(true);
+								return false;
+							}
+						}
+						return drone.path_finder.moveTowards(destination);
+					}
 				};
 				return true;
 			}
@@ -338,6 +362,10 @@ public class delivery_drone extends robot{
 	MapLocation hq_location;
 	MapLocation home_location;
 
+	// NAPAD!!!
+	MapLocation attack_location;
+	int attack_round = -1;
+
 	vector_set_gl water_locations = new vector_set_gl();
 	Set<MapLocation> enemy_netguns = new HashSet<>();
 	Set<MapLocation> enemy_refineries = new HashSet<>();
@@ -426,6 +454,12 @@ public class delivery_drone extends robot{
 	@Override
 	public void bc_drone_assist_clear(MapLocation pos, int priority) {
 	    assist_locations.remove(new LocationPriority(pos, priority));
+	}
+
+	@Override
+	public void bc_drone_attack(MapLocation pos, int round) {
+		attack_location = pos;
+		attack_round = round;
 	}
 
 	@Override
@@ -794,6 +828,11 @@ public class delivery_drone extends robot{
 		}
 
 		if (task != null && task.priority >= 100) return task;
+
+		// NAPAD!!!
+		if (attack_location != null) {
+
+		}
 
 		// UMIK
 		MapLocation cur = rc.getLocation();

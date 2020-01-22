@@ -70,6 +70,9 @@ abstract class robot {
 				case LOCP_DRONE_ASSIST_CLEAR:
 					bc_drone_assist_clear(m1, id);
 					break;
+				case LOCP_DRONE_ATTACK:
+				    bc_drone_attack(m1, id);
+				    break;
 				}
 			}
 
@@ -153,6 +156,9 @@ abstract class robot {
 	}
 
 	public void bc_drone_assist_clear(MapLocation pos, int priority) {
+	}
+
+	public void bc_drone_attack(MapLocation pos, int round) {
 	}
 
 	public void bc_water(MapLocation pos) {
