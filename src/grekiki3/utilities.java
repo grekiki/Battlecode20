@@ -285,7 +285,7 @@ class blockchain {
 	 */
 	final int MINER_HELP_HQ = 1000;
 	/**
-	 * Miner z ID-jem int2 ima nalogo zrušiti enemyHQ
+	 * Miner z ID-jem int2 ima nalogo zruï¿½iti enemyHQ
 	 */
 	final int MINER_RUSH = 1001;
 	/**
@@ -349,7 +349,7 @@ class blockchain {
 			MapLocation m1 = new MapLocation(msg[2], msg[3]);
 			MapLocation m2 = new MapLocation(msg[4], msg[5]);
 			int id = msg[6];
-			handle_location2(LOC2_DRONE, m1, m2, id);
+			handle_location2(type, m1, m2, id);
 		} else {
 			MapLocation m = new MapLocation(msg[2], msg[3]);
 			handle_location(type, m);
