@@ -491,11 +491,9 @@ public class miner extends robot {
 
 	public void postcompute() throws GameActionException {
 		// drone test
-		/*
-		 * if (rc.getRoundNum() % 100 == 0) { b.send_location2(b.LOC2_DRONE,
-		 * rc.getLocation(), Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()),
-		 * rc.getID()); }
-		 */
+		if (rc.getRoundNum() % 100 == 0) {
+			b.send_location2(b.LOC2_DRONE, rc.getLocation(), Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()), rc.getID());
+		}
 
 		if (stanje == 10) {
 			if (rc.getRoundNum() % 10 == 0) {

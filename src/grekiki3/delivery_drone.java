@@ -17,8 +17,6 @@ abstract class dronePathFinder extends BasePathFinder {
 	}
 
 	// Metoda se bo poklicala, ko naletimo na vodo.
-	void found_water(MapLocation pos) throws GameActionException { }
-	void found_unit(RobotInfo robot) throws GameActionException { }
 	abstract boolean is_dangerous(MapLocation pos) throws GameActionException;
 
 	@Override
@@ -34,15 +32,12 @@ abstract class dronePathFinder extends BasePathFinder {
 		MapLocation to = from.add(dir);
 		if (!rc.canSenseLocation(to))
 			return false;
-		if (rc.senseFlooding(to))
-			found_water(to);
 		// TODO kaj ce je ujet
 		if (!ignore_danger && is_dangerous(to)) {
 			return false;
 		}
 		RobotInfo robot = rc.senseRobotAtLocation(to);
 		if (robot != null && robot.getID() != rc.getID()) {
-		    found_unit(robot);
 			if (!ignore_units || robot.getType().isBuilding())
 				return false;
 		}
@@ -129,6 +124,7 @@ class DeliverDroneTask extends DroneTask {
 
 		this.reason = "DeliverDroneTask";
 		this.delivery = delivery;
+		this.priority = priority;
 	}
 
 	@Override
@@ -173,14 +169,27 @@ class DeliverDroneTask extends DroneTask {
 
 	void on_pick_up() throws GameActionException {
 	    if (drone.rc.canSenseRobot(delivery.id)) {
-			drone.pick_up_unit(drone.rc.senseRobot(delivery.id));
-			current_task = new MoveDroneTask(drone, delivery.to, this.priority) {
-				@Override
-				public void on_complete(boolean success) throws GameActionException {
-					super.on_complete(success);
-					DeliverDroneTask.this.on_complete(success);
+	    	RobotInfo unit = drone.rc.senseRobot(delivery.id);
+	    	if (drone.rc.canSenseLocation(unit.getLocation())) {
+				RobotInfo carry_drone = drone.rc.senseRobotAtLocation(unit.getLocation());
+				if (carry_drone.getHeldUnitID() == delivery.id) {
+					on_complete(false);
+					return;
 				}
-			};
+			} else {
+	    		on_complete(false);
+	    		return;
+			}
+
+			if (drone.pick_up_unit(unit)) {
+				current_task = new MoveDroneTask(drone, delivery.to, this.priority) {
+					@Override
+					public void on_complete(boolean success) throws GameActionException {
+						super.on_complete(success);
+						DeliverDroneTask.this.on_complete(success);
+					}
+				};
+			}
 		} else {
 	        on_complete(false);
 		}
@@ -189,6 +198,15 @@ class DeliverDroneTask extends DroneTask {
 	@Override
 	public String toString() {
 		return String.format("%s: --> %s", reason, delivery);
+	}
+
+	@Override
+	public void debug() {
+		super.debug();
+		if (current_task != null)
+			current_task.debug();
+		drone.rc.setIndicatorDot(delivery.from, 0,0,255);
+		drone.rc.setIndicatorDot(delivery.to, 0,255,0);
 	}
 }
 
@@ -267,16 +285,6 @@ public class delivery_drone extends robot{
 	@Override public void init() throws GameActionException {
 		path_finder = new dronePathFinder(rc) {
 			@Override
-			void found_water(MapLocation pos) throws GameActionException {
-				on_find_water(pos);
-			}
-
-			@Override
-			void found_unit(RobotInfo robot) throws GameActionException {
-			    on_find_unit(robot);
-			}
-
-			@Override
 			boolean is_dangerous(MapLocation pos) throws GameActionException {
 			    return is_location_dangerous(pos);
 			}
@@ -290,9 +298,12 @@ public class delivery_drone extends robot{
 	}
 
 	@Override public void precompute() throws GameActionException {
+		water_scan(rc.getLocation());
 	}
 
 	@Override public void runTurn() throws GameActionException {
+		if (!rc.isReady())return;
+
 		int b1 = Clock.getBytecodeNum();
 		task = find_best_task();
 		System.out.println("TASK FIND: " + (Clock.getBytecodeNum() - b1));
@@ -335,6 +346,14 @@ public class delivery_drone extends robot{
 
 	private boolean is_water(MapLocation pos) throws GameActionException {
 		return rc.canSenseLocation(pos) && rc.senseFlooding(pos);
+	}
+
+	private void water_scan(MapLocation pos) throws GameActionException {
+		for (Direction d : Util.dir) {
+			if (is_water(pos.add(d))) {
+				on_find_water(pos.add(d));
+			}
+		}
 	}
 
 	boolean pick_up_unit(RobotInfo unit) throws GameActionException {
@@ -603,6 +622,7 @@ public class delivery_drone extends robot{
 					if (success) {
 						drop_unit_safe();
 					}
+					delivery_locations.remove(delivery.id);
 				}
 			};
 		}

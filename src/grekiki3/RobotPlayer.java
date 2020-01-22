@@ -61,6 +61,9 @@ abstract class robot {
 				case LOC2_DRONE:
 					bc_drone(m1, m2, id);
 					break;
+				case LOC2_DRONE_COMPLETE:
+					bc_drone_complete(m1, m2, id);
+					break;
 				}
 			}
 
@@ -135,6 +138,9 @@ abstract class robot {
 	}
 
 	public void bc_drone(MapLocation from, MapLocation to, int id) {
+	}
+
+	public void bc_drone_complete(MapLocation from, MapLocation to, int id) {
 	}
 
 	public void bc_water(MapLocation pos) {
