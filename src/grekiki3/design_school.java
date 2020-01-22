@@ -10,28 +10,26 @@ import battlecode.common.RobotType;
 
 public class design_school extends robot {
 	int strategy = -1;
-
-	boolean attacking = false;
 	MapLocation hq = null;
-
+	boolean attacking=false;
 	public design_school(RobotController rc) {
 		super(rc);
+	}
+
+	@Override
+	public void init() throws GameActionException {
 		for (RobotInfo r : rc.senseNearbyRobots(10, rc.getTeam())) {
 			if (r.type == RobotType.HQ) {
 				hq = r.location;
 			}
 		}
-		if (hq == null) {
-			attacking = true;
-		}
-	}
-
-	@Override
-	public void init() throws GameActionException {
 		while (Clock.getBytecodesLeft() > 800 || rc.getCooldownTurns() > 1) {
 			if (!b.read_next_round()) {
 				return;
 			}
+		}
+		if (hq == null&&strategy==1000) {
+			attacking = true;
 		}
 
 	}
@@ -43,7 +41,7 @@ public class design_school extends robot {
 
 	@Override
 	public void runTurn() throws GameActionException {
-		if (attacking) {
+		if (strategy==2000) {
 			if (rc.getTeamSoup() > RobotType.NET_GUN.cost) {
 				for (Direction d : Util.dir) {
 					if (rc.canBuildRobot(RobotType.LANDSCAPER, d)) {
@@ -51,15 +49,25 @@ public class design_school extends robot {
 					}
 				}
 			}
+		}else if(strategy==1000) {
+			
 		}
 	}
 
 	@Override
-	public void postcompute() {
-
+	public void postcompute() throws GameActionException {
+		while (Clock.getBytecodesLeft() > 800 || rc.getCooldownTurns() > 1) {
+			if (!b.read_next_round()) {
+				return;
+			}
+		}
 	}
 
 	public void bc_base_strategy(int[] message) {
 		strategy = message[2];
+	}
+	@Override
+	public void bc_home_hq(MapLocation pos) {
+	    hq = pos;
 	}
 }

@@ -643,4 +643,5 @@ public class delivery_drone extends robot{
 	public void bc_base_strategy(int[] message) {
 		strategy=message[2];
 	}
+
 }
