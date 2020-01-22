@@ -10,7 +10,7 @@ abstract class robot {
 		this.rc = rc;
 		this.b = new blockchain(rc) {
 			@Override
-			public void handle_location(int type, MapLocation pos) {
+			public void handle_location(int type, MapLocation pos) throws GameActionException {
 //				System.out.println("" + type + " " + pos);
 				switch (type) {
 				case LOC_SUROVINA:
@@ -143,7 +143,7 @@ abstract class robot {
 	public void bc_home_hq(MapLocation pos) {
 	}
 
-	public void bc_enemy_hq(MapLocation pos) {
+	public void bc_enemy_hq(MapLocation pos) throws GameActionException {
 	}
 
 	public void bc_drone(MapLocation from, MapLocation to, int id) {

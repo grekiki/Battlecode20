@@ -313,7 +313,7 @@ class blockchain {
 		messages = new ArrayList<paket>();
 	}
 
-	public void handle_location(int type, MapLocation pos) {
+	public void handle_location(int type, MapLocation pos) throws GameActionException {
 	}
 
 	public void handle_location2(int type, MapLocation m1, MapLocation m2, int id) {
@@ -345,7 +345,7 @@ class blockchain {
 		return (msg[0] == PRIVATE_KEY);
 	}
 
-	public void parse_transaction(int[] msg) {
+	public void parse_transaction(int[] msg) throws GameActionException {
 		if (!check_private_key(msg))
 			return;
 

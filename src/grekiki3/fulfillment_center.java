@@ -3,6 +3,8 @@ package grekiki3;
 import battlecode.common.*;
 
 public class fulfillment_center extends robot {
+	MapLocation enemy_hq_location;
+
 	int drones_built = 0;
 	int drone_requests = 0;
 	int strategy = -1;
@@ -77,5 +79,13 @@ public class fulfillment_center extends robot {
 
 	public void bc_base_strategy(int[] message) {
 		strategy = message[2];
+	}
+
+	@Override
+	public void bc_enemy_hq(MapLocation pos) throws GameActionException {
+	    enemy_hq_location = pos;
+
+	    // test
+		b.send_location_priority(b.LOCP_DRONE_ATTACK, pos, rc.getRoundNum() + 800);
 	}
 }

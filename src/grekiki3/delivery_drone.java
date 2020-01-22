@@ -350,7 +350,7 @@ class LocationPriority {
 }
 
 public class delivery_drone extends robot{
-	private static final int ENEMY_DANGER_RADIUS = GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED + 18;
+	private static int ENEMY_DANGER_RADIUS = GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED + 18;
 	private static final int COW_ENEMY_PRIORITY = 27;
 	private static final int COW_ENEMY_RADIUS = ENEMY_DANGER_RADIUS * 3;
 	private static final int TASK_TIME_LIMIT = 100;
@@ -360,6 +360,7 @@ public class delivery_drone extends robot{
 	int strategy=-1;
 
 	MapLocation hq_location;
+	MapLocation enemy_hq_location;
 	MapLocation home_location;
 
 	// NAPAD!!!
@@ -460,6 +461,7 @@ public class delivery_drone extends robot{
 	public void bc_drone_attack(MapLocation pos, int round) {
 		attack_location = pos;
 		attack_round = round;
+		bc_drone_assist(pos, 500 + round);
 	}
 
 	@Override
@@ -527,10 +529,7 @@ public class delivery_drone extends robot{
 		}
 		MapLocation p = rc.getLocation();
 		Direction d=p.directionTo(goal);
-		if(rc.canDropUnit(d)) {
-			rc.dropUnit(d);
-		}
-		return false;
+		return drop_unit(d);
 	}
 	private boolean drop_unit_safe() throws GameActionException {
 		MapLocation p = rc.getLocation();
@@ -580,6 +579,12 @@ public class delivery_drone extends robot{
 					b.send_location(b.LOC_ENEMY_NETGUN, netgun);
 					enemy_netguns.add(netgun);
 				}
+			    if (robot.getType() == RobotType.HQ) {
+			    	if (enemy_hq_location == null) {
+			    		b.send_location(b.LOC_ENEMY_HQ, netgun);
+						enemy_hq_location = netgun;
+					}
+				}
 				rc.setIndicatorDot(netgun, 255, 0, 0);
 			}
 		}
@@ -599,6 +604,8 @@ public class delivery_drone extends robot{
 	}
 
 	boolean is_location_dangerous(MapLocation pos) throws GameActionException {
+		if (path_finder.ignore_danger) return false;
+
 		for (MapLocation m : enemy_netguns) {
 			if (pos.isWithinDistanceSquared(m, ENEMY_DANGER_RADIUS)) {
 				return true;
@@ -827,12 +834,16 @@ public class delivery_drone extends robot{
 			task = null;
 		}
 
-		if (task != null && task.priority >= 100) return task;
-
 		// NAPAD!!!
 		if (attack_location != null) {
-
+			ENEMY_DANGER_RADIUS = GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED + 2;
+			int round = rc.getRoundNum();
+			if (round >= attack_round) {
+				path_finder.ignore_danger = true;
+			}
 		}
+
+		if (task != null && task.priority >= 100) return task;
 
 		// UMIK
 		MapLocation cur = rc.getLocation();
@@ -860,7 +871,7 @@ public class delivery_drone extends robot{
 
 		if (task != null && task.is_running() && task.priority > 70) return task;
 
-		DroneDeliveryRequest delivery = find_closest_delivery_location(rc.getLocation());
+		DroneDeliveryRequest delivery = find_closest_delivery_location(cur);
 		if (delivery != null && delivery.from.isWithinDistanceSquared(cur, MAX_TASK_RADIUS)) {
 			return new DeliverDroneTask(this, delivery, 50) {
 				@Override
