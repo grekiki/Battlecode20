@@ -12,6 +12,7 @@ public class design_school extends robot {
 	int strategy = -1;
 	MapLocation hq = null;
 	boolean attacking=false;
+	int spawned=0;
 	public design_school(RobotController rc) {
 		super(rc);
 	}
@@ -42,10 +43,11 @@ public class design_school extends robot {
 	@Override
 	public void runTurn() throws GameActionException {
 		if (strategy==2000) {
-			if (rc.getTeamSoup() > RobotType.NET_GUN.cost) {
+			if (rc.getTeamSoup() > 550||(rc.getTeamSoup()>RobotType.NET_GUN.cost&&spawned<6)) {
 				for (Direction d : Util.dir) {
 					if (rc.canBuildRobot(RobotType.LANDSCAPER, d)) {
 						rc.buildRobot(RobotType.LANDSCAPER, d);
+						spawned++;
 					}
 				}
 			}

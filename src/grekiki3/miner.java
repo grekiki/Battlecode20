@@ -486,7 +486,10 @@ public class miner extends robot {
 		if(rc.senseElevation(rc.getLocation())>20&&Util.d_inf(rc.getLocation(), hq_location)<3) {
 			rc.disintegrate();
 		}
-		findBestTask();
+		findBestTask();//ups
+		if (!rc.isReady()) {
+			return;
+		}
 		if (task != null) {
 			task.run();
 		}
@@ -671,6 +674,17 @@ public class miner extends robot {
 	}
 
 	public void findBestTask() throws GameActionException {
+		if(200<rc.getRoundNum()&&rc.getRoundNum()<1300&&rc.getTeamSoup()>=500) {
+			for(Direction d:Util.dir) {
+				int h=rc.senseElevation(rc.getLocation().add(d));
+				if(h==8) {
+					if(rc.canBuildRobot(RobotType.VAPORATOR, d)) {
+						rc.buildRobot(RobotType.VAPORATOR, d);
+						return;
+					}
+				}
+			}
+		}
 		if (stanje == 11) {
 			if (task == null || task.type != naloga.RUSH) {
 				task = new naloga(this, null, 1000000, naloga.RUSH);

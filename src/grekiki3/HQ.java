@@ -86,7 +86,7 @@ public class HQ extends robot {
 					return;
 		}
 		if (strategy == 2000) {
-			if (this.miners_spawned <= 4 * polja.load && this.miners_spawned < 10)
+			if (((this.miners_spawned <= 4 * polja.load &&rc.getTeamSoup()>700)||this.miners_spawned <= 2 * polja.load )&& this.miners_spawned < 10)
 				if (try_spawn_miner(pick_miner_direction()))
 					return;
 
