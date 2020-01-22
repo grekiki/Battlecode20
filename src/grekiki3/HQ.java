@@ -191,5 +191,4 @@ public class HQ extends robot {
 			polja.add(pos);
 		}
 	}
-
 }
