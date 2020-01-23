@@ -517,7 +517,7 @@ public class delivery_drone extends robot {
 							}
 						}
 					}
-					Direction d=rc.getLocation().directionTo(enemyHq);
+					Direction d=Util.tryMove(rc, rc.getLocation().directionTo(enemyHq));
 					if(rc.canMove(d)) {
 						rc.move(d);
 					}
@@ -538,7 +538,7 @@ public class delivery_drone extends robot {
 				if (miner == null) {
 					System.out.println("NAPAKA pri rushu");
 				} else {
-					Direction d = rc.getLocation().directionTo(miner);
+					Direction d = Util.tryMove(rc, rc.getLocation().directionTo(miner));
 					if (miner.equals(rc.getLocation().add(d))) {
 						rc.pickUpUnit(rc.senseRobotAtLocation(rc.getLocation().add(d)).ID);
 						gotit = true;
