@@ -56,8 +56,7 @@ public class landscaper extends robot {
 	MapLocation prefered_location = null;
 	int previousRound = -1;
 	MapLocation[] holes;
-	int roundHqHeight;
-	int hqHeight = -1000;
+	int hqHeight = 2;
 	landPathFinder path;
 	vector_set_gl net_guns;
 
@@ -78,10 +77,10 @@ public class landscaper extends robot {
 		if (hq == null && strategy == 1000) {
 			attacking = true;
 		}
-		if (hq != null && rc.canSenseLocation(hq)) {
-			roundHqHeight = rc.senseElevation(hq) + 3;
-		} else {
-			roundHqHeight = 5;
+		if(hq!=null) {
+			if(rc.canSenseLocation(hq)) {
+				hqHeight=rc.senseElevation(hq);
+			}
 		}
 		wall1 = new ArrayList<MapLocation>();
 		wall2 = new ArrayList<MapLocation>();
@@ -140,7 +139,9 @@ public class landscaper extends robot {
 					b.send_location2(b.LOC2_DRONE, rc.getLocation(), wall2.get(t), rc.getID());
 				}
 			}
-			if (prefered_location != null && rc.getRoundNum() > 300 && Math.random() < 1.0 / 30 && !rc.getLocation().equals(prefered_location)) {
+			int d=Util.roundFlooded(hqHeight)-100;
+			
+			if (prefered_location != null && rc.getRoundNum() > d && Math.random() < 1.0 / 30 && !rc.getLocation().equals(prefered_location)) {
 				b.send_location2(b.LOC2_DRONE, rc.getLocation(), prefered_location, rc.getID());
 			}
 		}
@@ -414,7 +415,8 @@ public class landscaper extends robot {
 				}
 			}
 		}
-		while (Clock.getBytecodesLeft() > 800 || rc.getCooldownTurns() > 1) {
+		int timeLimit=800;
+		while (Clock.getBytecodesLeft() > timeLimit || rc.getCooldownTurns() > 1) {
 			if (!b.read_next_round()) {
 				return;
 			}
@@ -552,6 +554,7 @@ public class landscaper extends robot {
 
 	public void bc_base_strategy(int[] message) {
 		strategy = message[2];
+		hqHeight=message[3];
 	}
 
 	@Override

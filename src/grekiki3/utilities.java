@@ -275,6 +275,9 @@ class blockchain {
 	 */
 	final int LOC_HOME_HQ = 30;
 	final int LOC_ENEMY_HQ = 31;
+
+	final int LOC_MINER_DRONE=40;
+	final int LOC_MINER_LANDSCAPER=50;
 	/**
 	 * Enota zeli prevoz z dronom iz prve do druge lokacije
 	 */

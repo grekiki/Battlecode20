@@ -13,6 +13,7 @@ public class design_school extends robot {
 	MapLocation hq = null;
 	boolean attacking=false;
 	int spawned=0;
+	boolean sb=false;
 	public design_school(RobotController rc) {
 		super(rc);
 	}
@@ -43,8 +44,12 @@ public class design_school extends robot {
 
 	@Override
 	public void runTurn() throws GameActionException {
+		System.out.println(sb+" "+strategy);
+		if(sb) {
+			return;
+		}
 		if (strategy==2000) {
-			if (rc.getTeamSoup() > 550||(rc.getTeamSoup()>RobotType.NET_GUN.cost&&spawned<6)) {
+			if (rc.getTeamSoup() > 500||(rc.getTeamSoup()>RobotType.NET_GUN.cost+100&&spawned<6)) {
 				for (Direction d : Util.dir) {
 					if (rc.canBuildRobot(RobotType.LANDSCAPER, d)) {
 						rc.buildRobot(RobotType.LANDSCAPER, d);
@@ -74,7 +79,9 @@ public class design_school extends robot {
 			}
 		}
 	}
-
+	public void bc_full_wall(int[]message) {
+		sb=true;
+	}
 	public void bc_base_strategy(int[] message) {
 		strategy = message[2];
 	}

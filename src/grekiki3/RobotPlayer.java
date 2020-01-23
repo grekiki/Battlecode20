@@ -55,6 +55,12 @@ abstract class robot {
 				case LOC_ALLY_NETGUN:
 					bc_ally_netgun(pos);
 					break;
+				case LOC_MINER_DRONE:
+					bc_tovarna_dronov(pos);
+					break;
+				case LOC_MINER_LANDSCAPER:
+					bc_tovarna_landscaperjev(pos);
+					break;
 				}
 			}
 
@@ -74,11 +80,11 @@ abstract class robot {
 					bc_drone_assist_clear(m1, id);
 					break;
 				case LOCP_DRONE_ATTACK:
-				    bc_drone_attack(m1, id);
-				    break;
+					bc_drone_attack(m1, id);
+					break;
 				case LOCP_DRONE_ATTACK_STOP:
 					bc_drone_attack_stop(m1);
-				    break;
+					break;
 				}
 			}
 
@@ -105,8 +111,6 @@ abstract class robot {
 
 		};
 	}
-
-	
 
 	/**
 	 * Ta metoda se poklice ko se robot spawna.
@@ -180,10 +184,10 @@ abstract class robot {
 
 	public void bc_enemy_netgun(MapLocation pos) {
 	}
-	
+
 	public void bc_enemy_netgun_gone(MapLocation pos) {
 	}
-	
+
 	public void bc_ally_netgun(MapLocation pos) {
 	}
 
@@ -193,8 +197,9 @@ abstract class robot {
 	public void bc_unit_alive(int[] message) {
 	}
 
-	public void bc_full_wall(int[]message) throws GameActionException {}
-	
+	public void bc_full_wall(int[] message) throws GameActionException {
+	}
+
 	public void bc_miner_rush(int[] message) {
 	}
 

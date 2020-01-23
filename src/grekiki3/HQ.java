@@ -79,7 +79,7 @@ public class HQ extends robot {
 		slaba_polja = new vector_set_gl();
 		strategy = choose_strategy();
 		minerIds = new ArrayList<Integer>();
-		b.send_packet(b.BASE_STRATEGY, new int[] { b.PRIVATE_KEY, b.BASE_STRATEGY, strategy, 0, 0, 0, 0 });
+		b.send_packet(b.BASE_STRATEGY, new int[] { b.PRIVATE_KEY, b.BASE_STRATEGY, strategy, rc.senseElevation(rc.getLocation()), 0, 0, 0 });
 		b.send_location(b.LOC_HOME_HQ, rc.getLocation());
 		for (int x = -5; x < 5; x++) {
 			for (int y = -5; y < 5; y++) {
@@ -149,8 +149,19 @@ public class HQ extends robot {
 				}
 			}
 		}
-		if (wall_full) {
+		for (MapLocation m : wall2) {
+			if (rc.canSenseLocation(m)) {
+				RobotInfo r = rc.senseRobotAtLocation(m);
+				if (r != null && r.team == rc.getTeam() && r.type == RobotType.LANDSCAPER) {
+
+				} else {
+					wall_full = false;
+				}
+			}
+		}
+		if (wall_full&&!wall) {
 			wall = true;
+			b.send_packet(b.FULL_WALL, new int[]{b.PRIVATE_KEY, b.FULL_WALL, 0, 0, 0, 0, 0});
 		}
 	}
 
@@ -221,10 +232,7 @@ public class HQ extends robot {
 			b.send_location_priority(b.LOCP_DRONE_ATTACK_STOP, enemy_hq_location, attack_turn);
 		}
 
-		// test
-		if (rc.getRoundNum() == 350) {
-			b.send_packet(b.FULL_WALL, new int[]{b.PRIVATE_KEY, b.FULL_WALL, 0, 0, 0, 0, 0});
-		}
+
 
 		while (Clock.getBytecodesLeft() > 500) {
 			if (!b.read_next_round()) {

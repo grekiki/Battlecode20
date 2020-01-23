@@ -66,8 +66,8 @@ public class fulfillment_center extends robot {
 			}
 		}
 		int team_soup = rc.getTeamSoup();
-		boolean enough_soup = team_soup >= RobotType.DELIVERY_DRONE.cost;
-		return enough_soup && ((drones_built < 2 + drone_requests) || team_soup > 9000 || Math.random() < 0.05);
+		boolean enough_soup = team_soup >= RobotType.DELIVERY_DRONE.cost+300;
+		return enough_soup && ((drones_built < Math.min(2 + drone_requests/2,6)) || team_soup > 1000);
 	}
 
 	private boolean try_build() throws GameActionException {

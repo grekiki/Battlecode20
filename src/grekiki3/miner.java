@@ -443,7 +443,11 @@ public class miner extends robot {
 	 */
 	int stanje;
 	int strategija = -1;
-
+	boolean onScaffold = false;
+	int t = 0;
+	boolean ud=false;
+	boolean ul=false;
+	Direction raziskovanje=null;
 	public miner(RobotController rc) {
 		super(rc);
 	}
@@ -475,7 +479,28 @@ public class miner extends robot {
 
 	@Override
 	public void precompute() throws GameActionException {
+//		System.out.println("lol");
+		if (rc.getRoundNum() >= 300 && rc.senseElevation(rc.getLocation()) < 8 && !onScaffold && rc.getRoundNum() - t >= 50) {
+			getOnScaffold();
+			onScaffold = true;
+			t = rc.getRoundNum();
+		}
+	}
 
+	private void getOnScaffold() throws GameActionException {
+		System.out.println("Iscemo");
+		for (int x = -5; x <= 5; x++) {
+			for (int y = -5; y <= 5; y++) {
+				MapLocation goal = new MapLocation(rc.getLocation().x + x, rc.getLocation().y + y);
+				if (rc.canSenseLocation(goal)) {
+					if (rc.senseElevation(goal) == 8) {
+						System.out.println("Gremo do " + goal);
+						b.send_location2(b.LOC2_DRONE, rc.getLocation(), goal, rc.getID());
+						return;
+					}
+				}
+			}
+		}
 	}
 
 	@Override
@@ -486,13 +511,77 @@ public class miner extends robot {
 		if (rc.senseElevation(rc.getLocation()) > 20 && Util.d_inf(rc.getLocation(), hq_location) < 3) {
 			rc.disintegrate();
 		}
-		findBestTask();// ups
-		if (!rc.isReady()) {
-			return;
+		if (rc.senseElevation(rc.getLocation()) == 8 && onScaffold) {
+			runOnScaffold();
+		} else {
+			findBestTask();// ups
+			if (!rc.isReady()) {
+				return;
+			}
+			if (task != null) {
+				task.run();
+			}
 		}
-		if (task != null) {
-			task.run();
+	}
+	private void explore() throws GameActionException {
+		if (raziskovanje == null) {
+			raziskovanje = Util.getRandomDirection();
 		}
+		if (rc.canMove(raziskovanje) && !rc.senseFlooding(rc.getLocation().add(raziskovanje))&&rc.senseElevation(rc.getLocation().add(raziskovanje))==8) {
+			rc.move(raziskovanje);
+		} else {
+			raziskovanje = null;
+		}
+	}
+	private void runOnScaffold() throws GameActionException {
+		//try evaporator
+		if (200 < rc.getRoundNum() && rc.getRoundNum() < 1100 && rc.getTeamSoup() >= 500) {
+			for (Direction d : Util.dir) {
+				if (!rc.canSenseLocation(rc.getLocation().add(d))) {
+					continue;
+				}
+				int h = rc.senseElevation(rc.getLocation().add(d));
+				if (h == 8) {
+					if (rc.canBuildRobot(RobotType.VAPORATOR, d)&&onInter(rc.getLocation().add(d))) {
+						rc.buildRobot(RobotType.VAPORATOR, d);
+						return;
+					}
+				}
+			}
+		}
+		if(!ud&&rc.getTeamSoup()>RobotType.FULFILLMENT_CENTER.cost&&Math.random()<0.1) {
+			for (Direction d : Util.dir) {
+				if (!rc.canSenseLocation(rc.getLocation().add(d))) {
+					continue;
+				}
+				int h = rc.senseElevation(rc.getLocation().add(d));
+				if (h == 8) {
+					if (rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, d)&&onInter(rc.getLocation().add(d))) {
+						rc.buildRobot(RobotType.FULFILLMENT_CENTER, d);
+						b.send_location(b.LOC_MINER_DRONE, rc.getLocation().add(d));
+						ud=true;
+						return;
+					}
+				}
+			}
+		}
+		if(!ul&&rc.getTeamSoup()>RobotType.DESIGN_SCHOOL.cost&&Math.random()<0.1) {
+			for (Direction d : Util.dir) {
+				if (!rc.canSenseLocation(rc.getLocation().add(d))) {
+					continue;
+				}
+				int h = rc.senseElevation(rc.getLocation().add(d));
+				if (h == 8) {
+					if (rc.canBuildRobot(RobotType.DESIGN_SCHOOL, d)&&onInter(rc.getLocation().add(d))) {
+						rc.buildRobot(RobotType.DESIGN_SCHOOL, d);
+						b.send_location(b.LOC_MINER_LANDSCAPER, rc.getLocation().add(d));
+						ul=true;
+						return;
+					}
+				}
+			}
+		}
+		explore();
 	}
 
 	public void postcompute() throws GameActionException {
@@ -513,7 +602,9 @@ public class miner extends robot {
 			}
 		}
 	}
-
+	public boolean onInter(MapLocation m) {
+		return m.x%2!=hq_location.x%2&&m.y%2!=hq_location.y%2;
+	}
 	// Util
 	private void update_soup() throws GameActionException {
 //		System.out.println("Za "+juhe.size+" juh je ostalo " + Clock.getBytecodesLeft() + " casa");
@@ -674,20 +765,6 @@ public class miner extends robot {
 	}
 
 	public void findBestTask() throws GameActionException {
-		if (200 < rc.getRoundNum() && rc.getRoundNum() < 1300 && rc.getTeamSoup() >= 500) {
-			for (Direction d : Util.dir) {
-				if(!rc.canSenseLocation(rc.getLocation().add(d))) {
-					continue;
-				}
-				int h = rc.senseElevation(rc.getLocation().add(d));
-				if (h == 8) {
-					if (rc.canBuildRobot(RobotType.VAPORATOR, d)) {
-						rc.buildRobot(RobotType.VAPORATOR, d);
-						return;
-					}
-				}
-			}
-		}
 		if (stanje == 11) {
 			if (task == null || task.type != naloga.RUSH) {
 				task = new naloga(this, null, 1000000, naloga.RUSH);
@@ -870,6 +947,12 @@ public class miner extends robot {
 			System.out.println("Naloga dodana");
 			toBuild.add(new naloga(this, pos, GRADNJA, naloga.GRADNJA_TOVARNE_ZA_LANDSCAPERJE));
 		}
+	}
+	public void bc_tovarna_dronov(MapLocation pos) {
+		ud=true;
+	}
+	public void bc_tovarna_landscaperjev(MapLocation pos) {
+		ul=true;
 	}
 
 	@Override
