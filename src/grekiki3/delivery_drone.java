@@ -282,11 +282,9 @@ class ChaseDroneTask extends DroneTask {
 
 	@Override
 	public boolean run() throws GameActionException {
-		System.out.println("Naloga se zacne " + Clock.getBytecodesLeft());
 		if (!is_running) {
 			on_start();
 		}
-		System.out.println("Nekje na sredini " + Clock.getBytecodesLeft());
 		time_running++;
 		if (drone.rc.canSenseRobot(target_unit)) {
 			RobotInfo unit = drone.rc.senseRobot(target_unit);
@@ -297,11 +295,9 @@ class ChaseDroneTask extends DroneTask {
 		}
 
 		boolean move = drone.path_finder.moveTowards(destination);
-		System.out.println("Po izracumu premika " + Clock.getBytecodesLeft());
 		if (drone.path_finder.is_at_goal(drone.rc.getLocation(), destination)) {
 			on_complete(true);
 		}
-		System.out.println("Naloga se konca " + Clock.getBytecodesLeft());
 		return move;
 	}
 
@@ -509,16 +505,12 @@ public class delivery_drone extends robot {
 	public void runTurn() throws GameActionException {
 		if (!rc.isReady())
 			return;
-		System.out.println("Na zacetku " + Clock.getBytecodesLeft());
 		task = find_best_task();
-		System.out.println("Po najdeni nalogi " + Clock.getBytecodesLeft());
 		if (task != null) {
 			task.run();
-			System.out.println("Po koncu naloge " + Clock.getBytecodesLeft());
 			if (task != null)
 				task.debug();
 		}
-		System.out.println("Na koncu \"run\" " + Clock.getBytecodesLeft());
 	}
 
 	@Override
