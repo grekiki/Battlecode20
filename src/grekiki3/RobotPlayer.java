@@ -212,7 +212,7 @@ public strictfp class RobotPlayer {
 				r = new fulfillment_center(rc);
 				break;
 			case LANDSCAPER:
-				r = new landscaper2(rc);
+				r = new landscaper(rc);
 				break;
 			case DELIVERY_DRONE:
 				r = new delivery_drone(rc);

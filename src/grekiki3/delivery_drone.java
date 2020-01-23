@@ -300,7 +300,6 @@ class ChaseDroneTask extends DroneTask {
 		if (!is_running) {
 			on_start();
 		}
-
 		time_running++;
 		if (drone.rc.canSenseRobot(target_unit)) {
 			RobotInfo unit = drone.rc.senseRobot(target_unit);
@@ -331,6 +330,7 @@ class MoveOnTheWall extends DroneTask {
 	RobotController rc;
 	ArrayList<MapLocation> wall1;
 	ArrayList<MapLocation> wall2;
+
 	MoveOnTheWall(delivery_drone drone, int target_unit, MapLocation last_seen, int priority) {
 		super(drone);
 		rc = drone.rc;
@@ -853,7 +853,8 @@ public class delivery_drone extends robot {
 		DroneDeliveryRequest request = null;
 		for (DroneDeliveryRequest p : delivery_locations.values()) {
 			/*
-			 * if (!fix_delivery_request(p)) continue;
+		    if (!fix_delivery_request(p))
+		    	continue;
 			 */
 			/*
 			if (rc.canSenseLocation(p.to)) {
