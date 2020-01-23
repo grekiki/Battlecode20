@@ -676,11 +676,13 @@ public class miner extends robot {
 	public void findBestTask() throws GameActionException {
 		if (200 < rc.getRoundNum() && rc.getRoundNum() < 1300 && rc.getTeamSoup() >= 500) {
 			for (Direction d : Util.dir) {
-				int h = rc.senseElevation(rc.getLocation().add(d));
-				if (h == 8) {
-					if (rc.canBuildRobot(RobotType.VAPORATOR, d)) {
-						rc.buildRobot(RobotType.VAPORATOR, d);
-						return;
+				if (rc.canSenseLocation(rc.getLocation().add(d))) {
+					int h = rc.senseElevation(rc.getLocation().add(d));
+					if (h == 8) {
+						if (rc.canBuildRobot(RobotType.VAPORATOR, d)) {
+							rc.buildRobot(RobotType.VAPORATOR, d);
+							return;
+						}
 					}
 				}
 			}

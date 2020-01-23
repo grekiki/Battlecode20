@@ -763,7 +763,9 @@ abstract class BasePathFinder {
 
 		if (unit_wait_time >= UNIT_MAX_WAIT) {
 			ignore_units = false;
-			unit_wait_time = 0;
+			unit_wait_time = -LOOKAHEAD_STEPS;
+		} else if (unit_wait_time < 0) {
+			unit_wait_time++;
 		} else {
 			ignore_units = true;
 		}
