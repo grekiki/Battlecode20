@@ -76,15 +76,13 @@ public class HQ extends robot {
 		minerIds = new ArrayList<Integer>();
 		b.send_packet(b.BASE_STRATEGY, new int[] { b.PRIVATE_KEY, b.BASE_STRATEGY, strategy, 0, 0, 0, 0 });
 		b.send_location(b.LOC_HOME_HQ, rc.getLocation());
-		boolean left = rc.getLocation().x < rc.getMapWidth() / 2;
-		boolean bottom = rc.getLocation().y < rc.getMapHeight() / 2;
-		for (int x = 0; x < 5; x++) {
-			for (int y = 0; y < 5; y++) {
+		for (int x = -5; x < 5; x++) {
+			for (int y = -5; y < 5; y++) {
 				if ((x % 2 == 0 && y % 2 == 0) || (x + y < 5)) {
 
 				} else {
-					int px = left ? x : -x;
-					int py = bottom ? y : -y;
+					int px = x;
+					int py = y;
 					int h = rc.senseElevation(new MapLocation(rc.getLocation().x + px, rc.getLocation().y + py));
 					if (!rc.senseFlooding(new MapLocation(rc.getLocation().x + px, rc.getLocation().y + py)) && Math.abs(h - rc.senseElevation(rc.getLocation())) <= 3) {
 						if (landscaping == null && path_finder.exists_path(rc.getLocation(), new MapLocation(rc.getLocation().x + px, rc.getLocation().y + py))) {
@@ -184,11 +182,11 @@ public class HQ extends robot {
 	@Override
 	public void postcompute() throws GameActionException {
 		if (strategy == 2000) {
-			if (rc.getRoundNum() == 50) {
+			if (rc.getRoundNum() == 10) {
 				b.send_location(b.BUILD_TOVARNA_DRONOV, drones);
 				System.out.println(drones + " droni?");
 			}
-			if (rc.getRoundNum() == 200) {
+			if (rc.getRoundNum() == 50) {
 				b.send_location(b.BUILD_TOVARNA_LANDSCAPERJEV, landscaping);
 				System.out.println(landscaping + " diggerji?");
 			}
@@ -198,6 +196,10 @@ public class HQ extends robot {
 				b.send_location(b.BUILD_TOVARNA_LANDSCAPERJEV, new MapLocation(rc.getLocation().x, rc.getLocation().y - 2));
 //				b.send_location(b.BUILD_TOVARNA_DRONOV, new MapLocation(rc.getLocation().x,rc.getLocation().y-1));
 				built_defensive_ls = true;
+			}
+			if(rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length==0) {
+				strategy=2000; 
+				b.send_packet(b.BASE_STRATEGY, new int[] { b.PRIVATE_KEY, b.BASE_STRATEGY, strategy, 0, 0, 0, 0 });
 			}
 		}
 		while (Clock.getBytecodesLeft() > 500) {
