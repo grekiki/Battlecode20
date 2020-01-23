@@ -163,15 +163,15 @@ class rush {
 			return true;
 		} else {
 			boolean seeEnemyDrone = false;
-			MapLocation closestDrone=null;
-			int dist=1000000;
+			MapLocation closestDrone = null;
+			int dist = 1000000;
 			for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
 				if (r.type == RobotType.DELIVERY_DRONE) {
 					seeEnemyDrone = true;
-					int d2=rc.getLocation().distanceSquaredTo(r.location);
-					if(d2<dist) {
-						dist=d2;
-						closestDrone=r.location;
+					int d2 = rc.getLocation().distanceSquaredTo(r.location);
+					if (d2 < dist) {
+						dist = d2;
+						closestDrone = r.location;
 					}
 				}
 			}
@@ -179,19 +179,19 @@ class rush {
 				if (!madeNetGun) {
 					Direction d = rc.getLocation().directionTo(enemyHq);
 					if (tryBuild(RobotType.NET_GUN, d)) {
-						madeNetGun=true;
+						madeNetGun = true;
 						return true;
 					}
-				}else {//ne se premikat :)
+				} else {// ne se premikat :)
 					Util.tryMove(rc, rc.getLocation().directionTo(closestDrone).opposite());
 					return true;
 				}
 			}
-			
+
 			if (!madeDesignSchool) {
 				Direction d = rc.getLocation().directionTo(enemyHq);
 				if (tryBuild(RobotType.DESIGN_SCHOOL, d)) {
-					madeDesignSchool=true;
+					madeDesignSchool = true;
 					return true;
 				}
 			}
@@ -442,7 +442,7 @@ public class miner extends robot {
 	 * 30- nasprotnik uporablja drone
 	 */
 	int stanje;
-	int strategija=-1;
+	int strategija = -1;
 
 	public miner(RobotController rc) {
 		super(rc);
@@ -483,10 +483,10 @@ public class miner extends robot {
 		if (!rc.isReady()) {
 			return;
 		}
-		if(rc.senseElevation(rc.getLocation())>20&&Util.d_inf(rc.getLocation(), hq_location)<3) {
+		if (rc.senseElevation(rc.getLocation()) > 20 && Util.d_inf(rc.getLocation(), hq_location) < 3) {
 			rc.disintegrate();
 		}
-		findBestTask();//ups
+		findBestTask();// ups
 		if (!rc.isReady()) {
 			return;
 		}
@@ -674,11 +674,11 @@ public class miner extends robot {
 	}
 
 	public void findBestTask() throws GameActionException {
-		if(200<rc.getRoundNum()&&rc.getRoundNum()<1300&&rc.getTeamSoup()>=500) {
-			for(Direction d:Util.dir) {
-				int h=rc.senseElevation(rc.getLocation().add(d));
-				if(h==8) {
-					if(rc.canBuildRobot(RobotType.VAPORATOR, d)) {
+		if (200 < rc.getRoundNum() && rc.getRoundNum() < 1300 && rc.getTeamSoup() >= 500) {
+			for (Direction d : Util.dir) {
+				int h = rc.senseElevation(rc.getLocation().add(d));
+				if (h == 8) {
+					if (rc.canBuildRobot(RobotType.VAPORATOR, d)) {
 						rc.buildRobot(RobotType.VAPORATOR, d);
 						return;
 					}
@@ -756,7 +756,7 @@ public class miner extends robot {
 	}
 
 	public int izracunaj_vrenost_refinerije(MapLocation closest) throws GameActionException {
-		if (strategija == 1000) {
+		if (strategija == 1000 || strategija == 3000) {
 			if (rc.getSoupCarrying() < 500) {
 				return 0;
 			}

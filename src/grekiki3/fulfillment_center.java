@@ -45,7 +45,7 @@ public class fulfillment_center extends robot {
 			}
 		}
 	}
-	
+
 	@Override
 	public void bc_drone(MapLocation from, MapLocation to, int id) {
 		drone_requests++;
@@ -53,7 +53,7 @@ public class fulfillment_center extends robot {
 
 	@Override
 	public void bc_drone_complete(MapLocation from, MapLocation to, int id) {
-	    drone_requests--;
+		drone_requests--;
 	}
 
 	private boolean should_build() {
@@ -62,8 +62,13 @@ public class fulfillment_center extends robot {
 				return false;
 			}
 		}
+		if (strategy == 3000) {
+			if (rc.getTeamSoup() < 300) {// Ko imamo 1000 juhe lahko gradimo
+				return false;
+			}
+		}
 		boolean enough_soup = rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost;
-		return enough_soup && (drones_built < 2+drone_requests);
+		return enough_soup && (drones_built < 2 + drone_requests);
 	}
 
 	private boolean try_build() throws GameActionException {
@@ -83,9 +88,9 @@ public class fulfillment_center extends robot {
 
 	@Override
 	public void bc_enemy_hq(MapLocation pos) throws GameActionException {
-	    enemy_hq_location = pos;
+		enemy_hq_location = pos;
 
-	    // test
+		// test
 		b.send_location_priority(b.LOCP_DRONE_ATTACK, pos, rc.getRoundNum() + 800);
 	}
 }

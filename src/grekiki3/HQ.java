@@ -80,7 +80,18 @@ public class HQ extends robot {
 				}
 			}
 		}
-
+		if(rc.getRoundNum()<200&&strategy!=1000) {
+			for(RobotInfo r:rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), rc.getTeam().opponent())) {
+				if(r.type==RobotType.MINER) {
+					strategy=3000;
+					b.send_packet(b.BASE_STRATEGY, new int[] { b.PRIVATE_KEY, b.BASE_STRATEGY, strategy, 0, 0, 0, 0 });
+					if (!haveBaseBuilder && minerIds.size() > 0) {
+						haveBaseBuilder = true;
+						b.send_packet(b.MINER_HELP_HQ, new int[] { b.PRIVATE_KEY, b.MINER_HELP_HQ, minerIds.get(0), 0, 0, 0, 0 });
+					}
+				}
+			}
+		}
 		if (strategy == 1000) {
 			if (!haveRusher && minerIds.size() > 0) {
 				haveRusher = true;
@@ -114,17 +125,28 @@ public class HQ extends robot {
 					return;
 
 		}
+		if (strategy == 3000) {
+			if (this.miners_spawned < 3)
+				if (try_spawn_miner(pick_miner_direction()))
+					return;
+		}
 
 	}
-
+	static boolean built_defensive_ls=false;
 	@Override
 	public void postcompute() throws GameActionException {
 		if (strategy == 2000) {
-			if (rc.getRoundNum() == 20) {
+			if (rc.getRoundNum() == 50) {
 				b.send_location(b.BUILD_TOVARNA_DRONOV,drones);
 			}
-			if (rc.getRoundNum() == 50) {
+			if (rc.getRoundNum() == 200) {
 				b.send_location(b.BUILD_TOVARNA_LANDSCAPERJEV, landscaping);
+			}
+		}
+		if(strategy==3000) {
+			if(!built_defensive_ls) {
+				b.send_location(b.BUILD_TOVARNA_LANDSCAPERJEV, new MapLocation(rc.getLocation().x+1,rc.getLocation().y));
+				built_defensive_ls=true;
 			}
 		}
 		while (Clock.getBytecodesLeft() > 500) {

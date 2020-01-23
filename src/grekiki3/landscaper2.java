@@ -9,7 +9,36 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
+class landPathFinder extends BasePathFinder {
+	landPathFinder(RobotController rc) {
+		super(rc);
+	}
 
+	@Override
+	boolean can_move(MapLocation from, Direction dir) throws GameActionException {
+		// Ta metoda ignorira cooldown ...
+
+		MapLocation to = from.add(dir);
+		if (!rc.canSenseLocation(to) || rc.senseFlooding(to))
+			return false;
+		if (!rc.canSenseLocation(from) || Math.abs(rc.senseElevation(from) - rc.senseElevation(to)) > 3)
+			return false;
+		RobotInfo robot = rc.senseRobotAtLocation(to);
+		if (robot != null && robot.getID() != rc.getID() && (!ignore_units || robot.getType().isBuilding()))
+			return false;
+		return true;
+	}
+
+	public boolean moveTowards(MapLocation dest) throws GameActionException {
+		Direction dir = get_move_direction(dest);
+
+		if (dir != null && rc.canMove(dir)) {
+			rc.move(dir);
+			return true;
+		}
+		return false;
+	}
+}
 public class landscaper2 extends robot {
 	int strategy = -1;
 	boolean attacking = false;
@@ -25,7 +54,8 @@ public class landscaper2 extends robot {
 	int previousRound = -1;
 	MapLocation[] holes;
 	int roundHqHeight;
-
+	int hqHeight = -1000;
+	landPathFinder path;
 	public landscaper2(RobotController rc) {
 		super(rc);
 	}
@@ -37,6 +67,7 @@ public class landscaper2 extends robot {
 				break;
 			}
 		}
+		path=new landPathFinder(rc);
 		previousRound = rc.getRoundNum();
 		if (hq == null && strategy == 1000) {
 			attacking = true;
@@ -86,7 +117,7 @@ public class landscaper2 extends robot {
 		px = hq.x % 2;
 		py = hq.y % 2;
 		if (!attacking) {
-			if (rc.getRoundNum() >= 600 && prefered_location == null && (wall1.size() > 0 || wall2.size() > 0)) {
+			if (rc.getRoundNum() >= 300 && prefered_location == null && (wall1.size() > 0 || wall2.size() > 0)) {
 				if (wall1.size() > 0) {
 					int t = (int) Math.floor(Math.random() * wall1.size());
 					prefered_location = wall1.get(t);
@@ -165,8 +196,11 @@ public class landscaper2 extends robot {
 		if (!rc.isReady()) {
 			return;
 		}
-		System.out.println("init");
-		System.out.println(prefered_location);
+		if (strategy == 3000) {
+			defendBase();
+		}
+//		System.out.println("init");
+//		System.out.println(prefered_location);
 		if (prefered_location != null && prefered_location == rc.getLocation()) {
 			makeAWall();
 		} else if (attacking) {
@@ -176,8 +210,57 @@ public class landscaper2 extends robot {
 		}
 	}
 
+	private void defendBase() throws GameActionException {
+		MapLocation eb = null;
+		int dist = 100000;
+		for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
+			if (r.getType() == RobotType.DESIGN_SCHOOL || r.getType() == RobotType.FULFILLMENT_CENTER || r.getType() == RobotType.NET_GUN) {
+				if (rc.getLocation().distanceSquaredTo(r.location) < dist) {
+					dist = rc.getLocation().distanceSquaredTo(r.location);
+					eb = r.location;
+				}
+			}
+		}
+		if (eb == null) {
+			for (Direction d : Util.dir) {
+				RobotInfo r = rc.senseRobotAtLocation(rc.getLocation().add(d));
+				if(r.team==rc.getTeam()&&rc.canDigDirt(d)) {
+					rc.digDirt(d);
+					return;
+				}
+			}
+			path.moveTowards(hq);
+			return;
+		}
+		for (Direction d : Util.dir) {
+			RobotInfo r = rc.senseRobotAtLocation(rc.getLocation().add(d));
+			if (r == null) {
+				continue;
+			}
+			if (r.getType() == RobotType.DESIGN_SCHOOL || r.getType() == RobotType.FULFILLMENT_CENTER || r.getType() == RobotType.NET_GUN) {
+				if (r.getTeam() == rc.getTeam()) {
+					if (rc.canDigDirt(d)) {
+						rc.digDirt(d);
+						return;
+					}
+				} else {
+					if (rc.canDepositDirt(d)) {
+						rc.depositDirt(d);
+						return;
+					} else {
+						if (rc.canDigDirt(d.opposite())) {
+							rc.digDirt(d.opposite());
+							return;
+						}
+					}
+				}
+			}
+		}
+		path.moveTowards(eb);
+	}
+
 	private void makeAWall() throws GameActionException {
-		System.out.println("Walling");
+//		System.out.println("Walling");
 		int dist = Util.d_inf(rc.getLocation(), hq);
 		if (dist == 1) {
 			if (rc.getDirtCarrying() > 0) {
@@ -228,7 +311,13 @@ public class landscaper2 extends robot {
 					return;
 				}
 			} else {
-				rc.digDirt(rc.getLocation().directionTo(hq).opposite());
+				for (Direction d : Util.dir) {
+					int dist2 = Util.d_inf(rc.getLocation().add(d), hq);
+					if (dist2 == 3 && rc.canDigDirt(d)) {
+						rc.digDirt(d);
+						return;
+					}
+				}
 				return;
 			}
 		}
@@ -289,8 +378,69 @@ public class landscaper2 extends robot {
 	}
 
 	private void doLandscaping() throws GameActionException {
-		System.out.println("Landscaping");
-
+//		System.out.println("Landscaping");
+//		if (rc.getRoundNum() < 300) {
+//			// buildhq
+//			if (hqHeight != -1000) {
+//				int l1h = hqHeight + 3;
+//				int l2h = l1h + 3;
+//				int l3h = l1h;
+//				int dist = Util.d_inf(hq, rc.getLocation());
+//				if (dist > 5) {
+//					Direction d = Util.tryMove(rc, rc.getLocation().directionTo(hq));
+//					if (d != null && rc.canMove(d)) {
+//						rc.move(d);
+//					}
+//				} else {
+//					if (rc.getDirtCarrying() > 0) {
+//						for (Direction d : Util.dir) {
+//							int dist2 = Util.d_inf(hq, rc.getLocation().add(d));
+//							if (dist2 < 3) {
+//								int h;
+//								switch (dist2) {
+//								case 1:
+//									h = l1h;
+//									break;
+//								case 2:
+//									h = l2h;
+//									break;
+//								case 3:
+//									h = l3h;
+//									break;
+//								default:
+//									h = -1;
+//									break;
+//								}
+//								if(rc.senseElevation(rc.getLocation().add(d))<h) {
+//									rc.depositDirt(d);
+//									return;
+//								}
+//							}
+//						}
+//					} else {
+//						if (rc.canDigDirt(rc.getLocation().directionTo(hq).opposite())) {
+//							rc.digDirt(rc.getLocation().directionTo(hq).opposite());
+//							return;
+//						}else {
+//							Direction d=Util.getRandomDirection();
+//							if(rc.canMove(d)) {
+//								rc.move(d);
+//							}
+//						}
+//					}
+//				}
+//			} else {
+//				if (rc.canSenseLocation(hq)) {
+//					hqHeight = rc.senseSoup(hq);
+//				} else {
+//					Direction d = Util.tryMove(rc, rc.getLocation().directionTo(hq));
+//					if (d != null && rc.canMove(d)) {
+//						rc.move(d);
+//					}
+//				}
+//			}
+//			return;
+//		}
 		if (rc.getDirtCarrying() < RobotType.LANDSCAPER.dirtLimit) {
 			for (Direction d : Util.dir) {
 				boolean close_to_hq = Util.d_inf(rc.getLocation().add(d), hq) < 5;
