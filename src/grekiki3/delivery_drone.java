@@ -211,7 +211,8 @@ class DeliverDroneTask extends DroneTask {
 	boolean on_pick_up() throws GameActionException {
 		int sense = handle_sense_target();
 		if (sense > 0) {
-			if (drone.pick_up_unit(drone.rc.senseRobot(delivery.id))) {
+		    RobotInfo unit = drone.rc.senseRobot(delivery.id);
+			if (drone.pick_up_unit(unit)) {
 				priority = 71;
 				drone.b.send_location2(drone.b.LOC2_DRONE_COMPLETE, delivery.from, delivery.to, delivery.id);
 				current_task = new MoveDroneTask(drone, delivery.to, this.priority) {
@@ -227,10 +228,24 @@ class DeliverDroneTask extends DroneTask {
 							on_start();
 						}
 						time_running++;
+
+						MapLocation cur = drone.rc.getLocation();
+						if (unit.type == RobotType.LANDSCAPER && Util.d_inf(drone.rc.getLocation(), drone.hq_location) < 3) {
+							for (MapLocation m : drone.wall1) {
+								if (cur.isAdjacentTo(m)) {
+									Direction d = cur.directionTo(m);
+									if (drone.rc.canDropUnit(d)) {
+										drone.rc.dropUnit(d);
+										on_complete(true);
+										return true;
+									}
+								}
+							}
+						}
+
 						// Nikoli naj ne stopi na cilj, ce je na cilju pa se naj premakne
-						MapLocation loc = drone.rc.getLocation();
-						if (loc.isAdjacentTo(destination)) {
-							if (loc.equals(destination)) {
+						if (cur.isAdjacentTo(destination)) {
+							if (cur.equals(destination)) {
 								for (Direction d : Util.dir) {
 									if (drone.rc.canMove(d)) {
 										drone.rc.move(d);
@@ -353,18 +368,18 @@ class MoveOnTheWall extends DroneTask {
 			if (Util.d_inf(rc.getLocation(), drone.hq_location) > 3) {
 				drone.path_finder.moveTowards(drone.hq_location);
 				return true;
-			}else {
-				for(MapLocation m:wall1) {
-					if(rc.getLocation().isAdjacentTo(m)) {
-						Direction d=rc.getLocation().directionTo(m);
-						if(rc.canDropUnit(d)) {
+			} else {
+				for (MapLocation m : wall1) {
+					if (rc.getLocation().isAdjacentTo(m)) {
+						Direction d = rc.getLocation().directionTo(m);
+						if (rc.canDropUnit(d)) {
 							rc.dropUnit(d);
 							on_complete(true);
 							return true;
 						}
 					}
-					Direction d=Util.getRandomDirection();
-					if(rc.canMove(d)) {
+					Direction d = Util.getRandomDirection();
+					if (rc.canMove(d)) {
 						rc.move(d);
 					}
 				}
@@ -452,8 +467,8 @@ public class delivery_drone extends robot {
 	int attack_round = -1;
 
 	vector_set_gl water_locations = new vector_set_gl();
-	Set<MapLocation> enemy_netguns = new HashSet<>();
-	Set<MapLocation> enemy_refineries = new HashSet<>();
+	vector_set_gl enemy_netguns = new vector_set_gl();
+	vector_set_gl enemy_refineries = new vector_set_gl();
 	Set<LocationPriority> assist_locations = new HashSet<>();
 	Map<Integer, DroneDeliveryRequest> delivery_locations = new HashMap<>();
 
@@ -464,6 +479,8 @@ public class delivery_drone extends robot {
 
 	ArrayList<MapLocation> wall1 = new ArrayList<MapLocation>();
 	ArrayList<MapLocation> wall2 = new ArrayList<MapLocation>();
+
+	ArrayList<MapLocation> symmetry_points = new ArrayList<>();
 
 	public delivery_drone(RobotController rc) {
 		super(rc);
@@ -483,7 +500,7 @@ public class delivery_drone extends robot {
 
 		for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam())) {
 			if (r.type == RobotType.HQ) {
-			    bc_home_hq(r.location);
+				bc_home_hq(r.location);
 			} else if (r.type == RobotType.FULFILLMENT_CENTER) {
 				home_location = r.location;
 			}
@@ -505,7 +522,6 @@ public class delivery_drone extends robot {
 	public void runTurn() throws GameActionException {
 		if (!rc.isReady())
 			return;
-
 		task = find_best_task();
 		if (task != null) {
 			task.run();
@@ -516,6 +532,9 @@ public class delivery_drone extends robot {
 
 	@Override
 	public void postcompute() throws GameActionException {
+		for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
+			on_find_unit(r);
+		}
 		water_scan(rc.getLocation());
 		while (Clock.getBytecodesLeft() > 500) {
 			if (!b.read_next_round()) {
@@ -587,6 +606,16 @@ public class delivery_drone extends robot {
 				}
 			}
 		}
+
+		// Horizontalno:
+		int x0 = rc.getMapWidth() / 2;
+		symmetry_points.add(pos.translate(2 * (x0 - pos.x), 0));
+		// Vertikalno:
+		int y0 = rc.getMapHeight() / 2;
+		symmetry_points.add(pos.translate(0, 2 * (y0 - pos.y)));
+		// Sredisce:
+		MapLocation s = new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2);
+		symmetry_points.add(pos.translate(2*(s.x - pos.x), 2*(s.y - pos.y)));
 	}
 
 	private boolean is_water(MapLocation pos) throws GameActionException {
@@ -626,6 +655,9 @@ public class delivery_drone extends robot {
 		MapLocation p = rc.getLocation();
 		for (Direction d : Util.dir) {
 			if (is_water(p.add(d))) {
+				while (rc.getCooldownTurns() > 1) {
+					Clock.yield();
+				}
 				if (drop_unit(d))
 					return true;
 			}
@@ -640,7 +672,7 @@ public class delivery_drone extends robot {
 		MapLocation p = rc.getLocation();
 		Direction d = p.directionTo(goal);
 		// if (!is_water(p.add(d)))
-			return drop_unit(d);
+		return drop_unit(d);
 		// return false;
 	}
 
@@ -665,10 +697,11 @@ public class delivery_drone extends robot {
 
 	private void on_find_water(MapLocation pos) throws GameActionException {
 		if (held_unit != null && (held_unit.getTeam() == rc.getTeam().opponent() || held_unit.getType() == RobotType.COW && task != null && task.priority < COW_ENEMY_PRIORITY)) {
-			drop_unit_water();
-			if (task != null) {
-				task.on_complete(true);
-				task = null;
+			if (drop_unit_water()) {
+				if (task != null) {
+					task.on_complete(true);
+					task = null;
+				}
 			}
 		}
 
@@ -676,7 +709,7 @@ public class delivery_drone extends robot {
 			MapLocation closest_water = Util.closest(water_locations, pos);
 			if (closest_water == null || closest_water.distanceSquaredTo(pos) > 200)
 				b.send_location(b.LOC_WATER, pos);
-			if (closest_water == null || closest_water.distanceSquaredTo(pos) >= 64) {
+			if (closest_water == null || closest_water.distanceSquaredTo(pos) >= 48) {
 				water_locations.add(pos);
 			}
 		}
@@ -718,19 +751,13 @@ public class delivery_drone extends robot {
 	boolean is_location_dangerous(MapLocation pos) throws GameActionException {
 		if (path_finder.ignore_danger)
 			return false;
-
-		for (MapLocation m : enemy_netguns) {
+		for(int i=0;i<enemy_netguns.size;i++) {
+			MapLocation m = enemy_netguns.get(i);
+			if(m==null) {
+				continue;
+			}
 			if (pos.isWithinDistanceSquared(m, ENEMY_DANGER_RADIUS)) {
 				return true;
-			}
-		}
-
-		for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
-			on_find_unit(r);
-			if (r.getType().canShoot()) {
-				if (pos.isWithinDistanceSquared(r.getLocation(), ENEMY_DANGER_RADIUS)) {
-					return true;
-				}
 			}
 		}
 		return false;
@@ -795,7 +822,7 @@ public class delivery_drone extends robot {
 			RobotInfo unit = rc.senseRobotAtLocation(request.to);
 			if (rc.senseFlooding(request.to) || (unit != null && unit.getType() == RobotType.LANDSCAPER)) {
 				for (MapLocation w1 : wall1) {
-				    if (rc.canSenseLocation(w1)) {
+					if (rc.canSenseLocation(w1)) {
 						unit = rc.senseRobotAtLocation(w1);
 						if (rc.senseFlooding(request.to) || (unit != null && unit.getType() == RobotType.LANDSCAPER)) {
 							continue;
@@ -826,16 +853,19 @@ public class delivery_drone extends robot {
 		DroneDeliveryRequest request = null;
 		for (DroneDeliveryRequest p : delivery_locations.values()) {
 			/*
-		    if (!fix_delivery_request(p))
-		    	continue;
+			 * if (!fix_delivery_request(p)) continue;
 			 */
+			/*
 			if (rc.canSenseLocation(p.to)) {
 				RobotInfo unit = rc.senseRobotAtLocation(p.to);
 				if (unit != null && unit.getType() == RobotType.LANDSCAPER) {
 					// b.send_location2(b.LOC2_DRONE_COMPLETE, p.from, p.to, p.id);
-				    continue;
+					delivery_locations.remove(p.id);
+					continue;
 				}
 			}
+
+			 */
 
 			int d = p.from.distanceSquaredTo(pos);
 			if (d < closest) {
@@ -872,11 +902,14 @@ public class delivery_drone extends robot {
 
 	private DroneTask explore_task(int priority) throws GameActionException {
 		MapLocation dest = null;
-	    if (Math.random() < 0.5) {
-	        if (enemy_hq_location != null) {
-	            dest = enemy_hq_location;
+		if (Math.random() < 0.5) {
+			if (enemy_hq_location != null) {
+				dest = enemy_hq_location;
 			} else {
 				dest = closest_enemy_building();
+			}
+			if (dest == null && symmetry_points.size() > 0) {
+				dest = symmetry_points.remove(symmetry_points.size() - 1);
 			}
 		}
 		dest = dest == null ? Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()) : dest;
@@ -1002,8 +1035,8 @@ public class delivery_drone extends robot {
 			@Override
 			public boolean run() throws GameActionException {
 				if (drone.rc.getLocation().isWithinDistanceSquared(loc.loc, drone.rc.getCurrentSensorRadiusSquared())) {
-				    on_complete(true);
-				    return false;
+					on_complete(true);
+					return false;
 				}
 				return super.run();
 			}
@@ -1045,7 +1078,7 @@ public class delivery_drone extends robot {
 						@Override
 						public boolean run() throws GameActionException {
 							if (Util.d_inf(drone.rc.getLocation(), drone.hq_location) < 3) {
-								for(MapLocation m:wall1) {
+								for (MapLocation m : wall1) {
 									if (drone.rc.getLocation().isAdjacentTo(m)) {
 										Direction d = drone.rc.getLocation().directionTo(m);
 										if (drone.rc.canDropUnit(d)) {
@@ -1056,8 +1089,8 @@ public class delivery_drone extends robot {
 									}
 								}
 								if (drone.rc.getLocation().isAdjacentTo(destination)) {
-									Direction d=Util.getRandomDirection();
-									if(drone.rc.canMove(d)) {
+									Direction d = Util.getRandomDirection();
+									if (drone.rc.canMove(d)) {
 										drone.rc.move(d);
 										return true;
 									}
@@ -1097,6 +1130,7 @@ public class delivery_drone extends robot {
 					if (success) {
 						drop_unit_safe(delivery.to);
 					}
+					drop_unit_safe();
 					delivery_locations.remove(delivery.id);
 					priority = -1;
 				}
