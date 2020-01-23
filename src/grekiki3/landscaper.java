@@ -139,7 +139,7 @@ public class landscaper extends robot {
 					b.send_location2(b.LOC2_DRONE, rc.getLocation(), wall2.get(t), rc.getID());
 				}
 			}
-			int d=Util.roundFlooded(hqHeight)-100;
+			int d=Util.roundFlooded(hqHeight)-150;
 			
 			if (prefered_location != null && rc.getRoundNum() > d && Math.random() < 1.0 / 30 && !rc.getLocation().equals(prefered_location)) {
 				b.send_location2(b.LOC2_DRONE, rc.getLocation(), prefered_location, rc.getID());
@@ -505,6 +505,9 @@ public class landscaper extends robot {
 			// nismo nasli primerne luknje...
 			explore();
 		} else {
+			if(!primerna_luknja(Direction.CENTER,px,py)&&rc.senseElevation(rc.getLocation())<visina) {
+				rc.depositDirt(Direction.CENTER);
+			}
 			for (Direction d : Util.dir) {
 				if (!primerna_luknja(d, px, py)) {
 					if (rc.canSenseLocation(rc.getLocation().add(d)) && rc.senseElevation(rc.getLocation().add(d)) < visina && rc.senseElevation(rc.getLocation().add(d)) > -omejitev_visine) { // landscapati

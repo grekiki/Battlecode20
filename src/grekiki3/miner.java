@@ -128,8 +128,10 @@ class rush {
 	miner m;
 	RobotController rc;
 	MapLocation enemyHq = null;
-	boolean lrsymmetry = false;
-	boolean udsymmetry = false;
+	boolean lrsymmetry = true;
+	boolean udsymmetry = true;
+	boolean dsymmetry = true;
+
 	boolean madeDesignSchool = false;
 	boolean madeNetGun = false;
 
@@ -141,12 +143,12 @@ class rush {
 	boolean run() throws GameActionException {
 		if (enemyHq == null) {
 			// najprej lr
-			if (lrsymmetry) {
+			if (dsymmetry) {
+				enemyHq = new MapLocation(rc.getMapWidth() - 1 - m.hq_location.x, rc.getMapHeight() - 1 - m.hq_location.y);
+			} else if (lrsymmetry) {
 				enemyHq = new MapLocation(rc.getMapWidth() - 1 - m.hq_location.x, m.hq_location.y);
 			} else if (udsymmetry) {
 				enemyHq = new MapLocation(m.hq_location.x, rc.getMapHeight() - 1 - m.hq_location.y);
-			} else {
-				enemyHq = new MapLocation(rc.getMapWidth() - 1 - m.hq_location.x, rc.getMapHeight() - 1 - m.hq_location.y);
 			}
 		}
 		disproveSimetries();
@@ -159,7 +161,10 @@ class rush {
 			}
 		}
 		if (!seeHq) {
-			m.path_finder.moveTowards(enemyHq);
+			Direction d=Util.tryMove(rc, rc.getLocation().directionTo(enemyHq));
+			if(d==null) {
+				buildADroneForTravel();
+			}
 			return true;
 		} else {
 			boolean seeEnemyDrone = false;
@@ -197,6 +202,16 @@ class rush {
 			}
 			m.path_finder.moveTowards(enemyHq);
 			return true;
+		}
+	}
+
+	private void buildADroneForTravel() throws GameActionException {
+		if(rc.getTeamSoup()>RobotType.FULFILLMENT_CENTER.cost) {
+			for(Direction d:Util.dir) {
+				if(rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, d)) {
+					rc.buildRobot(RobotType.FULFILLMENT_CENTER, d);
+				}
+			}
 		}
 	}
 
@@ -262,7 +277,7 @@ class naloga {
 	}
 
 	public void run() throws GameActionException {
-//		System.out.println("Naloga " + type);
+		System.out.println("Naloga " + type);
 		switch (type) {
 		case GRADNJA_REFINERIJE:
 			gradnja_refinerije();
@@ -445,9 +460,10 @@ public class miner extends robot {
 	int strategija = -1;
 	boolean onScaffold = false;
 	int t = 0;
-	boolean ud=false;
-	boolean ul=false;
-	Direction raziskovanje=null;
+	boolean ud = false;
+	boolean ul = false;
+	Direction raziskovanje = null;
+
 	public miner(RobotController rc) {
 		super(rc);
 	}
@@ -508,6 +524,7 @@ public class miner extends robot {
 		if (!rc.isReady()) {
 			return;
 		}
+		System.out.println(stanje+" "+strategija);
 		if (rc.senseElevation(rc.getLocation()) > 20 && Util.d_inf(rc.getLocation(), hq_location) < 3) {
 			rc.disintegrate();
 		}
@@ -523,18 +540,20 @@ public class miner extends robot {
 			}
 		}
 	}
+
 	private void explore() throws GameActionException {
 		if (raziskovanje == null) {
 			raziskovanje = Util.getRandomDirection();
 		}
-		if (rc.canMove(raziskovanje) && !rc.senseFlooding(rc.getLocation().add(raziskovanje))&&rc.senseElevation(rc.getLocation().add(raziskovanje))==8) {
+		if (rc.canMove(raziskovanje) && !rc.senseFlooding(rc.getLocation().add(raziskovanje)) && rc.senseElevation(rc.getLocation().add(raziskovanje)) == 8) {
 			rc.move(raziskovanje);
 		} else {
 			raziskovanje = null;
 		}
 	}
+
 	private void runOnScaffold() throws GameActionException {
-		//try evaporator
+		// try evaporator
 		if (200 < rc.getRoundNum() && rc.getRoundNum() < 1100 && rc.getTeamSoup() >= 500) {
 			for (Direction d : Util.dir) {
 				if (!rc.canSenseLocation(rc.getLocation().add(d))) {
@@ -542,40 +561,40 @@ public class miner extends robot {
 				}
 				int h = rc.senseElevation(rc.getLocation().add(d));
 				if (h == 8) {
-					if (rc.canBuildRobot(RobotType.VAPORATOR, d)&&onInter(rc.getLocation().add(d))) {
+					if (rc.canBuildRobot(RobotType.VAPORATOR, d) && onInter(rc.getLocation().add(d))) {
 						rc.buildRobot(RobotType.VAPORATOR, d);
 						return;
 					}
 				}
 			}
 		}
-		if(!ud&&rc.getTeamSoup()>RobotType.FULFILLMENT_CENTER.cost&&Math.random()<0.1) {
+		if (!ud && rc.getTeamSoup() > RobotType.FULFILLMENT_CENTER.cost && Math.random() < 0.1) {
 			for (Direction d : Util.dir) {
 				if (!rc.canSenseLocation(rc.getLocation().add(d))) {
 					continue;
 				}
 				int h = rc.senseElevation(rc.getLocation().add(d));
 				if (h == 8) {
-					if (rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, d)&&onInter(rc.getLocation().add(d))) {
+					if (rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, d) && onInter(rc.getLocation().add(d))) {
 						rc.buildRobot(RobotType.FULFILLMENT_CENTER, d);
 						b.send_location(b.LOC_MINER_DRONE, rc.getLocation().add(d));
-						ud=true;
+						ud = true;
 						return;
 					}
 				}
 			}
 		}
-		if(!ul&&rc.getTeamSoup()>RobotType.DESIGN_SCHOOL.cost&&Math.random()<0.1) {
+		if (!ul && rc.getTeamSoup() > RobotType.DESIGN_SCHOOL.cost && Math.random() < 0.1) {
 			for (Direction d : Util.dir) {
 				if (!rc.canSenseLocation(rc.getLocation().add(d))) {
 					continue;
 				}
 				int h = rc.senseElevation(rc.getLocation().add(d));
 				if (h == 8) {
-					if (rc.canBuildRobot(RobotType.DESIGN_SCHOOL, d)&&onInter(rc.getLocation().add(d))) {
+					if (rc.canBuildRobot(RobotType.DESIGN_SCHOOL, d) && onInter(rc.getLocation().add(d))) {
 						rc.buildRobot(RobotType.DESIGN_SCHOOL, d);
 						b.send_location(b.LOC_MINER_LANDSCAPER, rc.getLocation().add(d));
-						ul=true;
+						ul = true;
 						return;
 					}
 				}
@@ -602,9 +621,11 @@ public class miner extends robot {
 			}
 		}
 	}
+
 	public boolean onInter(MapLocation m) {
-		return m.x%2!=hq_location.x%2&&m.y%2!=hq_location.y%2;
+		return m.x % 2 != hq_location.x % 2 && m.y % 2 != hq_location.y % 2;
 	}
+
 	// Util
 	private void update_soup() throws GameActionException {
 //		System.out.println("Za "+juhe.size+" juh je ostalo " + Clock.getBytecodesLeft() + " casa");
@@ -948,11 +969,13 @@ public class miner extends robot {
 			toBuild.add(new naloga(this, pos, GRADNJA, naloga.GRADNJA_TOVARNE_ZA_LANDSCAPERJE));
 		}
 	}
+
 	public void bc_tovarna_dronov(MapLocation pos) {
-		ud=true;
+		ud = true;
 	}
+
 	public void bc_tovarna_landscaperjev(MapLocation pos) {
-		ul=true;
+		ul = true;
 	}
 
 	@Override
