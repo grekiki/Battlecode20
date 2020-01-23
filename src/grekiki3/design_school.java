@@ -32,6 +32,7 @@ public class design_school extends robot {
 		if (hq == null&&strategy==1000) {
 			attacking = true;
 		}
+		
 
 	}
 
