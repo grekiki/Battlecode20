@@ -94,9 +94,13 @@ public class landscaper extends robot {
 
 					} else {
 						if (Math.max(ax, ay) == 1) {
-							wall1.add(new MapLocation(hq.x + x, hq.y + y));
+							if (rc.onTheMap(new MapLocation(hq.x + x, hq.y + y))) {
+								wall1.add(new MapLocation(hq.x + x, hq.y + y));
+							}
 						} else {
-							wall2.add(new MapLocation(hq.x + x, hq.y + y));
+							if (rc.onTheMap(new MapLocation(hq.x + x, hq.y + y))) {
+								wall2.add(new MapLocation(hq.x + x, hq.y + y));
+							}
 						}
 					}
 				}
@@ -403,11 +407,9 @@ public class landscaper extends robot {
 			}
 			if(rc.canSenseLocation(m)) {
 				RobotInfo r=rc.senseRobotAtLocation(m);
-				if(r!=null&&r.type==RobotType.NET_GUN) {
-					
-				}else {
-					net_guns.remove(r.location);
-					b.send_location(b.LOC_ENEMY_NETGUN_GONE, r.location);
+				if(r==null||r.type!=RobotType.NET_GUN) {
+					net_guns.remove(m);
+					b.send_location(b.LOC_ENEMY_NETGUN_GONE, m);
 				}
 			}
 		}

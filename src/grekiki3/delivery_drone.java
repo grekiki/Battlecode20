@@ -610,9 +610,13 @@ public class delivery_drone extends robot {
 
 					} else {
 						if (Math.max(ax, ay) == 1) {
-							wall1.add(new MapLocation(hq_location.x + x, hq_location.y + y));
+							if (rc.onTheMap(new MapLocation(hq_location.x + x, hq_location.y + y))) {
+								wall1.add(new MapLocation(hq_location.x + x, hq_location.y + y));
+							}
 						} else {
-							wall2.add(new MapLocation(hq_location.x + x, hq_location.y + y));
+							if (rc.onTheMap(new MapLocation(hq_location.x + x, hq_location.y + y))) {
+								wall2.add(new MapLocation(hq_location.x + x, hq_location.y + y));
+							}
 						}
 					}
 				}
