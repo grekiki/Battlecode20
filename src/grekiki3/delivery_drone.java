@@ -593,7 +593,10 @@ public class delivery_drone extends robot {
 	public void bc_enemy_netgun(MapLocation pos) {
 		enemy_netguns.add(pos);
 	}
-
+	@Override
+	public void bc_enemy_netgun_gone(MapLocation pos) {
+		enemy_netguns.remove(pos);
+	}
 	@Override
 	public void bc_home_hq(MapLocation pos) {
 		hq_location = pos;

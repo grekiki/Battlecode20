@@ -261,6 +261,7 @@ class blockchain {
 	final int LOC_WATER = 25;
 	final int LOC_ENEMY_NETGUN = 26;
 	final int LOC_ALLY_NETGUN = 27;
+	final int LOC_ENEMY_NETGUN_GONE = 28;
 	/**
 	 * Tukaj zelimo imeti tovarno dronov
 	 */

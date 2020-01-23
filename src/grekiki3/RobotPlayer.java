@@ -49,6 +49,9 @@ abstract class robot {
 				case LOC_ENEMY_NETGUN:
 					bc_enemy_netgun(pos);
 					break;
+				case LOC_ENEMY_NETGUN_GONE:
+					bc_enemy_netgun_gone(pos);
+					break;
 				case LOC_ALLY_NETGUN:
 					bc_ally_netgun(pos);
 					break;
@@ -102,6 +105,8 @@ abstract class robot {
 
 		};
 	}
+
+	
 
 	/**
 	 * Ta metoda se poklice ko se robot spawna.
@@ -175,7 +180,10 @@ abstract class robot {
 
 	public void bc_enemy_netgun(MapLocation pos) {
 	}
-
+	
+	public void bc_enemy_netgun_gone(MapLocation pos) {
+	}
+	
 	public void bc_ally_netgun(MapLocation pos) {
 	}
 
