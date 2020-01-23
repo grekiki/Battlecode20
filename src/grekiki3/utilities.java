@@ -261,6 +261,7 @@ class blockchain {
 	final int LOC_WATER = 25;
 	final int LOC_ENEMY_NETGUN = 26;
 	final int LOC_ALLY_NETGUN = 27;
+	final int LOC_ENEMY_NETGUN_GONE = 28;
 	/**
 	 * Tukaj zelimo imeti tovarno dronov
 	 */
@@ -300,6 +301,7 @@ class blockchain {
 	 * Baza ima stanje int1
 	 */
 	final int BASE_STRATEGY = 1200;
+	final int FULL_WALL=1300;
 
 	private final int LOC_MAX = 99;// do 99 je en mapLocation
 	private final int LOC2_MAX = 999;// od 100 do 999 sta 2

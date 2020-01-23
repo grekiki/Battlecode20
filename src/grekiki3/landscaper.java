@@ -59,6 +59,7 @@ public class landscaper extends robot {
 	int roundHqHeight;
 	int hqHeight = -1000;
 	landPathFinder path;
+	vector_set_gl net_guns;
 
 	public landscaper(RobotController rc) {
 		super(rc);
@@ -66,6 +67,7 @@ public class landscaper extends robot {
 
 	@Override
 	public void init() throws GameActionException {
+		net_guns=new vector_set_gl();
 		while (Clock.getBytecodesLeft() > 2000 || rc.getCooldownTurns() > 1) {
 			if (!b.read_next_round()) {
 				break;
@@ -394,6 +396,21 @@ public class landscaper extends robot {
 
 	@Override
 	public void postcompute() throws GameActionException {
+		for(int i=0;i<net_guns.load;i++) {
+			MapLocation m=net_guns.get(i);
+			if(m==null) {
+				continue;
+			}
+			if(rc.canSenseLocation(m)) {
+				RobotInfo r=rc.senseRobotAtLocation(m);
+				if(r!=null&&r.type==RobotType.NET_GUN) {
+					
+				}else {
+					net_guns.remove(r.location);
+					b.send_location(b.LOC_ENEMY_NETGUN_GONE, r.location);
+				}
+			}
+		}
 		while (Clock.getBytecodesLeft() > 800 || rc.getCooldownTurns() > 1) {
 			if (!b.read_next_round()) {
 				return;
@@ -601,5 +618,19 @@ public class landscaper extends robot {
 	@Override
 	public void bc_home_hq(MapLocation pos) {
 		hq = pos;
+	}
+	
+	@Override
+	public void bc_enemy_netgun(MapLocation pos) {
+		if (!net_guns.contains(pos)) {
+			net_guns.add(pos);
+		}
+	}
+	
+	@Override
+	public void bc_enemy_netgun_gone(MapLocation pos) {
+		if (net_guns.contains(pos)) {
+			net_guns.remove(pos);
+		}
 	}
 }

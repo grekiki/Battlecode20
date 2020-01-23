@@ -25,10 +25,11 @@ public class HQ extends robot {
 	int builder = -1;
 	boolean haveRusher = false;
 	int rusher = -1;
-
+	ArrayList<MapLocation> wall1;
+	ArrayList<MapLocation> wall2;
 	MapLocation landscaping;
 	MapLocation drones;
-
+	boolean wall=false;
 	public HQ(RobotController rc) {
 		super(rc);
 	}
@@ -40,9 +41,28 @@ public class HQ extends robot {
 	 */
 	@Override
 	public void init() throws GameActionException {
+		loc = rc.getLocation();
+		wall1 = new ArrayList<MapLocation>();
+		wall2 = new ArrayList<MapLocation>();
+		for (int x = -2; x <= 2; x++) {
+			for (int y = -2; y <= 2; y++) {
+				if (x != 0 || y != 0) {
+					int ax = Math.abs(x);
+					int ay = Math.abs(y);
+					if ((ax == 2 && ay == 0) || (ax == 0 && ay == 2)) {
+	
+					} else {
+						if (Math.max(ax, ay) == 1) {
+							wall1.add(new MapLocation(loc.x + x, loc.y + y));
+						} else {
+							wall2.add(new MapLocation(loc.x + x, loc.y + y));
+						}
+					}
+				}
+			}
+		}
 		w = rc.getMapWidth();
 		h = rc.getMapHeight();
-		loc = rc.getLocation();
 		polja = new vector_set_gl();
 		slaba_polja = new vector_set_gl();
 		strategy = choose_strategy();
@@ -107,6 +127,20 @@ public class HQ extends robot {
 				builder = minerIds.get(0);
 				b.send_packet(b.MINER_HELP_HQ, new int[] { b.PRIVATE_KEY, b.MINER_HELP_HQ, minerIds.get(0), 0, 0, 0, 0 });
 			}
+		}
+		boolean wall_full=true;
+		for(MapLocation m:wall1) {
+			if(rc.canSenseLocation(m)) {
+				RobotInfo r=rc.senseRobotAtLocation(m);
+				if(r!=null&&r.team==rc.getTeam()&&r.type==RobotType.LANDSCAPER) {
+					
+				}else {
+					wall_full=false;
+				}
+			}
+		}
+		if(wall_full) {
+			wall=true;
 		}
 	}
 
