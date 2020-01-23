@@ -83,7 +83,7 @@ abstract class robot {
 			}
 
 			@Override
-			public void handle_packet(int type, int[] message) {
+			public void handle_packet(int type, int[] message) throws GameActionException {
 				switch (type) {
 				case MINER_HELP_HQ:
 					bc_miner_to_help(message);
@@ -193,7 +193,7 @@ abstract class robot {
 	public void bc_unit_alive(int[] message) {
 	}
 
-	public void bc_full_wall(int[]message) {}
+	public void bc_full_wall(int[]message) throws GameActionException {}
 	
 	public void bc_miner_rush(int[] message) {
 	}
