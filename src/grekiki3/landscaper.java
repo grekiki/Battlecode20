@@ -210,6 +210,11 @@ public class landscaper extends robot {
 		}
 		if (strategy == 3000) {
 			defendBase();
+			return;
+		}
+		if(strategy==1000) {
+			doAttacking();
+			return;
 		}
 //		System.out.println("init");
 //		System.out.println(prefered_location);

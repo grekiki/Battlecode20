@@ -45,6 +45,7 @@ public class design_school extends robot {
 	@Override
 	public void runTurn() throws GameActionException {
 		System.out.println(sb+" "+strategy);
+		
 		if(sb) {
 			return;
 		}
@@ -58,7 +59,14 @@ public class design_school extends robot {
 				}
 			}
 		}else if(strategy==1000) {
-			
+			if(rc.getTeamSoup()>RobotType.LANDSCAPER.cost&&spawned<5) {
+				for (Direction d : Util.dir) {
+					if (rc.canBuildRobot(RobotType.LANDSCAPER, d)) {
+						rc.buildRobot(RobotType.LANDSCAPER, d);
+						spawned++;
+					}
+				}
+			}
 		}else if(strategy==3000) {
 			if(rc.getTeamSoup()>RobotType.LANDSCAPER.cost&&spawned<5) {
 				for (Direction d : Util.dir) {
@@ -89,4 +97,5 @@ public class design_school extends robot {
 	public void bc_home_hq(MapLocation pos) {
 	    hq = pos;
 	}
+	
 }

@@ -6,6 +6,8 @@ public class fulfillment_center extends robot {
 	int drones_built = 0;
 	int drone_requests = 0;
 	int strategy = -1;
+	boolean rush_support=false;
+	boolean done=false;
 
 	public fulfillment_center(RobotController rc) {
 		super(rc);
@@ -29,7 +31,18 @@ public class fulfillment_center extends robot {
 		if (!rc.isReady()) {
 			return;
 		}
-
+		if(rush_support) {
+			if(done) {
+				return;
+			}
+			for (Direction d : Util.dir) {
+				if (rc.canBuildRobot(RobotType.DELIVERY_DRONE, d)) {
+					rc.buildRobot(RobotType.DELIVERY_DRONE, d);
+					done=true;
+				}
+			}
+			return;
+		}
 		if (should_build()) {
 			try_build();
 		}
@@ -96,5 +109,11 @@ public class fulfillment_center extends robot {
 
 	public void bc_base_strategy(int[] message) {
 		strategy = message[2];
+	}
+	public void bc_rush(int[]q) {
+		MapLocation wait=new MapLocation(q[2],q[3]);
+		if(wait.isAdjacentTo(rc.getLocation())) {
+			rush_support=true;
+		}
 	}
 }

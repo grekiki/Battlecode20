@@ -243,7 +243,7 @@ public class HQ extends robot {
 
 	public int choose_strategy() {
 		wallRadius = 2;
-		if (rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 0/*||Math.random()<1*/) {
+		if (rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 0||Math.random()<1) {
 			return 1000;// rush
 		} else {
 			return 2000;

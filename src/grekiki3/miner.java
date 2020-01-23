@@ -150,6 +150,38 @@ class rush {
 			} else if (udsymmetry) {
 				enemyHq = new MapLocation(m.hq_location.x, rc.getMapHeight() - 1 - m.hq_location.y);
 			}
+			if(rc.canSenseLocation(enemyHq)&&(rc.senseRobotAtLocation(enemyHq)==null||rc.senseRobotAtLocation(enemyHq).type!=RobotType.HQ)) {
+				if (dsymmetry) {
+					dsymmetry=false;
+				} else if (lrsymmetry) {
+					lrsymmetry=false;
+				} else if (udsymmetry) {
+					udsymmetry=false;
+				}
+				if (dsymmetry) {
+					enemyHq = new MapLocation(rc.getMapWidth() - 1 - m.hq_location.x, rc.getMapHeight() - 1 - m.hq_location.y);
+				} else if (lrsymmetry) {
+					enemyHq = new MapLocation(rc.getMapWidth() - 1 -m.hq_location.x, m.hq_location.y);
+				} else if (udsymmetry) {
+					enemyHq = new MapLocation(m.hq_location.x, rc.getMapHeight() - 1 - m.hq_location.y);
+				}
+				if(rc.canSenseLocation(enemyHq)&&(rc.senseRobotAtLocation(enemyHq)==null||rc.senseRobotAtLocation(enemyHq).type!=RobotType.HQ)) {
+					if (dsymmetry) {
+						dsymmetry=false;
+					} else if (lrsymmetry) {
+						lrsymmetry=false;
+					} else if (udsymmetry) {
+						udsymmetry=false;
+					}
+					if (dsymmetry) {
+						enemyHq = new MapLocation(rc.getMapWidth() - 1 - m.hq_location.x, rc.getMapHeight() - 1 - m.hq_location.y);
+					} else if (lrsymmetry) {
+						enemyHq = new MapLocation(rc.getMapWidth() - 1 - m.hq_location.x, m.hq_location.y);
+					} else if (udsymmetry) {
+						enemyHq = new MapLocation(m.hq_location.x, rc.getMapHeight() - 1 - m.hq_location.y);
+					}
+				}
+			}
 		}
 		disproveSimetries();
 		boolean seeHq = false;
@@ -161,10 +193,11 @@ class rush {
 			}
 		}
 		if (!seeHq) {
-			Direction d=Util.tryMove(rc, rc.getLocation().directionTo(enemyHq));
-			if(d==null) {
+			Direction d = Util.tryMove(rc, rc.getLocation().directionTo(enemyHq));
+			if (d == null) {
 				buildADroneForTravel();
 			}
+			rc.move(d);
 			return true;
 		} else {
 			boolean seeEnemyDrone = false;
@@ -206,11 +239,23 @@ class rush {
 	}
 
 	private void buildADroneForTravel() throws GameActionException {
-		if(rc.getTeamSoup()>RobotType.FULFILLMENT_CENTER.cost) {
-			for(Direction d:Util.dir) {
-				if(rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, d)) {
-					rc.buildRobot(RobotType.FULFILLMENT_CENTER, d);
+		a: while (true) {
+			if (rc.getTeamSoup() > RobotType.FULFILLMENT_CENTER.cost) {
+				for (Direction d : Util.dir) {
+					if (rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, d)) {
+						rc.buildRobot(RobotType.FULFILLMENT_CENTER, d);
+						break a;
+					}
 				}
+			}
+		}
+		m.b.send_packet(m.b.RUSH, new int[] {m.b.PRIVATE_KEY,m.b.RUSH,rc.getLocation().x,rc.getLocation().y,0,0,0});
+		while (true) {
+			int t = rc.getRoundNum();
+			Clock.yield();
+			int t2 = rc.getRoundNum();
+			if (t2 != t + 1) {
+				return;
 			}
 		}
 	}
@@ -524,7 +569,7 @@ public class miner extends robot {
 		if (!rc.isReady()) {
 			return;
 		}
-		System.out.println(stanje+" "+strategija);
+		System.out.println(stanje + " " + strategija);
 		if (rc.senseElevation(rc.getLocation()) > 20 && Util.d_inf(rc.getLocation(), hq_location) < 3) {
 			rc.disintegrate();
 		}

@@ -305,6 +305,7 @@ class blockchain {
 	 */
 	final int BASE_STRATEGY = 1200;
 	final int FULL_WALL=1300;
+	final int RUSH=2000;
 
 	private final int LOC_MAX = 99;// do 99 je en mapLocation
 	private final int LOC2_MAX = 999;// od 100 do 999 sta 2

@@ -211,7 +211,7 @@ class DeliverDroneTask extends DroneTask {
 	boolean on_pick_up() throws GameActionException {
 		int sense = handle_sense_target();
 		if (sense > 0) {
-		    RobotInfo unit = drone.rc.senseRobot(delivery.id);
+			RobotInfo unit = drone.rc.senseRobot(delivery.id);
 			if (drone.pick_up_unit(unit)) {
 				priority = 71;
 				drone.b.send_location2(drone.b.LOC2_DRONE_COMPLETE, delivery.from, delivery.to, delivery.id);
@@ -409,14 +409,17 @@ public class delivery_drone extends robot {
 	vector_set_gl enemy_refineries = new vector_set_gl();
 	Set<LocationPriority> assist_locations = new HashSet<>();
 	Map<Integer, DroneDeliveryRequest> delivery_locations = new HashMap<>();
-
+	boolean rush_support = false;
 	DroneTask task;
 	dronePathFinder path_finder;
 	RobotInfo held_unit;
 	MapLocation enemy_pickup_location;
-
+	boolean gotit = false;
 	ArrayList<MapLocation> wall1 = new ArrayList<MapLocation>();
 	ArrayList<MapLocation> wall2 = new ArrayList<MapLocation>();
+	boolean lrsymmetry = true;
+	boolean udsymmetry = true;
+	boolean dsymmetry = true;
 
 	ArrayList<MapLocation> symmetry_points = new ArrayList<>();
 
@@ -460,12 +463,107 @@ public class delivery_drone extends robot {
 	public void runTurn() throws GameActionException {
 		if (!rc.isReady())
 			return;
+		if (rush_support) {
+			System.out.println("RUSHING");
+			if (rc.isCurrentlyHoldingUnit()) {
+				if(gotit) {
+					disproveSimetries();
+					MapLocation enemyHq=null;
+					if (dsymmetry) {
+						enemyHq = new MapLocation(rc.getMapWidth() - 1 - hq_location.x, rc.getMapHeight() - 1 - hq_location.y);
+					} else if (lrsymmetry) {
+						enemyHq = new MapLocation(rc.getMapWidth() - 1 - hq_location.x, hq_location.y);
+					} else if (udsymmetry) {
+						enemyHq = new MapLocation(hq_location.x, rc.getMapHeight() - 1 - hq_location.y);
+					}
+					if(rc.canSenseLocation(enemyHq)&&(rc.senseRobotAtLocation(enemyHq)==null||rc.senseRobotAtLocation(enemyHq).type!=RobotType.HQ)) {
+						if (dsymmetry) {
+							dsymmetry=false;
+						} else if (lrsymmetry) {
+							lrsymmetry=false;
+						} else if (udsymmetry) {
+							udsymmetry=false;
+						}
+						if (dsymmetry) {
+							enemyHq = new MapLocation(rc.getMapWidth() - 1 - hq_location.x, rc.getMapHeight() - 1 - hq_location.y);
+						} else if (lrsymmetry) {
+							enemyHq = new MapLocation(rc.getMapWidth() - 1 - hq_location.x, hq_location.y);
+						} else if (udsymmetry) {
+							enemyHq = new MapLocation(hq_location.x, rc.getMapHeight() - 1 - hq_location.y);
+						}
+						if(rc.canSenseLocation(enemyHq)&&(rc.senseRobotAtLocation(enemyHq)==null||rc.senseRobotAtLocation(enemyHq).type!=RobotType.HQ)) {
+							if (dsymmetry) {
+								dsymmetry=false;
+							} else if (lrsymmetry) {
+								lrsymmetry=false;
+							} else if (udsymmetry) {
+								udsymmetry=false;
+							}
+							if (dsymmetry) {
+								enemyHq = new MapLocation(rc.getMapWidth() - 1 - hq_location.x, rc.getMapHeight() - 1 - hq_location.y);
+							} else if (lrsymmetry) {
+								enemyHq = new MapLocation(rc.getMapWidth() - 1 - hq_location.x, hq_location.y);
+							} else if (udsymmetry) {
+								enemyHq = new MapLocation(hq_location.x, rc.getMapHeight() - 1 - hq_location.y);
+							}
+						}
+					}
+					if(rc.getLocation().distanceSquaredTo(enemyHq)<10) {
+						for(Direction d:Util.dir) {
+							if(rc.canDropUnit(d)) {
+								rc.dropUnit(d);
+								rush_support=false;
+								return;
+							}
+						}
+					}
+					Direction d=rc.getLocation().directionTo(enemyHq);
+					if(rc.canMove(d)) {
+						rc.move(d);
+					}
+				}else {
+					for(Direction d:Util.dir) {
+						if(rc.canDropUnit(d)) {
+							rc.dropUnit(d);
+						}
+					}
+				}
+			} else {
+				MapLocation miner = null;
+				for (RobotInfo r : rc.senseNearbyRobots()) {
+					if (rc.getTeam() == r.getTeam() && r.type == RobotType.MINER) {
+						miner = r.location;
+					}
+				}
+				if (miner == null) {
+					System.out.println("NAPAKA pri rushu");
+				} else {
+					Direction d = rc.getLocation().directionTo(miner);
+					if (miner.equals(rc.getLocation().add(d))) {
+						rc.pickUpUnit(rc.senseRobotAtLocation(rc.getLocation().add(d)).ID);
+						gotit = true;
+					} else {
+						if (rc.canMove(d)) {
+							rc.move(d);
+						} else {
+							return;
+						}
+					}
+				}
+			}
+			return;
+		}
 		task = find_best_task();
 		if (task != null) {
 			task.run();
 			if (task != null)
 				task.debug();
 		}
+	}
+
+	private void disproveSimetries() {
+		// TODO Auto-generated method stub
+		
 	}
 
 	@Override
@@ -525,8 +623,8 @@ public class delivery_drone extends robot {
 	@Override
 	public void bc_full_wall(int[] message) throws GameActionException {
 		delivery_locations.entrySet().removeIf(e -> is_wall_location(e.getValue().to) > 0);
-	    if (task != null && task instanceof DeliverDroneTask) {
-	    	if (is_wall_location(((DeliverDroneTask) task).delivery.to) > 0) {
+		if (task != null && task instanceof DeliverDroneTask) {
+			if (is_wall_location(((DeliverDroneTask) task).delivery.to) > 0) {
 				task.on_complete(false);
 			}
 		}
@@ -541,10 +639,12 @@ public class delivery_drone extends robot {
 	public void bc_enemy_netgun(MapLocation pos) {
 		enemy_netguns.add(pos);
 	}
+
 	@Override
 	public void bc_enemy_netgun_gone(MapLocation pos) {
 		enemy_netguns.remove(pos);
 	}
+
 	@Override
 	public void bc_home_hq(MapLocation pos) {
 		hq_location = pos;
@@ -579,15 +679,17 @@ public class delivery_drone extends robot {
 		symmetry_points.add(pos.translate(0, 2 * (y0 - pos.y)));
 		// Sredisce:
 		MapLocation s = new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2);
-		symmetry_points.add(pos.translate(2*(s.x - pos.x), 2*(s.y - pos.y)));
+		symmetry_points.add(pos.translate(2 * (s.x - pos.x), 2 * (s.y - pos.y)));
 	}
 
 	int is_wall_location(MapLocation pos) {
 		for (MapLocation w1 : wall1) {
-			if (pos.equals(w1)) return 1;
+			if (pos.equals(w1))
+				return 1;
 		}
 		for (MapLocation w2 : wall2) {
-			if (pos.equals(w2)) return 2;
+			if (pos.equals(w2))
+				return 2;
 		}
 		return -1;
 	}
@@ -725,9 +827,9 @@ public class delivery_drone extends robot {
 	boolean is_location_dangerous(MapLocation pos) throws GameActionException {
 		if (path_finder.ignore_danger)
 			return false;
-		for(int i=0;i<enemy_netguns.size;i++) {
+		for (int i = 0; i < enemy_netguns.size; i++) {
 			MapLocation m = enemy_netguns.get(i);
-			if(m==null) {
+			if (m == null) {
 				continue;
 			}
 			if (pos.isWithinDistanceSquared(m, ENEMY_DANGER_RADIUS)) {
@@ -827,19 +929,14 @@ public class delivery_drone extends robot {
 		DroneDeliveryRequest request = null;
 		for (DroneDeliveryRequest p : delivery_locations.values()) {
 			/*
-		    if (!fix_delivery_request(p))
-		    	continue;
+			 * if (!fix_delivery_request(p)) continue;
 			 */
 			/*
-			if (rc.canSenseLocation(p.to)) {
-				RobotInfo unit = rc.senseRobotAtLocation(p.to);
-				if (unit != null && unit.getType() == RobotType.LANDSCAPER) {
-					// b.send_location2(b.LOC2_DRONE_COMPLETE, p.from, p.to, p.id);
-					delivery_locations.remove(p.id);
-					continue;
-				}
-			}
-
+			 * if (rc.canSenseLocation(p.to)) { RobotInfo unit =
+			 * rc.senseRobotAtLocation(p.to); if (unit != null && unit.getType() ==
+			 * RobotType.LANDSCAPER) { // b.send_location2(b.LOC2_DRONE_COMPLETE, p.from,
+			 * p.to, p.id); delivery_locations.remove(p.id); continue; } }
+			 * 
 			 */
 
 			int d = p.from.distanceSquaredTo(pos);
@@ -1119,6 +1216,7 @@ public class delivery_drone extends robot {
 		DroneDeliveryRequest delivery = attack_location == null ? find_closest_delivery_location(cur) : null;
 		if (delivery != null && delivery.from.isWithinDistanceSquared(cur, MAX_TASK_RADIUS)) {
 			return new DeliverDroneTask(this, delivery, 50) {
+
 				@Override
 				public void on_complete(boolean success) throws GameActionException {
 					super.on_complete(success);
@@ -1174,4 +1272,10 @@ public class delivery_drone extends robot {
 		strategy = message[2];
 	}
 
+	public void bc_rush(int[] q) {
+		MapLocation wait = new MapLocation(q[2], q[3]);
+		if (wait.distanceSquaredTo(rc.getLocation()) <= 10) {
+			rush_support = true;
+		}
+	}
 }
