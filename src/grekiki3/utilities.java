@@ -192,12 +192,6 @@ class Util {
 			return dir.rotateLeft();
 		} else if (rc.canMove(dir.rotateRight()) && rc.canSenseLocation(rc.getLocation().add(dir.rotateRight())) && !rc.senseFlooding(rc.getLocation().add(dir.rotateRight()))) {
 			return dir.rotateRight();
-		} else if (rc.canMove(dir.rotateLeft().rotateLeft()) && rc.canSenseLocation(rc.getLocation().add(dir.rotateLeft().rotateLeft()))
-				&& !rc.senseFlooding(rc.getLocation().add(dir.rotateLeft().rotateLeft()))) {
-			return dir.rotateLeft().rotateLeft();
-		} else if (rc.canMove(dir.rotateRight().rotateRight()) && rc.canSenseLocation(rc.getLocation().add(dir.rotateRight().rotateRight()))
-				&& !rc.senseFlooding(rc.getLocation().add(dir.rotateRight().rotateRight()))) {
-			return dir.rotateRight().rotateRight();
 		} else {
 			return null;
 		}
