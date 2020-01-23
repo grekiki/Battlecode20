@@ -9,6 +9,7 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
+
 class landPathFinder extends BasePathFinder {
 	landPathFinder(RobotController rc) {
 		super(rc);
@@ -39,6 +40,7 @@ class landPathFinder extends BasePathFinder {
 		return false;
 	}
 }
+
 public class landscaper2 extends robot {
 	int strategy = -1;
 	boolean attacking = false;
@@ -56,6 +58,7 @@ public class landscaper2 extends robot {
 	int roundHqHeight;
 	int hqHeight = -1000;
 	landPathFinder path;
+
 	public landscaper2(RobotController rc) {
 		super(rc);
 	}
@@ -67,7 +70,7 @@ public class landscaper2 extends robot {
 				break;
 			}
 		}
-		path=new landPathFinder(rc);
+		path = new landPathFinder(rc);
 		previousRound = rc.getRoundNum();
 		if (hq == null && strategy == 1000) {
 			attacking = true;
@@ -211,52 +214,116 @@ public class landscaper2 extends robot {
 	}
 
 	private void defendBase() throws GameActionException {
-		MapLocation eb = null;
-		int dist = 100000;
-		for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
-			if (r.getType() == RobotType.DESIGN_SCHOOL || r.getType() == RobotType.FULFILLMENT_CENTER || r.getType() == RobotType.NET_GUN) {
-				if (rc.getLocation().distanceSquaredTo(r.location) < dist) {
-					dist = rc.getLocation().distanceSquaredTo(r.location);
-					eb = r.location;
-				}
-			}
-		}
-		if (eb == null) {
-			for (Direction d : Util.dir) {
-				RobotInfo r = rc.senseRobotAtLocation(rc.getLocation().add(d));
-				if(r.team==rc.getTeam()&&rc.canDigDirt(d)) {
-					rc.digDirt(d);
-					return;
-				}
-			}
-			path.moveTowards(hq);
-			return;
-		}
+		System.out.println("DEFENSE!");
+		MapLocation enemyBuilding = findClosestEnemyBuilding();
+		// poskusi odkopati našo stavbo
 		for (Direction d : Util.dir) {
 			RobotInfo r = rc.senseRobotAtLocation(rc.getLocation().add(d));
-			if (r == null) {
-				continue;
+			if (r != null && r.team == rc.getTeam() && rc.canDigDirt(d)&&(r.getType() == RobotType.DESIGN_SCHOOL ||r.getType() == RobotType.HQ || r.getType() == RobotType.FULFILLMENT_CENTER || r.getType() == RobotType.NET_GUN)) {
+				rc.digDirt(d);
+				System.out.println("Izkopavamo stavbo na "+rc.getLocation().add(d));
+				return;
 			}
-			if (r.getType() == RobotType.DESIGN_SCHOOL || r.getType() == RobotType.FULFILLMENT_CENTER || r.getType() == RobotType.NET_GUN) {
-				if (r.getTeam() == rc.getTeam()) {
-					if (rc.canDigDirt(d)) {
-						rc.digDirt(d);
-						return;
+		}
+		if(rc.getDirtCarrying()==RobotType.LANDSCAPER.dirtLimit) {
+			dumpDirt();
+		}
+		int countRoundHqAlly=0;
+		for(RobotInfo r:rc.senseNearbyRobots(hq, 2, rc.getTeam())) {
+			if(r.type==RobotType.LANDSCAPER) {
+				countRoundHqAlly++;
+			}
+		}
+		int countRoundHqEnemy=0;
+		for(RobotInfo r:rc.senseNearbyRobots(hq, 2, rc.getTeam().opponent())) {
+			if(r.type==RobotType.LANDSCAPER) {
+				countRoundHqEnemy++;
+			}
+		}
+		
+		if (enemyBuilding == null||countRoundHqEnemy>=countRoundHqAlly) {
+			System.out.println("Ni nasprotnih stavb, krožimo okoli hq");
+			path.moveTowards(hq);
+			return;
+		} else {
+			if (rc.getDirtCarrying() > 0) {
+				//poskusimo nasipati zemljo na nasprotnikovo stavbo
+				for (Direction d : Util.dir) {
+					RobotInfo r = rc.senseRobotAtLocation(rc.getLocation().add(d));
+					if (r!=null&&(r.getType() == RobotType.DESIGN_SCHOOL || r.getType() == RobotType.FULFILLMENT_CENTER || r.getType() == RobotType.NET_GUN)) {
+						if (r.getTeam() != rc.getTeam()) {
+							if (rc.canDepositDirt(d)) {
+								rc.depositDirt(d);
+								System.out.println("Nasipavamo "+rc.getLocation().add(d));
+								return;
+							}
+						}
 					}
-				} else {
-					if (rc.canDepositDirt(d)) {
-						rc.depositDirt(d);
-						return;
-					} else {
-						if (rc.canDigDirt(d.opposite())) {
-							rc.digDirt(d.opposite());
+				}
+				System.out.println("Gremo proti "+enemyBuilding);
+				path.moveTowards(enemyBuilding);
+				return;
+			}else {
+				//ni zemlje-poskusimo jo skopati
+				for(Direction d:Util.dir) {
+					if(rc.senseRobotAtLocation(rc.getLocation().add(d))==null) {
+						if(rc.canDigDirt(d)) {
+							System.out.println("Kopljemo zemljo iz "+rc.getLocation().add(d));
+							rc.digDirt(d);
 							return;
 						}
 					}
 				}
+				Direction rand=Util.getRandomDirection();
+				if(rc.canMove(rand)) {
+					rc.move(rand);
+				}
+				return;
 			}
 		}
-		path.moveTowards(eb);
+
+	}
+
+	private boolean dumpDirt() throws GameActionException {
+		System.out.println("Dumping ");
+		for (Direction d : Util.dir) {
+			RobotInfo r = rc.senseRobotAtLocation(rc.getLocation().add(d));
+			if (r!=null&&(r.getType() == RobotType.DESIGN_SCHOOL || r.getType() == RobotType.FULFILLMENT_CENTER || r.getType() == RobotType.NET_GUN)) {
+				if (r.getTeam() != rc.getTeam()) {
+					if (rc.canDepositDirt(d)) {
+						rc.depositDirt(d);
+						System.out.println("Nasipavamo "+rc.getLocation().add(d));
+						return true;
+					}
+				}
+			}
+		}
+		for (Direction d : Util.dir) {
+			RobotInfo r = rc.senseRobotAtLocation(rc.getLocation().add(d));
+			if (r!=null) {
+				if (r.getTeam() != rc.getTeam()) {
+					if (rc.canDepositDirt(d)) {
+						rc.depositDirt(d);
+						System.out.println("Nasipavamo "+rc.getLocation().add(d));
+						return true;
+					}
+				}
+			}
+		}
+		rc.depositDirt(Direction.CENTER);
+		return true;
+	}
+
+	private MapLocation findClosestEnemyBuilding() {
+		MapLocation eb = null;
+		int dist = 100000;
+		for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
+			if (rc.getLocation().distanceSquaredTo(r.location) < dist&&(r.getType() == RobotType.DESIGN_SCHOOL || r.getType() == RobotType.FULFILLMENT_CENTER || r.getType() == RobotType.NET_GUN)) {
+				dist = rc.getLocation().distanceSquaredTo(r.location);
+				eb = r.location;
+			}
+		}
+		return eb;
 	}
 
 	private void makeAWall() throws GameActionException {

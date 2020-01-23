@@ -55,7 +55,7 @@ public class design_school extends robot {
 		}else if(strategy==1000) {
 			
 		}else if(strategy==3000) {
-			if(rc.getTeamSoup()>RobotType.LANDSCAPER.cost) {
+			if(rc.getTeamSoup()>RobotType.LANDSCAPER.cost&&spawned<5) {
 				for (Direction d : Util.dir) {
 					if (rc.canBuildRobot(RobotType.LANDSCAPER, d)) {
 						rc.buildRobot(RobotType.LANDSCAPER, d);

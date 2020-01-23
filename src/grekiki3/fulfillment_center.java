@@ -72,8 +72,21 @@ public class fulfillment_center extends robot {
 	}
 
 	private boolean try_build() throws GameActionException {
+		MapLocation netgun = null;
+		for (RobotInfo r : rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), rc.getTeam().opponent())) {
+			if (r.type == RobotType.NET_GUN) {
+				netgun = r.location;
+			}
+		}
 		for (Direction d : Util.dir) {
-			if (rc.canBuildRobot(RobotType.DELIVERY_DRONE, d)) {
+			MapLocation ans = rc.getLocation().add(d);
+			boolean ok = true;
+			if (netgun != null) {
+				if (netgun.distanceSquaredTo(ans) <= 15) {
+					ok = false;
+				}
+			}
+			if (ok && rc.canBuildRobot(RobotType.DELIVERY_DRONE, d)) {
 				rc.buildRobot(RobotType.DELIVERY_DRONE, d);
 				drones_built++;
 				return true;
