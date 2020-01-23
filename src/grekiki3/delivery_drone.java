@@ -585,6 +585,11 @@ public class delivery_drone extends robot {
 	}
 
 	@Override
+	public void bc_full_wall(int[] message) {
+
+	}
+
+	@Override
 	public void bc_water(MapLocation pos) {
 		water_locations.add(pos);
 	}
@@ -1113,6 +1118,12 @@ public class delivery_drone extends robot {
 								}
 								if (time_running % 10 == 0) {
 									destination = Util.randomPoint(drone.rc.getMapHeight(), drone.rc.getMapWidth());
+								}
+							}
+							if (time_running > 16) {
+								if (drop_unit_unsafe()) {
+									on_complete(true);
+									return true;
 								}
 							}
 							return super.run();
