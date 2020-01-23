@@ -74,10 +74,12 @@ public class HQ extends robot {
 
 	@Override
 	public void precompute() throws GameActionException {
-		for (RobotInfo r : rc.senseNearbyRobots(2)) {
-			if (r.team == rc.getTeam() && r.type == RobotType.MINER) {
-				if (!minerIds.contains(r.ID)) {
-					minerIds.add(r.ID);
+		if (rc.getRoundNum() < 200) {
+			for (RobotInfo r : rc.senseNearbyRobots(2)) {
+				if (r.team == rc.getTeam() && r.type == RobotType.MINER) {
+					if (!minerIds.contains(r.ID)) {
+						minerIds.add(r.ID);
+					}
 				}
 			}
 		}
@@ -143,9 +145,11 @@ public class HQ extends robot {
 		if (strategy == 2000) {
 			if (rc.getRoundNum() == 50) {
 				b.send_location(b.BUILD_TOVARNA_DRONOV, drones);
+				System.out.println(drones+" droni?");
 			}
 			if (rc.getRoundNum() == 200) {
 				b.send_location(b.BUILD_TOVARNA_LANDSCAPERJEV, landscaping);
+				System.out.println(landscaping+" diggerji?");
 			}
 		}
 		if (strategy == 3000) {
@@ -161,7 +165,6 @@ public class HQ extends robot {
 			}
 		}
 	}
-
 
 	public int choose_strategy() {
 		wallRadius = 2;

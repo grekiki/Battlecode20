@@ -262,7 +262,7 @@ class naloga {
 	}
 
 	public void run() throws GameActionException {
-//		System.out.println("Naloga " + type);
+		System.out.println("Naloga " + type);
 		switch (type) {
 		case GRADNJA_REFINERIJE:
 			gradnja_refinerije();
@@ -415,7 +415,7 @@ public class miner extends robot {
 
 	naloga task;
 	ArrayList<naloga> toBuild;
-	final static int GRADNJA = 1000;
+	final static int GRADNJA = c.inf;
 	final static int PREMIKANJE_JUHE_V_BAZO = 300;
 	final static int NABIRANJE = 250;// Vidimo juho do katere lahko dokazano pridemo
 	final static int PREMIK_DO_JUHE = 200;// Baje da se do juhe da priti. Pathfinding
@@ -616,7 +616,7 @@ public class miner extends robot {
 			}
 			if (rc.getLocation().distanceSquaredTo(m) <= 2) {
 				// Kako pogledati ce je okoli polja juha? Simple: Scan
-				if (rc.senseNearbySoup(m, 20).length == 0) {
+				if (rc.senseNearbySoup(m, 4).length == 0) {
 					polja.remove(m);
 					b.send_location(b.LOC_SUROVINA_PRAZNO, m);
 					i--;
@@ -676,6 +676,9 @@ public class miner extends robot {
 	public void findBestTask() throws GameActionException {
 		if (200 < rc.getRoundNum() && rc.getRoundNum() < 1300 && rc.getTeamSoup() >= 500) {
 			for (Direction d : Util.dir) {
+				if(!rc.canSenseLocation(rc.getLocation().add(d))) {
+					continue;
+				}
 				int h = rc.senseElevation(rc.getLocation().add(d));
 				if (h == 8) {
 					if (rc.canBuildRobot(RobotType.VAPORATOR, d)) {
