@@ -224,7 +224,7 @@ public class landscaper extends robot {
 	private void defendBase() throws GameActionException {
 		System.out.println("DEFENSE!");
 		MapLocation enemyBuilding = findClosestEnemyBuilding();
-		// poskusi odkopati našo stavbo
+		// poskusi odkopati naso stavbo
 		for (Direction d : Util.dir) {
 			RobotInfo r = rc.senseRobotAtLocation(rc.getLocation().add(d));
 			if (r != null && r.team == rc.getTeam() && rc.canDigDirt(d)&&(r.getType() == RobotType.DESIGN_SCHOOL ||r.getType() == RobotType.HQ || r.getType() == RobotType.FULFILLMENT_CENTER || r.getType() == RobotType.NET_GUN)) {
@@ -250,7 +250,7 @@ public class landscaper extends robot {
 		}
 		
 		if (enemyBuilding == null||countRoundHqEnemy>=countRoundHqAlly) {
-			System.out.println("Ni nasprotnih stavb, krožimo okoli hq");
+			System.out.println("Ni nasprotnih stavb, krozimo okoli hq");
 			path.moveTowards(hq);
 			return;
 		} else {
@@ -423,7 +423,7 @@ public class landscaper extends robot {
 
 	private void doAttacking() throws GameActionException {
 		System.out.println("Attacking");
-		// poišèemo najblizjo nasprotnikovo stavbo, jo zasipamo ali gremo do nje
+		// poiscemo najblizjo nasprotnikovo stavbo, jo zasipamo ali gremo do nje
 		MapLocation eb = null;
 		int dist = 100000;
 		for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
