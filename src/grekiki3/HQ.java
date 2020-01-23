@@ -289,4 +289,7 @@ public class HQ extends robot {
 			polja.add(pos);
 		}
 	}
+	public void bc_enemy_hq(MapLocation pos) throws GameActionException {
+		System.out.println("hq ve za "+pos);
+	}
 }
