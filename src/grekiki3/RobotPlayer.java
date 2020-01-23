@@ -91,6 +91,9 @@ abstract class robot {
 				case BASE_STRATEGY:
 					bc_base_strategy(message);
 					break;
+				case FULL_WALL:
+					bc_full_wall(message);
+					break;
 				}
 			}
 
@@ -176,7 +179,7 @@ abstract class robot {
 	public void bc_unit_alive(int[] message) {
 	}
 
-	
+	public void bc_full_wall(int[]message) {}
 	
 	public void bc_miner_rush(int[] message) {
 	}
