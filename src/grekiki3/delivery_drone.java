@@ -433,7 +433,7 @@ public class delivery_drone extends robot {
 			}
 		};
 
-		MAX_TASK_RADIUS = Math.max(rc.getMapWidth(), rc.getMapHeight()) / 2;
+		MAX_TASK_RADIUS = Math.max(rc.getMapWidth(), rc.getMapHeight()) / 2 + 16;
 		MAX_TASK_RADIUS = MAX_TASK_RADIUS * MAX_TASK_RADIUS;
 
 		for (RobotInfo r : rc.senseNearbyRobots(-1, rc.getTeam())) {
@@ -877,14 +877,14 @@ public class delivery_drone extends robot {
 
 	private DroneTask explore_task(int priority) throws GameActionException {
 		MapLocation dest = null;
-		if (Math.random() < 0.5) {
+		if (Math.random() < 0.7) {
 			if (enemy_hq_location != null) {
 				dest = enemy_hq_location;
 			} else {
 				dest = closest_enemy_building();
 			}
 			if (dest == null && symmetry_points.size() > 0) {
-				dest = symmetry_points.remove(symmetry_points.size() - 1);
+				dest = symmetry_points.remove((int) (Math.random() * symmetry_points.size()));
 			}
 		}
 		dest = dest == null ? Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()) : dest;
@@ -1043,6 +1043,8 @@ public class delivery_drone extends robot {
 				return t;
 		}
 
+		DroneDeliveryRequest delivery = attack_location == null ? find_closest_delivery_location(cur) : null;
+
 		if (rc.isCurrentlyHoldingUnit()) {
 			if (task != null && task.is_running())
 				return task;
@@ -1106,17 +1108,42 @@ public class delivery_drone extends robot {
 					return go_home_task(task == null ? 30 : task.priority);
 				}
 			} else {
-				if (held_unit != null && held_unit.getType() == RobotType.COW) {
-					return enemy_cow_building_task();
+				if (delivery != null) {
+					MapLocation closest_water = Util.closest(water_locations, cur);
+					if (closest_water != null) {
+						return new MoveDroneTask(this, closest_water, 25) {
+							@Override
+							public void on_complete(boolean success) throws GameActionException {
+								super.on_complete(success);
+								drop_unit_water();
+							}
+						};
+					}
+					drop_unit_unsafe();
+					return new DeliverDroneTask(this, delivery, 50) {
+						@Override
+						public void on_complete(boolean success) throws GameActionException {
+							super.on_complete(success);
+							if (success) {
+								drop_unit_safe(delivery.to);
+							}
+							drop_unit_safe();
+							delivery_locations.remove(delivery.id);
+							priority = -1;
+						}
+					};
+				} else {
+					if (held_unit != null && held_unit.getType() == RobotType.COW) {
+						return enemy_cow_building_task();
+					}
+					return drop_water_task();
 				}
-				return drop_water_task();
 			}
 		}
 
 		if (task != null && task.is_running() && task.priority > 70)
 			return task;
 
-		DroneDeliveryRequest delivery = attack_location == null ? find_closest_delivery_location(cur) : null;
 		if (delivery != null && delivery.from.isWithinDistanceSquared(cur, MAX_TASK_RADIUS)) {
 			return new DeliverDroneTask(this, delivery, 50) {
 				@Override

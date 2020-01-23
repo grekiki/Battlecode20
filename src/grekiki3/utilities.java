@@ -24,7 +24,7 @@ class c {
  *
  */
 class Util {
-	public static Random r = new Random(1234);
+	public static Random r = new Random();
 	public static Direction[] dir = { Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST };
 
 	/**
