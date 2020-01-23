@@ -322,7 +322,7 @@ class blockchain {
 	public void handle_location2(int type, MapLocation m1, MapLocation m2, int id) {
 	}
 
-	public void handle_packet(int type, int[] message) {
+	public void handle_packet(int type, int[] message) throws GameActionException {
 	}
 
 	public void send_location(int type, MapLocation pos) throws GameActionException {

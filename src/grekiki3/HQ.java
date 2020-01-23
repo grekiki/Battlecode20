@@ -30,6 +30,12 @@ public class HQ extends robot {
 	MapLocation landscaping;
 	MapLocation drones;
 	boolean wall=false;
+
+	MapLocation enemy_hq_location;
+	boolean attack_started = false;
+	int attack_turn = -1;
+	int next_attack = 700;
+
 	public HQ(RobotController rc) {
 		super(rc);
 	}
@@ -193,6 +199,25 @@ public class HQ extends robot {
 				built_defensive_ls = true;
 			}
 		}
+
+		// drone napad test
+		if (rc.getRoundNum() > next_attack && enemy_hq_location != null && !attack_started) {
+			attack_turn = rc.getRoundNum() + 150;
+			b.send_location_priority(b.LOCP_DRONE_ATTACK, enemy_hq_location, attack_turn);
+			attack_started = true;
+		}
+		if (attack_started && rc.getRoundNum() - attack_turn > 30) {
+			attack_started = false;
+			attack_turn = -1;
+			next_attack = rc.getRoundNum() + 190;
+			b.send_location_priority(b.LOCP_DRONE_ATTACK_STOP, enemy_hq_location, attack_turn);
+		}
+
+		// test
+		if (rc.getRoundNum() == 350) {
+			b.send_packet(b.FULL_WALL, new int[]{b.PRIVATE_KEY, b.FULL_WALL, 0, 0, 0, 0, 0});
+		}
+
 		while (Clock.getBytecodesLeft() > 500) {
 			if (!b.read_next_round()) {
 				break;
@@ -279,5 +304,10 @@ public class HQ extends robot {
 		if (!polja.contains(pos)) {
 			polja.add(pos);
 		}
+	}
+
+	@Override
+	public void bc_enemy_hq(MapLocation pos) throws GameActionException {
+		enemy_hq_location = pos;
 	}
 }
