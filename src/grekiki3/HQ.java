@@ -26,6 +26,8 @@ public class HQ extends robot {
 	boolean haveRusher = false;
 	int rusher = -1;
 
+	MapLocation landscaping;
+	MapLocation drones;
 	public HQ(RobotController rc) {
 		super(rc);
 	}
@@ -46,6 +48,27 @@ public class HQ extends robot {
 		minerIds = new ArrayList<Integer>();
 		b.send_packet(b.BASE_STRATEGY, new int[] { b.PRIVATE_KEY, b.BASE_STRATEGY, strategy, 0, 0, 0, 0 });
 		b.send_location(b.LOC_HOME_HQ, rc.getLocation());
+		boolean left=rc.getLocation().x<rc.getMapWidth()/2;
+		boolean bottom=rc.getLocation().y<rc.getMapHeight()/2;
+		for(int x=0;x<5;x++) {
+			for(int y=0;y<5;y++) {
+				if((x%2==0&&y%2==0)||(x+y<5)) {
+					
+				}else {
+					int px=left?x:-x;
+					int py=bottom?y:-y;
+					int h=rc.senseElevation(new MapLocation(rc.getLocation().x+px,rc.getLocation().y+py));
+					if(!rc.senseFlooding(new MapLocation(rc.getLocation().x+px,rc.getLocation().y+py))&&Math.abs(h-rc.senseElevation(rc.getLocation()))<=3) {
+						if(landscaping==null) {
+							landscaping=new MapLocation(rc.getLocation().x+px,rc.getLocation().y+py);
+						}else if(drones==null){
+							drones=new MapLocation(rc.getLocation().x+px,rc.getLocation().y+py);
+						}
+					}
+				}
+			}
+		}
+		System.out.println(drones+" "+landscaping);
 	}
 
 	@Override
@@ -98,10 +121,10 @@ public class HQ extends robot {
 	public void postcompute() throws GameActionException {
 		if (strategy == 2000) {
 			if (rc.getRoundNum() == 20) {
-				b.send_location(b.BUILD_TOVARNA_DRONOV, loc.translate(3, 1));
+				b.send_location(b.BUILD_TOVARNA_DRONOV,drones);
 			}
 			if (rc.getRoundNum() == 50) {
-				b.send_location(b.BUILD_TOVARNA_LANDSCAPERJEV, loc.translate(3, -1));
+				b.send_location(b.BUILD_TOVARNA_LANDSCAPERJEV, landscaping);
 			}
 		}
 		while (Clock.getBytecodesLeft() > 500) {

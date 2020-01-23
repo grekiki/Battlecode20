@@ -25,6 +25,7 @@ public class landscaper2 extends robot {
 	int previousRound = -1;
 	MapLocation[] holes;
 	int roundHqHeight;
+
 	public landscaper2(RobotController rc) {
 		super(rc);
 	}
@@ -40,8 +41,10 @@ public class landscaper2 extends robot {
 		if (hq == null && strategy == 1000) {
 			attacking = true;
 		}
-		if (hq != null) {
+		if (hq != null && rc.canSenseLocation(hq)) {
 			roundHqHeight = rc.senseElevation(hq) + 3;
+		} else {
+			roundHqHeight = 5;
 		}
 		wall1 = new ArrayList<MapLocation>();
 		wall2 = new ArrayList<MapLocation>();
