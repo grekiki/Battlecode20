@@ -433,7 +433,7 @@ class LocationPriority {
 }
 
 public class delivery_drone extends robot {
-	private static int ENEMY_DANGER_RADIUS = GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED + 18;
+	private static int ENEMY_DANGER_RADIUS = GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED + 12;
 	private static final int COW_ENEMY_PRIORITY = 27;
 	private static final int COW_ENEMY_RADIUS = ENEMY_DANGER_RADIUS * 3;
 	private static final int TASK_TIME_LIMIT = 100;
@@ -755,7 +755,7 @@ public class delivery_drone extends robot {
 				}
 
 				int d = r.getLocation().distanceSquaredTo(pos);
-				if (robot == null || d < closest || priority > get_unit_priority(robot.getType())) {
+				if (robot == null || d < closest || (priority > get_unit_priority(robot.getType()) && (d - closest) < 4)) {
 					closest = d;
 					robot = r;
 				}
@@ -803,11 +803,20 @@ public class delivery_drone extends robot {
 		return dest;
 	}
 
-	private DroneTask explore_task(int priority) {
-		return new MoveDroneTask(this, Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()), priority);
+	private DroneTask explore_task(int priority) throws GameActionException {
+		MapLocation dest = null;
+	    if (Math.random() < 0.5) {
+	        if (enemy_hq_location != null) {
+	            dest = enemy_hq_location;
+			} else {
+				dest = closest_enemy_building();
+			}
+		}
+		dest = dest == null ? Util.randomPoint(rc.getMapHeight(), rc.getMapWidth()) : dest;
+		return new MoveDroneTask(this, dest, priority);
 	}
 
-	private DroneTask go_home_task(int priority) {
+	private DroneTask go_home_task(int priority) throws GameActionException {
 		if (hq_location != null) {
 			return new MoveDroneTask(this, hq_location, priority);
 		}
@@ -921,6 +930,15 @@ public class delivery_drone extends robot {
 					assist_locations.remove(loc);
 					b.send_location_priority(b.LOCP_DRONE_ASSIST_CLEAR, loc.loc, loc.priority);
 				}
+			}
+
+			@Override
+			public boolean run() throws GameActionException {
+				if (drone.rc.getLocation().isWithinDistanceSquared(loc.loc, drone.rc.getCurrentSensorRadiusSquared())) {
+				    on_complete(true);
+				    return false;
+				}
+				return super.run();
 			}
 		};
 	}
