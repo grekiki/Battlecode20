@@ -546,6 +546,7 @@ public class delivery_drone extends robot {
 	@Override
 	public void bc_enemy_hq(MapLocation pos) {
 		enemy_netguns.add(pos);
+		enemy_hq_location = pos;
 	}
 
 	@Override
@@ -573,6 +574,14 @@ public class delivery_drone extends robot {
 		attack_location = pos;
 		attack_round = round;
 		bc_drone_assist(pos, 500 + round);
+	}
+
+	@Override
+	public void bc_drone_attack_stop(MapLocation pos) {
+		assist_locations.remove(new LocationPriority(pos, attack_round));
+		attack_location = null;
+		attack_round = -1;
+		path_finder.ignore_danger = false;
 	}
 
 	@Override

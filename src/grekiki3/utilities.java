@@ -282,6 +282,7 @@ class blockchain {
 	final int LOCP_DRONE_ASSIST = 102;
 	final int LOCP_DRONE_ASSIST_CLEAR = 103;
 	final int LOCP_DRONE_ATTACK = 105;
+	final int LOCP_DRONE_ATTACK_STOP = 106;
 	/**
 	 * Miner z ID-jem int2 mora pomagati bazi in vsakih 10 potez obvestiti o tem da
 	 * je se ziv.

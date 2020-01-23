@@ -5,6 +5,8 @@ import battlecode.common.*;
 public class fulfillment_center extends robot {
 	MapLocation enemy_hq_location;
 	boolean attack_started = false;
+	int attack_turn = -1;
+	int next_attack = 700;
 
 	int drones_built = 0;
 	int drone_requests = 0;
@@ -41,9 +43,16 @@ public class fulfillment_center extends robot {
 	@Override
 	public void postcompute() throws GameActionException {
 		// test
-		if (rc.getRoundNum() > 900 && enemy_hq_location != null && !attack_started) {
-			b.send_location_priority(b.LOCP_DRONE_ATTACK, enemy_hq_location, rc.getRoundNum() + 150);
+		if (rc.getRoundNum() > next_attack && drones_built > 28 && enemy_hq_location != null && !attack_started) {
+			attack_turn = rc.getRoundNum() + 150;
+			b.send_location_priority(b.LOCP_DRONE_ATTACK, enemy_hq_location, attack_turn);
 			attack_started = true;
+		}
+		if (attack_started && rc.getRoundNum() - attack_turn > 30) {
+			attack_started = false;
+			attack_turn = -1;
+			next_attack = rc.getRoundNum() + 220;
+			b.send_location_priority(b.LOCP_DRONE_ATTACK_STOP, enemy_hq_location, attack_turn);
 		}
 
 		while (Clock.getBytecodesLeft() > 500) {
@@ -74,8 +83,9 @@ public class fulfillment_center extends robot {
 				return false;
 			}
 		}
-		boolean enough_soup = rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost;
-		return enough_soup && (drones_built < 2 + drone_requests);
+		int team_soup = rc.getTeamSoup();
+		boolean enough_soup = team_soup >= RobotType.DELIVERY_DRONE.cost;
+		return enough_soup && ((drones_built < 2 + drone_requests) || team_soup > 9000 || Math.random() < 0.05);
 	}
 
 	private boolean try_build() throws GameActionException {
