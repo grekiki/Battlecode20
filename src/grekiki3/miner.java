@@ -262,7 +262,7 @@ class naloga {
 	}
 
 	public void run() throws GameActionException {
-		System.out.println("Naloga " + type);
+//		System.out.println("Naloga " + type);
 		switch (type) {
 		case GRADNJA_REFINERIJE:
 			gradnja_refinerije();
