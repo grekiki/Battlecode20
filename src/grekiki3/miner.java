@@ -759,7 +759,7 @@ public class miner extends robot {
 
 	public int izracunaj_vrenost_refinerije(MapLocation closest) throws GameActionException {
 		if (strategija == 1000 || strategija == 3000) {
-			if (rc.getSoupCarrying() < 500) {
+			if (rc.getSoupCarrying() < 300) {
 				return 0;
 			}
 		}

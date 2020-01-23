@@ -28,6 +28,7 @@ public class HQ extends robot {
 
 	MapLocation landscaping;
 	MapLocation drones;
+
 	public HQ(RobotController rc) {
 		super(rc);
 	}
@@ -48,27 +49,27 @@ public class HQ extends robot {
 		minerIds = new ArrayList<Integer>();
 		b.send_packet(b.BASE_STRATEGY, new int[] { b.PRIVATE_KEY, b.BASE_STRATEGY, strategy, 0, 0, 0, 0 });
 		b.send_location(b.LOC_HOME_HQ, rc.getLocation());
-		boolean left=rc.getLocation().x<rc.getMapWidth()/2;
-		boolean bottom=rc.getLocation().y<rc.getMapHeight()/2;
-		for(int x=0;x<5;x++) {
-			for(int y=0;y<5;y++) {
-				if((x%2==0&&y%2==0)||(x+y<5)) {
-					
-				}else {
-					int px=left?x:-x;
-					int py=bottom?y:-y;
-					int h=rc.senseElevation(new MapLocation(rc.getLocation().x+px,rc.getLocation().y+py));
-					if(!rc.senseFlooding(new MapLocation(rc.getLocation().x+px,rc.getLocation().y+py))&&Math.abs(h-rc.senseElevation(rc.getLocation()))<=3) {
-						if(landscaping==null) {
-							landscaping=new MapLocation(rc.getLocation().x+px,rc.getLocation().y+py);
-						}else if(drones==null){
-							drones=new MapLocation(rc.getLocation().x+px,rc.getLocation().y+py);
+		boolean left = rc.getLocation().x < rc.getMapWidth() / 2;
+		boolean bottom = rc.getLocation().y < rc.getMapHeight() / 2;
+		for (int x = 0; x < 5; x++) {
+			for (int y = 0; y < 5; y++) {
+				if ((x % 2 == 0 && y % 2 == 0) || (x + y < 5)) {
+
+				} else {
+					int px = left ? x : -x;
+					int py = bottom ? y : -y;
+					int h = rc.senseElevation(new MapLocation(rc.getLocation().x + px, rc.getLocation().y + py));
+					if (!rc.senseFlooding(new MapLocation(rc.getLocation().x + px, rc.getLocation().y + py)) && Math.abs(h - rc.senseElevation(rc.getLocation())) <= 3) {
+						if (landscaping == null) {
+							landscaping = new MapLocation(rc.getLocation().x + px, rc.getLocation().y + py);
+						} else if (drones == null) {
+							drones = new MapLocation(rc.getLocation().x + px, rc.getLocation().y + py);
 						}
 					}
 				}
 			}
 		}
-		System.out.println(drones+" "+landscaping);
+		System.out.println(drones + " " + landscaping);
 	}
 
 	@Override
@@ -80,10 +81,10 @@ public class HQ extends robot {
 				}
 			}
 		}
-		if(rc.getRoundNum()<200&&strategy!=1000) {
-			for(RobotInfo r:rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), rc.getTeam().opponent())) {
-				if(r.type==RobotType.MINER) {
-					strategy=3000;
+		if (rc.getRoundNum() < 200 && strategy != 1000) {
+			for (RobotInfo r : rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), rc.getTeam().opponent())) {
+				if (r.type == RobotType.MINER) {
+					strategy = 3000;
 					b.send_packet(b.BASE_STRATEGY, new int[] { b.PRIVATE_KEY, b.BASE_STRATEGY, strategy, 0, 0, 0, 0 });
 					if (!haveBaseBuilder && minerIds.size() > 0) {
 						haveBaseBuilder = true;
@@ -95,11 +96,13 @@ public class HQ extends robot {
 		if (strategy == 1000) {
 			if (!haveRusher && minerIds.size() > 0) {
 				haveRusher = true;
+				rusher = minerIds.get(0);
 				b.send_packet(b.MINER_RUSH, new int[] { b.PRIVATE_KEY, b.MINER_RUSH, minerIds.get(0), 0, 0, 0, 0 });
 			}
 		} else if (strategy == 2000) {
 			if (!haveBaseBuilder && minerIds.size() > 0) {
 				haveBaseBuilder = true;
+				builder = minerIds.get(0);
 				b.send_packet(b.MINER_HELP_HQ, new int[] { b.PRIVATE_KEY, b.MINER_HELP_HQ, minerIds.get(0), 0, 0, 0, 0 });
 			}
 		}
@@ -120,7 +123,7 @@ public class HQ extends robot {
 					return;
 		}
 		if (strategy == 2000) {
-			if (((this.miners_spawned <= 4 * polja.load &&rc.getTeamSoup()>700)||this.miners_spawned <= 2 * polja.load )&& this.miners_spawned < 10)
+			if (((this.miners_spawned <= 4 * polja.load && rc.getTeamSoup() > 700) || this.miners_spawned <= 2 * polja.load) && this.miners_spawned < 10)
 				if (try_spawn_miner(pick_miner_direction()))
 					return;
 
@@ -132,21 +135,24 @@ public class HQ extends robot {
 		}
 
 	}
-	static boolean built_defensive_ls=false;
+
+	static boolean built_defensive_ls = false;
+
 	@Override
 	public void postcompute() throws GameActionException {
 		if (strategy == 2000) {
 			if (rc.getRoundNum() == 50) {
-				b.send_location(b.BUILD_TOVARNA_DRONOV,drones);
+				b.send_location(b.BUILD_TOVARNA_DRONOV, drones);
 			}
 			if (rc.getRoundNum() == 200) {
 				b.send_location(b.BUILD_TOVARNA_LANDSCAPERJEV, landscaping);
 			}
 		}
-		if(strategy==3000) {
-			if(!built_defensive_ls) {
-				b.send_location(b.BUILD_TOVARNA_LANDSCAPERJEV, new MapLocation(rc.getLocation().x+1,rc.getLocation().y));
-				built_defensive_ls=true;
+		if (strategy == 3000) {
+			if (!built_defensive_ls) {
+				b.send_location(b.BUILD_TOVARNA_LANDSCAPERJEV, new MapLocation(rc.getLocation().x, rc.getLocation().y - 2));
+//				b.send_location(b.BUILD_TOVARNA_DRONOV, new MapLocation(rc.getLocation().x,rc.getLocation().y-1));
+				built_defensive_ls = true;
 			}
 		}
 		while (Clock.getBytecodesLeft() > 500) {
@@ -155,6 +161,7 @@ public class HQ extends robot {
 			}
 		}
 	}
+
 
 	public int choose_strategy() {
 		wallRadius = 2;
