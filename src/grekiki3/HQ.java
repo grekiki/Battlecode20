@@ -175,6 +175,10 @@ public class HQ extends robot {
 		}
 
 		if (strategy == 1000) {
+			if(rc.getRoundNum()>=300) {
+				strategy=2000;
+				b.send_packet(b.BASE_STRATEGY, new int[] { b.PRIVATE_KEY, b.BASE_STRATEGY, strategy, 0, 0, 0, 0 });
+			}
 			if (this.miners_spawned < 3)
 				if (try_spawn_miner(pick_miner_direction()))
 					return;
