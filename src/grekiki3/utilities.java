@@ -196,6 +196,17 @@ class Util {
 			return null;
 		}
 	}
+	public static Direction tryMoveDrone(RobotController rc, Direction dir) throws GameActionException {
+		if (rc.canMove(dir) && rc.canSenseLocation(rc.getLocation().add(dir))) {
+			return dir;
+		} else if (rc.canMove(dir.rotateLeft()) && rc.canSenseLocation(rc.getLocation().add(dir.rotateLeft()))) {
+			return dir.rotateLeft();
+		} else if (rc.canMove(dir.rotateRight()) && rc.canSenseLocation(rc.getLocation().add(dir.rotateRight()))) {
+			return dir.rotateRight();
+		} else {
+			return null;
+		}
+	}
 
 }
 
